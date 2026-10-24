@@ -30,6 +30,19 @@ export function top_scorers(players: readonly PlayerSummary[], count: number): P
     .slice(0, count);
 }
 
+/** Keeps the AI's scorer in the list: it takes the last place of its team if needed. */
+export function with_ai_scorer(
+  top: readonly PlayerSummary[],
+  players: readonly PlayerSummary[],
+  ai_scorer_id: string | null,
+): PlayerSummary[] {
+  const ai_scorer = players.find((player) => player.id === ai_scorer_id);
+  if (!ai_scorer || top.some((player) => player.id === ai_scorer.id)) {
+    return [...top];
+  }
+  return [...top.slice(0, -1), ai_scorer];
+}
+
 function player_meta({ player, team_name }: ScorerOption): string {
   return player.goals_last_5 > 0
     ? before_copy.goals_last_5(team_name, player.goals_last_5)
@@ -41,6 +54,16 @@ function player_label(player: PlayerSummary): string {
   return `${player.first_name} ${player.last_name}${jersey}`;
 }
 
+function team_options(
+  players: readonly PlayerSummary[],
+  team_name: string,
+  ai_scorer_id: string | null,
+): ScorerOption[] {
+  return with_ai_scorer(top_scorers(players, PLAYERS_PER_TEAM), players, ai_scorer_id).map(
+    (player) => ({ player, team_name }),
+  );
+}
+
 interface ScorerPickProps extends PickProps {
   ai_scorer_id: string | null;
 }
@@ -49,14 +72,8 @@ export function ScorerPick({ game, picks, update, disabled, ai_scorer_id }: Scor
   const home_players = useTeamPlayers(game.home_team.id);
   const away_players = useTeamPlayers(game.away_team.id);
   const options: ScorerOption[] = [
-    ...top_scorers(home_players.data ?? [], PLAYERS_PER_TEAM).map((player) => ({
-      player,
-      team_name: game.home_team.name,
-    })),
-    ...top_scorers(away_players.data ?? [], PLAYERS_PER_TEAM).map((player) => ({
-      player,
-      team_name: game.away_team.name,
-    })),
+    ...team_options(home_players.data ?? [], game.home_team.name, ai_scorer_id),
+    ...team_options(away_players.data ?? [], game.away_team.name, ai_scorer_id),
   ];
   const is_loading = home_players.isPending || away_players.isPending;
 

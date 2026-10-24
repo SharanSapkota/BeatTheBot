@@ -1,5 +1,6 @@
 import { api_error_schema } from "@voita_kone/shared_types";
 import type { z } from "zod";
+import { clear_session_token, read_session_token } from "./session";
 
 /** An error answer from our API ({ error: { code, message } }) or a failed request. */
 export class ApiError extends Error {
@@ -21,7 +22,9 @@ export function get_api_base_url(): string {
   return api_base_url.replace(/\/+$/, "");
 }
 
-async function to_api_error(response: Response, path: string): Promise<ApiError> {
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+async function to_api_error(response: Response, method: Method, path: string): Promise<ApiError> {
   const parsed = api_error_schema.safeParse(await response.json().catch(() => null));
   if (parsed.success) {
     return new ApiError(parsed.data.error.code, response.status, parsed.data.error.message);
@@ -29,22 +32,57 @@ async function to_api_error(response: Response, path: string): Promise<ApiError>
   return new ApiError(
     "HTTP_ERROR",
     response.status,
-    `GET ${path} failed (${String(response.status)})`,
+    `${method} ${path} failed (${String(response.status)})`,
   );
 }
 
-/** GET a path under /api/v1 and validate the body with the shared zod schema. */
-export async function api_get<T extends z.ZodType>(path: string, schema: T): Promise<z.infer<T>> {
-  let response: Response;
+async function send(method: Method, path: string, body: unknown, token: string | null) {
+  const headers: Record<string, string> = {};
+  if (token !== null) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
   try {
-    response = await fetch(`${get_api_base_url()}${path}`);
+    return await fetch(`${get_api_base_url()}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
   } catch {
     throw new ApiError("NETWORK_ERROR", 0, "Could not reach the server");
   }
+}
+
+/**
+ * Calls a path under /api/v1 with the session token (if any) and validates the body with the
+ * shared zod schema. A 401 for a stored token means it is no longer valid: the token is
+ * cleared, and a GET is tried once more without it (public data still loads).
+ */
+export async function api_request<T extends z.ZodType>(
+  method: Method,
+  path: string,
+  schema: T,
+  body?: unknown,
+): Promise<z.infer<T>> {
+  const token = read_session_token();
+  let response = await send(method, path, body, token);
+  if (response.status === 401 && token !== null) {
+    clear_session_token();
+    if (method === "GET") {
+      response = await send(method, path, body, null);
+    }
+  }
   if (!response.ok) {
-    throw await to_api_error(response, path);
+    throw await to_api_error(response, method, path);
   }
   return schema.parse(await response.json());
+}
+
+/** GET a path under /api/v1 and validate the body with the shared zod schema. */
+export function api_get<T extends z.ZodType>(path: string, schema: T): Promise<z.infer<T>> {
+  return api_request("GET", path, schema);
 }
 
 /** True when the endpoint does not exist yet (route-level 404), not when an item is missing. */
@@ -63,9 +101,15 @@ export function warn_once(label: string, message: string): void {
   console.warn(message);
 }
 
+/** True when the endpoint itself failed (unreachable or a server error), not a known answer. */
+export function is_endpoint_failure(error: unknown): boolean {
+  return error instanceof ApiError && (error.code === "NETWORK_ERROR" || error.http_status >= 500);
+}
+
 /**
- * Real API first. While an endpoint is not built yet (404 NOT_FOUND), use sample data
- * for that part and say so once in the console.
+ * Real API first. When an endpoint is not built yet (404 NOT_FOUND) or fails (network,
+ * 5xx), use sample data for that part and say so once in the console. Known answers such as
+ * GAME_NOT_FOUND or PREDICTION_NOT_READY are passed on to the caller.
  */
 export async function get_or_sample<T extends z.ZodType>(
   path: string,
@@ -76,10 +120,17 @@ export async function get_or_sample<T extends z.ZodType>(
   try {
     return await api_get(path, schema);
   } catch (error) {
-    if (!is_missing_endpoint(error)) {
-      throw error;
+    if (is_missing_endpoint(error)) {
+      warn_once(endpoint_label, `${endpoint_label} is not built yet: showing sample data.`);
+      return build_sample();
     }
-    warn_once(endpoint_label, `${endpoint_label} is not built yet: showing sample data.`);
-    return build_sample();
+    if (is_endpoint_failure(error)) {
+      warn_once(
+        endpoint_label,
+        `${endpoint_label} failed (${String(error)}): showing sample data.`,
+      );
+      return build_sample();
+    }
+    throw error;
   }
 }

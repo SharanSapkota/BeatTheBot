@@ -1,25 +1,17 @@
-import { Link, useLocation } from "react-router";
+import { Link } from "react-router";
 import { class_names } from "../lib/class_names";
-import { useDemoMode } from "../lib/demo_mode";
 import { shared_copy } from "./copy";
+import { useMainNav } from "./use_main_nav";
 import styles from "./bottom_nav.module.css";
 
-/** Games and Leaders, as in the design. Keeps demo mode in the links. */
+/** Games and Leaders at the bottom of the phone layout (the desktop header has its own nav). */
 export function BottomNav() {
-  const { pathname } = useLocation();
-  const { link_to } = useDemoMode();
-  const is_leaders = pathname.startsWith("/leaderboard");
-  const items = [
-    { path: "/", label: shared_copy.nav_games, is_active: !is_leaders },
-    { path: "/leaderboard", label: shared_copy.nav_leaders, is_active: is_leaders },
-  ];
-
   return (
     <nav aria-label={shared_copy.nav_label} className={styles.nav}>
-      {items.map((item) => (
+      {useMainNav().map((item) => (
         <Link
-          key={item.path}
-          to={link_to(item.path)}
+          key={item.to}
+          to={item.to}
           aria-current={item.is_active ? "page" : undefined}
           className={class_names(styles.link, item.is_active && styles.active)}
         >

@@ -1,8 +1,13 @@
+.featured {
+  display: flex;
+  flex-direction: column;
+}
+
 .card {
   text-decoration: none;
   color: var(--color_text);
   background: var(--color_card);
-  border: 2px solid var(--color_you);
+  border: 2px solid var(--color_brand);
   border-radius: var(--radius_card);
   padding: 16px;
   display: flex;
@@ -15,7 +20,7 @@
 }
 
 .card:hover .button {
-  background: var(--color_you_dark);
+  background: var(--color_brand_hover);
 }
 
 .top {
@@ -29,7 +34,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--color_you_dark);
+  color: var(--color_brand_dark);
 }
 
 .teams {
@@ -59,6 +64,13 @@
   white-space: nowrap;
 }
 
+.bottom,
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .your_line {
   font-size: 13px;
   color: var(--color_text_soft);
@@ -67,11 +79,79 @@
 .button {
   min-height: 48px;
   border-radius: var(--radius_control);
-  background: var(--color_you);
-  color: #ffffff;
+  background: var(--color_brand);
+  color: var(--color_on_brand);
   font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Desktop: the dark hero panel of 10_desktop_hub.png. */
+@media (min-width: 900px) {
+  .card,
+  .card:hover {
+    color: var(--color_on_dark);
+    background: var(--color_dark);
+    border: none;
+    border-radius: 0;
+    min-height: 440px;
+    padding: 40px;
+    justify-content: space-between;
+    gap: 28px;
+  }
+
+  .kicker {
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    color: var(--color_brand);
+  }
+
+  .teams {
+    justify-content: center;
+    gap: 56px;
+  }
+
+  .team {
+    gap: 12px;
+    width: auto;
+    min-width: 140px;
+  }
+
+  .team_name {
+    font-family: var(--font_display);
+    font-weight: 700;
+    font-size: 34px;
+  }
+
+  .center {
+    font-size: 72px;
+    color: var(--color_on_dark_soft);
+  }
+
+  .bottom {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .lines {
+    gap: 4px;
+    font-weight: 600;
+  }
+
+  .your_line {
+    font-size: 16px;
+    color: var(--color_on_dark_soft);
+  }
+
+  .button {
+    min-height: 52px;
+    padding: 0 28px;
+    border-radius: var(--radius_desktop);
+    font-size: 19px;
+  }
 }

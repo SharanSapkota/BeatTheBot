@@ -43,3 +43,33 @@
   font-weight: 600;
   color: var(--color_text_soft);
 }
+
+/* Desktop: Kaleva gray panels. */
+@media (min-width: 900px) {
+  .grid {
+    gap: 16px;
+  }
+
+  .stake {
+    background: var(--color_page);
+    border: none;
+    border-radius: 0;
+    padding: 20px;
+    gap: 6px;
+  }
+
+  .label {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .values {
+    font-size: 20px;
+    color: var(--color_ink);
+  }
+
+  .fans_label {
+    font-size: 17px;
+    font-weight: 700;
+  }
+}

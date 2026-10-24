@@ -1,7 +1,7 @@
-import type { GameSummary, WinChance } from "@voita_kone/shared_types";
+import type { GameSummary, WinChance, WinChancePoint } from "@voita_kone/shared_types";
 import { Card } from "../../components/card";
-import { SectionTitle } from "../../components/section_title";
-import { format_clock_time, format_percent } from "../../lib/format";
+import { KalevaSectionTitle } from "../../components/kaleva_section_title";
+import { format_clock_time, format_compact_score, format_percent } from "../../lib/format";
 import { during_copy } from "./copy";
 import styles from "./win_chance_chart.module.css";
 
@@ -13,6 +13,8 @@ const MIDDLE_Y = 55;
 const PIXELS_PER_SHARE = 108;
 const END_X = 230;
 const MIN_LABEL_SPACING = 34;
+/** "Start" is about this wide at 11 px; the first goal label starts after it. */
+const START_LABEL_WIDTH = 34;
 
 export function share_to_y(share: number): number {
   return Math.max(8, Math.min(92, MIDDLE_Y - (share - 0.5) * PIXELS_PER_SHARE));
@@ -34,6 +36,21 @@ export function step_points(shares: readonly number[]): string {
   return points.join(" ");
 }
 
+/** Axis label: "Start", the score after a goal, "End". "Now" has no axis label (the dot does). */
+export function point_label(point: WinChancePoint): string {
+  if (point.kind === "start") {
+    return during_copy.win_chance_start;
+  }
+  if (point.kind === "goal") {
+    return format_compact_score(point.home_goals, point.away_goals);
+  }
+  return point.kind === "end" ? during_copy.win_chance_end : "";
+}
+
+function summary_label(point: WinChancePoint): string {
+  return point.kind === "now" ? during_copy.win_chance_now : point_label(point);
+}
+
 interface WinChanceChartProps {
   game: GameSummary;
   win_chance: WinChance;
@@ -46,17 +63,20 @@ export function WinChanceChart({ game, win_chance }: WinChanceChartProps) {
   const step_width = END_X / Math.max(1, shares.length);
   const show_all_labels = step_width >= MIN_LABEL_SPACING;
   const summary = win_chance.points
-    .map((point) => `${point.label} ${format_percent(point.home_win_probability)}`)
+    .map((point) => `${summary_label(point)} ${format_percent(point.home_win_probability)}`)
     .join(", ");
 
   return (
     <Card>
-      <SectionTitle
+      <KalevaSectionTitle
+        mobile_variant="card"
         title={during_copy.win_chance_title}
         right={<span className={styles.updates}>{during_copy.win_chance_updates}</span>}
       />
       <svg
+        className={styles.chart}
         width="100%"
+        preserveAspectRatio="xMinYMid meet"
         height={HEIGHT}
         viewBox={`0 0 ${String(WIDTH)} ${String(HEIGHT)}`}
         role="img"
@@ -67,32 +87,33 @@ export function WinChanceChart({ game, win_chance }: WinChanceChartProps) {
           y1={MIDDLE_Y}
           x2={WIDTH}
           y2={MIDDLE_Y}
-          stroke="#DCE3EA"
+          className={styles.mid_line}
           strokeDasharray="4 4"
         />
         <polyline
           points={step_points(shares)}
           fill="none"
-          stroke="#1D5FD1"
+          className={styles.line}
           strokeWidth="3"
           strokeLinejoin="round"
         />
-        <circle cx={END_X} cy={share_to_y(current)} r="5" fill="#1D5FD1" />
+        <circle cx={END_X} cy={share_to_y(current)} r="5" className={styles.dot} />
         {win_chance.points.map((point, index) => {
+          const label = point_label(point);
           const is_recent = index >= win_chance.points.length - 2;
-          if (!show_all_labels && index !== 0 && !is_recent) {
+          if (label === "" || (!show_all_labels && index !== 0 && !is_recent)) {
             return null;
           }
-          const x = index === 0 ? 0 : index * step_width - 14;
+          const x = index === 0 ? 0 : Math.max(START_LABEL_WIDTH, index * step_width - 14);
           return (
             <text
-              key={`${point.label}_${String(index)}`}
+              key={`${point.kind}_${String(index)}`}
               x={x.toFixed(1)}
               y="100"
               fontSize="11"
-              fill="#5B6B7E"
+              className={styles.axis_label}
             >
-              {point.label}
+              {label}
             </text>
           );
         })}
@@ -101,11 +122,11 @@ export function WinChanceChart({ game, win_chance }: WinChanceChartProps) {
           y={share_to_y(current) - 4}
           fontSize="13"
           fontWeight="700"
-          fill="#0E1B2C"
+          className={styles.value_label}
         >
           {`${game.home_team.name} ${format_percent(current)}`}
         </text>
-        <text x="300" y="68" fontSize="10" fill="#5B6B7E">
+        <text x="300" y="68" fontSize="10" className={styles.axis_label}>
           50%
         </text>
       </svg>

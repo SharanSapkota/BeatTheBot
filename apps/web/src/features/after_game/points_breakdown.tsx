@@ -1,5 +1,6 @@
 import type { GameDetail } from "@voita_kone/shared_types";
 import { Card } from "../../components/card";
+import { KalevaSectionTitle } from "../../components/kaleva_section_title";
 import { class_names } from "../../lib/class_names";
 import { format_compact_score, format_period } from "../../lib/format";
 import type { GamePicks } from "../../lib/picks";
@@ -85,9 +86,13 @@ interface PointsBreakdownProps {
 export function PointsBreakdown({ lines, total }: PointsBreakdownProps) {
   return (
     <Card gap={0} labelled_by="your_points_title">
-      <h2 id="your_points_title" className={styles.title}>
-        {after_copy.your_points}
-      </h2>
+      <div className={styles.title}>
+        <KalevaSectionTitle
+          id="your_points_title"
+          title={after_copy.your_points}
+          mobile_variant="card"
+        />
+      </div>
       {lines.length === 0 && <p className={styles.empty}>{after_copy.no_picks}</p>}
       {lines.map((line) => (
         <div key={line.id} className={styles.line}>

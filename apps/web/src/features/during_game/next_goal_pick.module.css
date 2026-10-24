@@ -14,18 +14,35 @@
 
 .fill {
   height: 6px;
-  background: var(--color_you);
+  background: var(--color_brand);
   transition: width 1s linear;
 }
 
 .closes {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color_you);
+  color: var(--color_brand_text);
   white-space: nowrap;
 }
 
 .note {
   font-size: 12px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
+}
+
+@media (min-width: 900px) {
+  .note {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 900px) {
+  .track,
+  .fill {
+    border-radius: 0;
+  }
+
+  .closes {
+    font-size: 16px;
+  }
 }

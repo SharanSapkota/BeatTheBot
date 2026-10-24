@@ -1,4 +1,4 @@
-import type { GameDetail, GameSummary } from "@voita_kone/shared_types";
+import type { AiPrediction, GameDetail, GameSummary } from "@voita_kone/shared_types";
 import { Link } from "react-router";
 import { AiChip } from "../../components/ai_chip";
 import { StatusPill } from "../../components/status_pill";
@@ -12,29 +12,30 @@ import { to_ai_pick, useAiPrediction, useGameDetail } from "../game/api";
 import { useGamePoints } from "../game/use_game_points";
 import { center_text, game_status } from "./game_status";
 import { game_day_copy } from "./copy";
+import { HeroCaption } from "./hero_caption";
 import styles from "./featured_game_card.module.css";
 
 const MAX_PREMATCH_POINTS = POINTS.winner + POINTS.exact_score + POINTS.scorer + POINTS.beat_ai;
 
+function ai_pick_text(game: GameSummary, prediction: AiPrediction | null | undefined): string {
+  if (prediction === undefined) {
+    return "…";
+  }
+  if (prediction === null) {
+    return game_day_copy.ai_pick_pending;
+  }
+  const home_is_pick = prediction.predicted_winner_team_id === game.home_team.id;
+  const winner = home_is_pick ? game.home_team : game.away_team;
+  const share = home_is_pick ? prediction.home_win_probability : prediction.away_win_probability;
+  return game_day_copy.ai_pick(winner.name, format_percent(share));
+}
+
 function UpcomingLines({ game }: { game: GameSummary }) {
   const prediction = useAiPrediction(game).data;
   const [picks] = useGamePicks(game.id);
-  const winner =
-    prediction?.predicted_winner_team_id === game.away_team.id ? game.away_team : game.home_team;
-  const winner_share = prediction
-    ? winner.id === game.home_team.id
-      ? prediction.home_win_probability
-      : 1 - prediction.home_win_probability
-    : null;
   return (
     <>
-      <AiChip
-        text={
-          winner_share === null
-            ? "…"
-            : game_day_copy.ai_pick(winner.name, format_percent(winner_share))
-        }
-      />
+      <AiChip text={ai_pick_text(game, prediction)} variant="hero" />
       <span className={styles.your_line}>
         {picks.locked_at
           ? game_day_copy.picks_saved(possible_points(picks, to_ai_pick(prediction)))
@@ -48,15 +49,13 @@ function LiveAiChip({ game }: { game: GameDetail }) {
   const prediction = useAiPrediction(game).data;
   const win_chance = useWinChance(game, prediction).data;
   const home_share = win_chance?.points.at(-1)?.home_win_probability;
-  return (
-    <AiChip
-      text={
-        home_share === undefined
-          ? "…"
-          : game_day_copy.ai_now(game.home_team.name, format_percent(home_share))
-      }
-    />
-  );
+  let text = "…";
+  if (prediction === null) {
+    text = game_day_copy.ai_no_pick;
+  } else if (home_share !== undefined) {
+    text = game_day_copy.ai_now(game.home_team.name, format_percent(home_share));
+  }
+  return <AiChip text={text} variant="hero" />;
 }
 
 function FinalLines({ game }: { game: GameDetail }) {
@@ -65,7 +64,7 @@ function FinalLines({ game }: { game: GameDetail }) {
   const picked_team =
     prediction?.predicted_winner_team_id === game.away_team.id ? game.away_team : game.home_team;
   const ai_right = picked_team.id === winner_team_id(game);
-  let ai_line = "…";
+  let ai_line: string = prediction === null ? game_day_copy.ai_no_pick : "…";
   if (prediction) {
     ai_line = ai_right
       ? game_day_copy.ai_was_right(picked_team.name)
@@ -83,7 +82,7 @@ function FinalLines({ game }: { game: GameDetail }) {
   }
   return (
     <>
-      <AiChip text={ai_line} />
+      <AiChip text={ai_line} variant="hero" />
       <span className={styles.your_line}>{your_line}</span>
     </>
   );
@@ -95,7 +94,7 @@ function DetailLines({ game }: { game: GameSummary }) {
   if (!detail) {
     return (
       <>
-        <AiChip text="…" />
+        <AiChip text="…" variant="hero" />
         <span className={styles.your_line}>&nbsp;</span>
       </>
     );
@@ -121,31 +120,47 @@ function button_text(game: GameSummary, has_saved_picks: boolean): string {
   return has_saved_picks ? game_day_copy.button_before_saved : game_day_copy.button_before;
 }
 
-/** The user's team's game, with a 2 px orange border. The whole card is the link. */
+/**
+ * The user's team's game. Mobile: a card with a 2 px orange border. Desktop: Kaleva's hero, a
+ * dark panel and a gray caption box with the stakes. The card (panel) is the link.
+ */
 export function FeaturedGameCard({ game }: { game: GameSummary }) {
   const { link_to } = useDemoMode();
   const [picks] = useGamePicks(game.id);
   const status = game_status(game, true);
 
   return (
-    <Link to={link_to(`/games/${game.id}`)} className={styles.card}>
-      <div className={styles.top}>
-        <span className={styles.kicker}>{game_day_copy.your_team}</span>
-        <StatusPill tone={status.tone}>{status.label}</StatusPill>
-      </div>
-      <div className={styles.teams}>
-        <div className={styles.team}>
-          <TeamBadge team={game.home_team} size="featured" />
-          <span className={styles.team_name}>{game.home_team.name}</span>
+    <div className={styles.featured}>
+      <Link to={link_to(`/games/${game.id}`)} className={styles.card}>
+        <div className={styles.top}>
+          <span className={styles.kicker}>{game_day_copy.your_team}</span>
+          <StatusPill tone={status.tone} dark_on_desktop>
+            {status.label}
+          </StatusPill>
         </div>
-        <span className={styles.center}>{center_text(game)}</span>
-        <div className={styles.team}>
-          <TeamBadge team={game.away_team} size="featured" />
-          <span className={styles.team_name}>{game.away_team.name}</span>
+        <div className={styles.teams}>
+          <div className={styles.team}>
+            <TeamBadge team={game.home_team} size="featured" />
+            <span className={styles.team_name}>{game.home_team.name}</span>
+          </div>
+          <span className={styles.center}>{center_text(game)}</span>
+          <div className={styles.team}>
+            <TeamBadge team={game.away_team} size="featured" />
+            <span className={styles.team_name}>{game.away_team.name}</span>
+          </div>
         </div>
-      </div>
-      {game.state === "upcoming" ? <UpcomingLines game={game} /> : <DetailLines game={game} />}
-      <span className={styles.button}>{button_text(game, picks.locked_at !== null)}</span>
-    </Link>
+        <div className={styles.bottom}>
+          <div className={styles.lines}>
+            {game.state === "upcoming" ? (
+              <UpcomingLines game={game} />
+            ) : (
+              <DetailLines game={game} />
+            )}
+          </div>
+          <span className={styles.button}>{button_text(game, picks.locked_at !== null)}</span>
+        </div>
+      </Link>
+      <HeroCaption game={game} />
+    </div>
   );
 }

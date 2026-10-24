@@ -8,6 +8,7 @@ import {
   type SyncGame,
   type SyncGameEvent,
 } from "../integrations/liiga_client/liiga_mapper";
+import type { JobTrigger } from "./job_scheduler";
 import type { LiveSyncRepository } from "./sync_games_repository";
 
 /** A game that started longer ago than this is not polled any more (stale or cancelled). */
@@ -26,6 +27,10 @@ export class LiveSyncJob {
     private readonly repository: LiveSyncRepository,
     private readonly logger: Logger,
     private readonly clock: Clock,
+    /** Asked to run when a game has just become final (model run, scoring). */
+    private readonly final_game_triggers: readonly JobTrigger[] = [],
+    /** Asked to run after every update of a live game (live pick scoring). */
+    private readonly update_triggers: readonly JobTrigger[] = [],
   ) {}
 
   async run_once(): Promise<LiveSyncResult> {
@@ -60,6 +65,17 @@ export class LiveSyncJob {
     }
 
     const updated_count = games.length > 0 ? await this.repository.save_games(games, events) : 0;
+    if (updated_count > 0) {
+      for (const trigger of this.update_triggers) {
+        trigger.request_run("live update");
+      }
+    }
+    // Due games were not final yet, so a final one here has just ended.
+    if (games.some((game) => game.status === "final")) {
+      for (const trigger of this.final_game_triggers) {
+        trigger.request_run("game final");
+      }
+    }
     const result = { due_count: due.length, updated_count, failed_count };
     this.logger.info(result, "Live sync run");
     return result;

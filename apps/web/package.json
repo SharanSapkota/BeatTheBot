@@ -10,12 +10,15 @@
     "lint": "eslint .",
     "typecheck": "tsc",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "test:quiet": "vitest run --reporter=dot --silent=passed-only",
+    "e2e": "playwright test",
+    "e2e:quiet": "playwright test --reporter=line"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "catalog:",
-    "@fontsource/inter": "catalog:",
+    "@fontsource/barlow-semi-condensed": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@voita_kone/scoring": "workspace:*",
     "@voita_kone/shared_types": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",

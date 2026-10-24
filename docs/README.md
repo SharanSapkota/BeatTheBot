@@ -1,5 +1,7 @@
 # Design reference: Voita kone PWA (5 screens)
 
+> **Superseded:** the app now uses the Kaleva theme and a desktop layout. The current tokens, fonts and layout rules are in `docs/design/README.md`. The navy tokens and Inter below are the old theme.
+
 The UI must match these designs. Phone first (390 px wide), centered on desktop.
 
 - `screens/`: full-length renders of every screen and state (2× pixel density, so 780 px wide image = 390 px CSS).

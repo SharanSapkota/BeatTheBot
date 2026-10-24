@@ -22,7 +22,13 @@
 
 .active,
 .active:hover {
-  color: var(--color_you);
+  color: var(--color_brand_text);
   font-weight: 700;
-  border-top-color: var(--color_you);
+  border-top-color: var(--color_brand);
+}
+
+@media (min-width: 900px) {
+  .nav {
+    display: none;
+  }
 }

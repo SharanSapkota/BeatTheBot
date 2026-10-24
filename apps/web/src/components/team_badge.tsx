@@ -3,7 +3,7 @@ import { class_names } from "../lib/class_names";
 import { team_code } from "../lib/team_code";
 import styles from "./team_badge.module.css";
 
-export type TeamBadgeSize = "row" | "header" | "score" | "featured";
+export type TeamBadgeSize = "row" | "thumb" | "header" | "score" | "featured";
 
 /** Team colors from the design; other teams get the neutral badge with their short code. */
 function team_tone(team_name: string): string | undefined {
@@ -18,7 +18,7 @@ function team_tone(team_name: string): string | undefined {
 
 interface TeamBadgeProps {
   team: Pick<TeamSummary, "name" | "short_name">;
-  /** row 28 px, header 44 px, score 48 px, featured 52 px. */
+  /** row 28 px, thumb 36 px, header 44 px, score 48 px, featured 52 px (larger on desktop). */
   size: TeamBadgeSize;
 }
 

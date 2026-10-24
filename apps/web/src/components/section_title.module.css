@@ -21,3 +21,10 @@
   font-size: 17px;
   font-weight: 700;
 }
+
+@media (min-width: 900px) {
+  .title_16,
+  .title_17 {
+    font-size: 21px;
+  }
+}

@@ -7,7 +7,8 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:quiet": "vitest run --reporter=dot --silent=passed-only"
   },
   "dependencies": {
     "zod": "catalog:"

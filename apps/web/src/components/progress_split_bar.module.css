@@ -21,3 +21,14 @@
 .labels_bold {
   font-weight: 600;
 }
+
+@media (min-width: 900px) {
+  .bar {
+    border-radius: 0;
+  }
+
+  .labels,
+  .labels_bold {
+    font-size: 17px;
+  }
+}

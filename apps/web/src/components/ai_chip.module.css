@@ -17,3 +17,19 @@
   font-weight: 600;
   color: var(--color_ai_dark);
 }
+
+@media (min-width: 900px) {
+  .hero {
+    background: none;
+    padding: 0;
+  }
+
+  .hero .icon {
+    display: none;
+  }
+
+  .hero .text {
+    font-size: 20px;
+    color: var(--color_on_dark);
+  }
+}

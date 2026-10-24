@@ -10,8 +10,16 @@
   overflow-x: clip;
 }
 
-@media (min-width: 431px) {
+@media (min-width: 431px) and (max-width: 899px) {
   .shell {
     box-shadow: 0 0 0 1px var(--color_line);
+  }
+}
+
+/* Desktop: full-width white page; each page centers its own content (max 1320 px). */
+@media (min-width: 900px) {
+  .shell {
+    max-width: none;
+    background: var(--color_card);
   }
 }

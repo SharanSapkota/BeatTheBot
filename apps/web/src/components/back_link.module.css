@@ -1,6 +1,6 @@
 .link,
 .link:hover {
-  color: #ffffff;
+  color: var(--color_on_dark);
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
@@ -10,4 +10,12 @@
   min-height: var(--touch_min);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  .link,
+  .link:hover {
+    font-size: 18px;
+    gap: 6px;
+  }
 }

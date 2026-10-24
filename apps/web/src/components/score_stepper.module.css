@@ -42,3 +42,21 @@
   font-size: 44px;
   line-height: 1.1;
 }
+
+@media (min-width: 900px) {
+  .button {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius_desktop);
+    font-size: 24px;
+  }
+
+  .value {
+    width: 40px;
+    font-size: 52px;
+  }
+
+  .team {
+    font-size: 16px;
+  }
+}

@@ -1,6 +1,4 @@
 .title {
-  font-size: 17px;
-  font-weight: 700;
   margin-bottom: 8px;
 }
 
@@ -54,6 +52,27 @@
 
 .missed {
   font-size: 12px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
   white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .row {
+    padding: 14px 0;
+    border-bottom-color: var(--color_line);
+  }
+
+  .time {
+    font-size: 20px;
+    width: 60px;
+  }
+
+  .text {
+    font-size: 19px;
+  }
+
+  .win,
+  .missed {
+    font-size: 16px;
+  }
 }

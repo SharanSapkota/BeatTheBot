@@ -4,7 +4,15 @@ import { build_container } from "./container";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-const { app_dependencies, db, live_sync_poller } = build_container(env);
+const {
+  app_dependencies,
+  db,
+  live_sync_poller,
+  model_run_scheduler,
+  scoring_scheduler,
+  answers_scoring_scheduler,
+  stories_scheduler,
+} = build_container(env);
 const { logger } = app_dependencies;
 const app = create_app(app_dependencies);
 
@@ -15,6 +23,11 @@ const server = app.listen(env.API_PORT, (error) => {
   }
   logger.info(`API listening on http://localhost:${env.API_PORT}/api/v1`);
   live_sync_poller?.start();
+  // In the background: the API answers requests while the model runs.
+  model_run_scheduler.request_run("api start");
+  scoring_scheduler.request_run("api start");
+  answers_scoring_scheduler.request_run("api start");
+  stories_scheduler.request_run("api start");
 });
 
 function shut_down(signal: NodeJS.Signals): void {
@@ -30,6 +43,14 @@ function shut_down(signal: NodeJS.Signals): void {
       logger.error({ err: server_error }, "Error while closing the server");
     }
     Promise.resolve(live_sync_poller?.stop())
+      .then(() =>
+        Promise.all([
+          model_run_scheduler.idle(),
+          scoring_scheduler.idle(),
+          answers_scoring_scheduler.idle(),
+          stories_scheduler.idle(),
+        ]),
+      )
       .then(() => db.destroy())
       .then(() => process.exit(server_error ? 1 : 0))
       .catch((db_error: unknown) => {

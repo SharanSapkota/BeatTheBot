@@ -8,7 +8,7 @@
 .inline {
   border-radius: 8px;
   padding: 8px 10px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
 }
 
 .stacked {
@@ -40,4 +40,29 @@
 .thanks {
   color: var(--color_good);
   font-weight: 600;
+}
+
+/* Desktop: plain gray small print under the section, like kaleva.fi. */
+@media (min-width: 900px) {
+  .note,
+  .report {
+    font-size: 16px;
+  }
+
+  .inline,
+  .stacked {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    color: var(--color_label);
+  }
+
+  .stacked {
+    background: var(--color_page);
+    padding: 14px 16px;
+  }
+
+  .report {
+    color: var(--color_ink);
+  }
 }

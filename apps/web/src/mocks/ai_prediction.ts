@@ -3,10 +3,13 @@ import {
   type AiPrediction,
   type GameSummary,
   type PlayerSummary,
+  type PredictedScorer,
 } from "@voita_kone/shared_types";
 import { api_get } from "../lib/api_client";
-import { format_clock_time } from "../lib/format";
 import { is_design_demo, minutes_after_start, round_to, seeded_fraction } from "./sample_utils";
+
+/** model_version of sample data; the AI card says "sample data" when it sees it. */
+export const SAMPLE_MODEL_VERSION = "sample";
 
 const DESIGN_REASONS = [
   "Kärpät won 4 of their last 5 home games.",
@@ -14,20 +17,35 @@ const DESIGN_REASONS = [
   "Kärpät's top scorer has 5 goals in his last 4 games.",
 ];
 
-async function top_scorer_id(team_id: string): Promise<string | null> {
+async function top_scorer(team_id: string): Promise<PredictedScorer | null> {
   try {
     const { data } = await api_get(`/teams/${team_id}/players`, players_response_schema);
     const best = [...data].sort(
       (first: PlayerSummary, second: PlayerSummary) =>
         second.goals_last_5 - first.goals_last_5 || second.season_goals - first.season_goals,
     )[0];
-    return best?.id ?? null;
+    return best
+      ? {
+          id: best.id,
+          team_id,
+          first_name: best.first_name,
+          last_name: best.last_name,
+          jersey_number: best.jersey_number,
+          recent_goals: best.goals_last_5,
+          recent_games: 5,
+          season_goals: best.season_goals,
+        }
+      : null;
   } catch {
     return null;
   }
 }
 
-// TODO(step 3): replace with GET /api/v1/games/:game_id/ai_prediction (prediction model).
+function sample_reason(index: number, text: string) {
+  return { fact_id: `sample_${String(index + 1)}`, type: "sample", values: {}, text_en: text };
+}
+
+// Only used when GET /games/:game_id/ai_prediction fails (see get_or_sample).
 export async function build_sample_ai_prediction(game: GameSummary): Promise<AiPrediction> {
   const design = is_design_demo(game);
   const seed = seeded_fraction(game.id);
@@ -36,24 +54,24 @@ export async function build_sample_ai_prediction(game: GameSummary): Promise<AiP
   const home_favoured = home_win_probability >= 0.5;
   const winner = home_favoured ? game.home_team : game.away_team;
   const loser = home_favoured ? game.away_team : game.home_team;
+  const reasons = design
+    ? DESIGN_REASONS
+    : [
+        `${winner.name} have the better form over their last 5 games.`,
+        `${loser.name} have let in more goals per game this season.`,
+        `${game.home_team.name} play at home, where Liiga teams win more often.`,
+      ];
 
   return {
     game_id: game.id,
     predicted_winner_team_id: winner.id,
     home_win_probability,
+    away_win_probability: round_to(1 - home_win_probability, 0.01),
+    overtime_probability: 0.2,
     predicted_home_goals: home_favoured ? 2 : 1,
     predicted_away_goals: home_favoured ? 1 : 2,
-    predicted_scorer_id: await top_scorer_id(winner.id),
-    reasons: design
-      ? DESIGN_REASONS.map((text, index) => ({ fact_id: `f${String(index + 1)}`, text }))
-      : [
-          { fact_id: "f1", text: `${winner.name} have the better form over their last 5 games.` },
-          { fact_id: "f2", text: `${loser.name} have let in more goals per game this season.` },
-          {
-            fact_id: "f3",
-            text: `${game.home_team.name} play at home, where Liiga teams win more often.`,
-          },
-        ],
+    predicted_scorer: await top_scorer(winner.id),
+    reasons: reasons.map((text, index) => sample_reason(index, text)),
     stakes: [
       {
         team_id: game.home_team.id,
@@ -72,6 +90,8 @@ export async function build_sample_ai_prediction(game: GameSummary): Promise<AiP
       home_pick_share: design ? 0.71 : round_to(0.4 + seed * 0.4, 0.01),
       total_picks: design ? 3812 : Math.round(1200 + seed * 2800),
     },
-    label_text: `AI's pick, calculated from game statistics. Reasons checked by Kaleva sports desk, ${format_clock_time(minutes_after_start(game, -145))}.`,
+    label_text: "AI's pick, calculated from game statistics",
+    model_version: SAMPLE_MODEL_VERSION,
+    calculated_at: minutes_after_start(game, -145),
   };
 }

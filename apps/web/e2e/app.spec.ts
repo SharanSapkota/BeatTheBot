@@ -1,15 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// The whole demo flow on a 390 x 844 phone: hub -> Before -> lock picks -> Live -> Final
-// -> Leaderboard. The demo replays a real finished game, so it works at any time of day.
-
-const SCREENSHOT_DIR = "e2e/screenshots";
+// The whole demo flow: hub -> Before -> lock picks -> Live -> Final -> Leaderboard, once per
+// project (mobile 390 x 844, desktop 1440 x 900). The demo replays a real finished game, so it
+// works at any time of day. Screenshots go to e2e/screenshots/<project>/.
 
 async function save_screenshot(page: Page, name: string): Promise<void> {
   // Let fonts and the timeline animation settle so screenshots are comparable.
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(1500);
-  await page.screenshot({ path: `${SCREENSHOT_DIR}/${name}.png`, fullPage: true });
+  const project = test.info().project.name;
+  await page.screenshot({ path: `e2e/screenshots/${project}/${name}.png`, fullPage: true });
 }
 
 async function open_hub(page: Page, moment: "before" | "live" | "final"): Promise<void> {
@@ -20,6 +20,11 @@ async function open_hub(page: Page, moment: "before" | "live" | "final"): Promis
 
 function featured_card(page: Page) {
   return page.getByRole("link").filter({ hasText: "YOUR TEAM'S GAME" });
+}
+
+async function horizontal_overflow(page: Page): Promise<number> {
+  await page.waitForLoadState("networkidle");
+  return page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 }
 
 test.describe.configure({ mode: "serial" });
@@ -102,8 +107,8 @@ test("demo flow: hub, before, live, final, leaderboard", async ({ page }) => {
     .click();
   await save_screenshot(page, "04_after_game");
 
-  // 5. Leaderboard.
-  await page.getByRole("link", { name: "Game day" }).click();
+  // 5. Leaderboard. The back link reads "Game day" on mobile, "Today's games" on desktop.
+  await page.getByRole("link", { name: /^(Game day|Today's games)$/ }).click();
   await page
     .getByRole("navigation", { name: "Main sections" })
     .getByRole("link", { name: "Leaders" })
@@ -114,20 +119,67 @@ test("demo flow: hub, before, live, final, leaderboard", async ({ page }) => {
   await save_screenshot(page, "05_leaderboard");
 });
 
-test("no horizontal scroll at 360 px on any screen", async ({ page }) => {
-  await page.setViewportSize({ width: 360, height: 780 });
-  for (const moment of ["before", "live", "final"] as const) {
-    await open_hub(page, moment);
-    await featured_card(page).click();
-    await page.waitForLoadState("networkidle");
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
+test("no horizontal scroll at 360, 900 and 1440 px on any screen", async ({ page }) => {
+  // The widths are set here, so one project is enough.
+  test.skip(test.info().project.name !== "mobile", "runs once, in the mobile project");
+  for (const width of [360, 900, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const moment of ["before", "live", "final"] as const) {
+      await open_hub(page, moment);
+      expect(
+        await horizontal_overflow(page),
+        `hub ${moment} at ${String(width)}`,
+      ).toBeLessThanOrEqual(0);
+      await featured_card(page).click();
+      expect(
+        await horizontal_overflow(page),
+        `game screen ${moment} at ${String(width)}`,
+      ).toBeLessThanOrEqual(0);
+    }
+    await page.goto("/leaderboard?demo=1");
+    expect(await horizontal_overflow(page), `leaderboard at ${String(width)}`).toBeLessThanOrEqual(
+      0,
     );
-    expect(overflow, `game screen at ${moment}`).toBeLessThanOrEqual(0);
   }
-  await page.goto("/leaderboard?demo=1");
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("first lock-in on a real game asks for a name and saves the pick", async ({
+  page,
+  request,
+}) => {
+  const response = await request.get("http://localhost:3000/api/v1/games?state=upcoming");
+  const body = (await response.json()) as { data: { id: string; start_time: string }[] };
+  const game = body.data.find((candidate) => new Date(candidate.start_time) > new Date());
+  test.skip(game === undefined, "no upcoming real game in the next days");
+
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.goto(`/games/${game?.id ?? ""}`);
+  await page.getByRole("group", { name: "Pick the winner" }).getByRole("button").first().click();
+  await page.getByRole("button", { name: "Lock in my picks" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "What should we call you?" });
+  await expect(dialog).toBeVisible();
+  await save_screenshot(page, "06_name_dialog");
+  await dialog.getByLabel("Display name").fill(`e2e ${test.info().project.name}`);
+  await dialog.getByRole("button", { name: "Save and lock in" }).click();
+
+  await expect(page.getByText(/Picks saved · edit until \d\d:\d\d/)).toBeVisible();
+  // The pick comes back from the server after clearing it on this device.
+  await page.evaluate(() => {
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith("voita_kaleva_picks_")) {
+        window.localStorage.removeItem(key);
+      }
+    }
+  });
+  await page.reload();
+  await expect(page.getByText(/Picks saved · edit until/)).toBeVisible();
+
+  // Clean up: the test user and its pick are deleted again (GDPR delete).
+  const token = await page.evaluate(() => window.localStorage.getItem("voita_kaleva_session"));
+  const deleted = await request.delete("http://localhost:3000/api/v1/me", {
+    headers: { Authorization: `Bearer ${JSON.parse(token ?? '""') as string}` },
+  });
+  expect(deleted.status()).toBe(204);
 });

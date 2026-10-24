@@ -38,7 +38,7 @@ export function HighlightCard({ highlight }: { highlight: Highlight | null }) {
   };
 
   return (
-    <Card tone="navy" padding="none" gap={0} labelled_by="highlight_title">
+    <Card tone="dark" padding="none" gap={0} labelled_by="highlight_title">
       <div className={styles.video}>
         <span className={styles.tag}>{after_copy.highlight_tag}</span>
         <span className={styles.placeholder}>{after_copy.video_placeholder}</span>

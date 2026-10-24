@@ -11,6 +11,9 @@ interface PossiblePointsFooterProps {
   has_winner: boolean;
   is_saved: boolean;
   is_past_start: boolean;
+  is_saving: boolean;
+  /** Why the last lock-in failed, shown above the button. */
+  error_text: string | null;
   on_lock_in: () => void;
 }
 
@@ -21,12 +24,25 @@ export function PossiblePointsFooter({
   has_winner,
   is_saved,
   is_past_start,
+  is_saving,
+  error_text,
   on_lock_in,
 }: PossiblePointsFooterProps) {
+  let button_text: string = has_winner ? before_copy.lock_button : before_copy.pick_winner_first;
+  if (is_saving) {
+    button_text = before_copy.saving;
+  }
   let action = (
-    <PrimaryButton on_click={on_lock_in} disabled={!has_winner}>
-      {has_winner ? before_copy.lock_button : before_copy.pick_winner_first}
-    </PrimaryButton>
+    <>
+      {error_text && (
+        <p className={styles.error} role="alert">
+          {error_text}
+        </p>
+      )}
+      <PrimaryButton on_click={on_lock_in} disabled={!has_winner || is_saving}>
+        {button_text}
+      </PrimaryButton>
+    </>
   );
   if (is_past_start) {
     action = <div className={styles.closed}>{before_copy.locked_at_start}</div>;
@@ -40,7 +56,7 @@ export function PossiblePointsFooter({
   }
 
   return (
-    <Card tone="navy">
+    <Card tone="dark">
       <div className={styles.top}>
         <span className={styles.label}>{before_copy.possible_title}</span>
         <span className={styles.points}>{before_copy.points(possible_points)}</span>

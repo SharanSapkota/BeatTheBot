@@ -16,16 +16,18 @@ export const leaderboard_copy = {
     `${String(weeks)} of the last ${String(of_weeks)} weeks`,
   summary_before: "Fans beat the AI in ",
   summary_after: (games: number, period: LeaderboardPeriod) =>
-    `. Correct winner picks, ${String(games)} games ${period === "week" ? "this week" : "this season"}.`,
+    `Correct winner picks, ${String(games)} ${games === 1 ? "game" : "games"} with an AI pick ${period === "week" ? "this week" : "this season"}.`,
   prize_kicker: (period: LeaderboardPeriod) =>
     period === "week" ? "THIS WEEK'S PRIZE" : "SEASON PRIZE",
   sponsor_logo_line_1: "sponsor",
   sponsor_logo_line_2: "logo",
   ranking_label: "Ranking",
+  ranking_title: (period: LeaderboardPeriod) =>
+    period === "week" ? "Ranking · this week" : "Ranking · season",
   you_initials: "YOU",
   movement: (places: number, period: LeaderboardPeriod) =>
     `up ${String(places)} places ${period === "week" ? "this week" : "this season"}`,
   points_label: (points: string) => `${points} points`,
   rank_label: (rank: number) => `Rank ${String(rank)}`,
-  footer: "Concept demo · sample data",
+  footer: "Concept demo · free to play, prizes by points, no real money",
 } as const;

@@ -14,22 +14,15 @@
   color: var(--color_text);
 }
 
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.title {
-  font-size: 17px;
-  font-weight: 700;
-}
-
 .link {
   font-size: 13px;
   color: var(--color_ai);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.full_link {
+  display: none;
 }
 
 .rows {
@@ -69,4 +62,56 @@
   text-align: right;
   font-weight: 700;
   font-size: 14px;
+}
+
+/* Desktop: THIS WEEK section of the hub sidebar, square bars. */
+@media (min-width: 900px) {
+  .card {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    gap: 14px;
+  }
+
+  .link {
+    display: none;
+  }
+
+  .full_link {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: underline;
+    color: var(--color_ink);
+  }
+
+  .card:hover .full_link {
+    color: var(--color_brand_text);
+  }
+
+  .rows {
+    gap: 14px;
+  }
+
+  .row {
+    gap: 12px;
+  }
+
+  .label {
+    width: 90px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .track,
+  .fill {
+    height: 14px;
+    border-radius: 0;
+  }
+
+  .value {
+    width: 48px;
+    font-size: 18px;
+  }
 }

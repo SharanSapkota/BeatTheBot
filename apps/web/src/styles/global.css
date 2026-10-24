@@ -1,8 +1,8 @@
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource/barlow-semi-condensed/300.css";
+@import "@fontsource/barlow-semi-condensed/400.css";
+@import "@fontsource/barlow-semi-condensed/500.css";
+@import "@fontsource/barlow-semi-condensed/600.css";
+@import "@fontsource/barlow-semi-condensed/700.css";
 @import "@fontsource/barlow-condensed/700.css";
 @import "@fontsource/barlow-condensed/800.css";
 @import "./tokens.css";
@@ -72,5 +72,25 @@ button:disabled {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* One layout breakpoint: 900px. Below it the phone layout, from it the Kaleva desktop layout.
+   (Media queries can't read CSS variables, so 900px is repeated in the CSS modules.) */
+.desktop_only {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  body {
+    background: var(--color_card);
+  }
+
+  .mobile_only {
+    display: none;
+  }
+
+  .desktop_only {
+    display: revert;
   }
 }

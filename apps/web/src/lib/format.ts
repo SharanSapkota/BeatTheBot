@@ -58,6 +58,11 @@ export function format_percent(share: number): string {
   return `${String(Math.round(share * 100))}%`;
 }
 
+/** A share that may be unknown (e.g. "You" while signed out): "–" then. */
+export function format_optional_percent(share: number | null): string {
+  return share === null ? "–" : format_percent(share);
+}
+
 /** 2 -> "2nd"; overtime and shootout get their own names. */
 export function format_period(period: number): string {
   if (period === 4) {

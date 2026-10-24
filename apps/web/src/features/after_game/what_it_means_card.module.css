@@ -16,3 +16,47 @@
   line-height: 1.55;
   color: var(--color_text_strong);
 }
+
+.pending {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color_text_soft);
+}
+
+/* Desktop: "WHAT IT MEANS" becomes a Kaleva section title, the headline a big story headline. */
+@media (min-width: 900px) {
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font_display);
+    font-weight: 800;
+    font-size: 30px;
+    line-height: 1.05;
+    letter-spacing: 0;
+    color: var(--color_ink);
+    margin-bottom: 6px;
+  }
+
+  .kicker::after {
+    content: "";
+    flex-grow: 1;
+    height: 8px;
+    background: var(--color_brand);
+  }
+
+  .headline {
+    font-size: 32px;
+    line-height: 1.2;
+    color: var(--color_ink);
+  }
+
+  .body {
+    font-size: 21px;
+    line-height: 1.5;
+  }
+
+  .pending {
+    font-size: 18px;
+  }
+}

@@ -1,4 +1,4 @@
-import type { GameDetail, ResultQuiz } from "@voita_kone/shared_types";
+import type { GameDetail } from "@voita_kone/shared_types";
 import { describe, expect, it } from "vitest";
 import { ILVES, KARPAT, LAINE, MAKELA, build_game } from "../test_helpers/game_fixture";
 import { EMPTY_PICKS, type GamePicks } from "./picks";
@@ -9,6 +9,7 @@ import {
   score_after_regulation,
   type AiPick,
 } from "./points";
+import { make_question } from "../test_helpers/questions";
 
 const FINAL = build_game("final"); // Kärpät 3-1 Ilves
 const AI_KARPAT: AiPick = {
@@ -24,17 +25,7 @@ const AI_ILVES: AiPick = {
   scorer_id: MAKELA.id,
 };
 
-const QUIZ: ResultQuiz = {
-  points_each: 2,
-  questions: ["q1", "q2", "q3"].map((id) => ({
-    id,
-    prompt: id,
-    options: ["a", "b"],
-    correct_option: "a",
-    explanation_right: "",
-    explanation_wrong: "",
-  })),
-};
+const QUIZ = ["q1", "q2", "q3"].map((id) => make_question({ id }));
 
 function picks(change: Partial<GamePicks>): GamePicks {
   return { ...EMPTY_PICKS, locked_at: "2026-10-24T12:00:00.000Z", ...change };
@@ -45,7 +36,7 @@ describe("compute_game_points", () => {
     const points = compute_game_points({
       game: FINAL,
       ai_pick: AI_KARPAT,
-      quiz: null,
+      quiz: [],
       picks: picks({
         winner_team_id: KARPAT.id,
         home_goals: 3,
@@ -121,7 +112,7 @@ describe("compute_game_points", () => {
   ])("%s", (_name, change, ai_pick, expected_total) => {
     const base =
       change.winner_team_id === undefined ? { ...EMPTY_PICKS, ...change } : picks(change);
-    expect(compute_game_points({ game: FINAL, ai_pick, quiz: null, picks: base }).total).toBe(
+    expect(compute_game_points({ game: FINAL, ai_pick, quiz: [], picks: base }).total).toBe(
       expected_total,
     );
   });
@@ -159,7 +150,7 @@ describe("compute_game_points", () => {
     const points = compute_game_points({
       game: live,
       ai_pick: AI_KARPAT,
-      quiz: null,
+      quiz: [],
       picks: {
         ...EMPTY_PICKS,
         next_goal_picks: [

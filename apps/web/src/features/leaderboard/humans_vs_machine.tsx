@@ -1,8 +1,8 @@
 import type { Leaderboard } from "@voita_kone/shared_types";
 import { Card } from "../../components/card";
-import { SectionTitle } from "../../components/section_title";
+import { KalevaSectionTitle } from "../../components/kaleva_section_title";
 import { class_names } from "../../lib/class_names";
-import { format_percent } from "../../lib/format";
+import { format_optional_percent } from "../../lib/format";
 import { leaderboard_copy } from "./copy";
 import styles from "./humans_vs_machine.module.css";
 
@@ -15,23 +15,28 @@ export function HumansVsMachine({ leaderboard }: { leaderboard: Leaderboard }) {
   ];
   return (
     <Card>
-      <SectionTitle title={leaderboard_copy.humans_title} />
+      <KalevaSectionTitle title={leaderboard_copy.humans_title} mobile_variant="card" />
       <div className={styles.grid}>
         {boxes.map((box) => (
           <div key={box.id} className={class_names(styles.box, styles[box.id])}>
             <span className={styles.label}>{box.label}</span>
-            <span className={styles.value}>{format_percent(box.share)}</span>
+            <span className={styles.value}>{format_optional_percent(box.share)}</span>
           </div>
         ))}
       </div>
       <p className={styles.summary}>
-        {leaderboard_copy.summary_before}
-        <b>
-          {leaderboard_copy.fans_beat_ai(
-            leaderboard.fans_beat_ai_weeks,
-            leaderboard.compared_weeks,
-          )}
-        </b>
+        {leaderboard.compared_weeks > 0 && (
+          <>
+            {leaderboard_copy.summary_before}
+            <b>
+              {leaderboard_copy.fans_beat_ai(
+                leaderboard.fans_beat_ai_weeks,
+                leaderboard.compared_weeks,
+              )}
+            </b>
+            {". "}
+          </>
+        )}
         {leaderboard_copy.summary_after(leaderboard.game_count, leaderboard.period)}
       </p>
     </Card>

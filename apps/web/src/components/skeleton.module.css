@@ -40,3 +40,16 @@
     opacity: 0.5;
   }
 }
+
+@media (min-width: 900px) {
+  .card {
+    border-radius: 0;
+  }
+}
+
+@media (min-width: 900px) {
+  .card {
+    background: var(--color_page);
+    border: none;
+  }
+}

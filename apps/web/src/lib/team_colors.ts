@@ -1,5 +1,5 @@
-// Team marks for dots and timeline circles. Kärpät and Ilves use their design colors;
-// other teams get navy (home) or slate (away) so the two sides stay apart.
+// Team marks for dots and timeline circles, as CSS colors from tokens.css. Kärpät and Ilves use
+// their design colors; other teams get dark (home) or gray (away) so the two sides stay apart.
 
 export interface TeamMark {
   fill: string;
@@ -8,10 +8,12 @@ export interface TeamMark {
 
 export function team_mark(team_name: string, side: "home" | "away"): TeamMark {
   if (team_name === "Kärpät") {
-    return { fill: "#111111", stroke: "#FFD200" };
+    return { fill: "var(--team_karpat_bg)", stroke: "var(--team_karpat_fg)" };
   }
   if (team_name === "Ilves") {
-    return { fill: "#0F6B3A", stroke: null };
+    return { fill: "var(--team_ilves_bg)", stroke: null };
   }
-  return side === "home" ? { fill: "#0E1B2C", stroke: null } : { fill: "#9AA7B5", stroke: null };
+  return side === "home"
+    ? { fill: "var(--team_other_home)", stroke: null }
+    : { fill: "var(--team_other_away)", stroke: null };
 }

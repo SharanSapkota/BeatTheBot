@@ -40,7 +40,7 @@ Season context: Liiga 2026/27 is a one-off 17-team "superseason" with 3 relegate
 - **Internal packages** have no build step: they export TypeScript source (`"exports": "./src/index.ts"`).
 - **API:** Express, zod (validation), Kysely + PostgreSQL (snake_case columns), pino (logging).
 - **Frontend:** `apps/web` is the main app, a **PWA**: React + Vite + TanStack Query + react-router. Mobile-first (390px phone design), works up to desktop.
-- **PWA:** `vite-plugin-pwa` (Workbox), `registerType: 'autoUpdate'`, web app manifest (name/short_name "Voita kone", `display: standalone`, `start_url: "/"`, `theme_color #0E1B2C`, `background_color #EEF2F6`, icons 192/512 + maskable, apple-touch-icon, iOS meta tags). App shell precached; GET games/standings/predictions/leaderboard use NetworkFirst (short timeout, cache fallback); never cache POST/PUT or auth endpoints. Offline banner, picks blocked offline, "Update available" toast. Lighthouse PWA/installability must pass. Details: `docs/architecture.md`.
+- **PWA:** `vite-plugin-pwa` (Workbox), `registerType: 'autoUpdate'`, web app manifest (name/short_name "Voita kone", `display: standalone`, `start_url: "/"`, `theme_color #111111`, `background_color #F3F3F3`, icons 192/512 + maskable, apple-touch-icon, iOS meta tags). App shell precached; GET games/standings/predictions/leaderboard use NetworkFirst (short timeout, cache fallback); never cache POST/PUT or auth endpoints. Offline banner, picks blocked offline, "Update available" toast. Lighthouse PWA/installability must pass. Details: `docs/architecture.md`.
 - **Auth:** always `Authorization: Bearer <token>` (no cookies), so the same API works in the PWA and in an embed on another domain.
 - **Embed (step 10):** the same `apps/web` components built as a single `widget.js` (Vite library mode), mounted in a **Shadow DOM** so Kaleva's CSS can't affect it. Demo via Chrome MV3 extension.
 - **i18n:** i18next + react-i18next; UI strings in `packages/i18n/locales/`. No hardcoded UI text. MVP ships `fi` only; `sv`/`en` later.
@@ -91,6 +91,7 @@ voita_kone/
 ├── packages/
 │   ├── shared_types/        # zod schemas + TS types shared by api and frontends
 │   ├── prediction_model/    # pure functions: team strength, Monte Carlo season sim
+│   ├── scoring/             # points rules (pure), shared by api and web
 │   ├── fact_checker/        # build_fact_sheet(), check_claims() (pure, fully tested)
 │   ├── i18n/                # locale files fi/sv/en + helpers
 │   └── config/              # shared eslint, prettier, tsconfig.base.json
@@ -144,7 +145,7 @@ voita_kone/
 - [ ] 1. Database schema + Liiga API sync + demo fill-ins (`data_source = 'liiga_api' | 'demo'`)
 - [ ] 2. Games API: today's games with state, game detail, standings
 - [ ] 3. `prediction_model` package + `ai_predictions` module (pick, %, reasons, stakes)
-- [ ] 4. Accounts (`users`, `auth_identities`, `sessions`, `POST /auth/device`) + before-game predictions + scoring + leaderboard (Humans vs AI vs Crowd)
+- [x] 4. Accounts (`users`, `auth_identities`, `sessions`, `POST /auth/device`) + before-game predictions + scoring + leaderboard (Humans vs AI vs Crowd)
 - [ ] 5. `fact_checker` + LLM "what it means" story + traffic light
 - [ ] 6. Questions: live picks (next goal, period goal), result quiz, player vote
 - [ ] 7. Highlights: minimal editor form + editor approval for stories

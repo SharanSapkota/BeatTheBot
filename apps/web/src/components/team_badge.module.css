@@ -49,3 +49,37 @@
   background: var(--team_neutral_bg);
   color: var(--team_neutral_fg);
 }
+
+@media (min-width: 900px) {
+  .header,
+  .score {
+    width: 88px;
+    height: 88px;
+    font-size: 30px;
+  }
+
+  .featured {
+    width: 112px;
+    height: 112px;
+    font-size: 38px;
+  }
+
+  .header.karpat,
+  .score.karpat,
+  .featured.karpat {
+    border-width: 4px;
+  }
+}
+
+/* Thumbnail of the desktop game list: small badges on a dark square. */
+.thumb {
+  width: 36px;
+  height: 36px;
+  font-family: var(--font_body);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.thumb.neutral {
+  background: var(--team_neutral_on_dark_bg);
+}

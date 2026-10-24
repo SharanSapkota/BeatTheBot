@@ -1,5 +1,15 @@
 .header {
-  background: var(--color_navy);
-  color: #ffffff;
+  background: var(--color_dark);
+  color: var(--color_on_dark);
   padding: 14px 16px 18px;
+}
+
+@media (min-width: 900px) {
+  .header {
+    padding: 24px
+      max(
+        var(--desktop_gutter),
+        calc((100% - var(--content_max_width)) / 2 + var(--desktop_gutter))
+      );
+  }
 }

@@ -44,7 +44,7 @@ export function build_demo_users(editor_email: string): DemoUser[] {
 
 /**
  * Picks for one finished game: some exactly right, some partly, some wrong, so the
- * leaderboard has a spread. points_awarded stays empty: scoring comes in step 4.
+ * leaderboard has a spread. points_awarded stays empty: the scoring job fills it.
  */
 export function build_demo_predictions(target: PredictionTarget): DemoPrediction[] {
   const home_won = target.home_goals > target.away_goals;

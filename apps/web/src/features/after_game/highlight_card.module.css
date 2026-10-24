@@ -1,7 +1,7 @@
 .video {
   position: relative;
   height: 200px;
-  background: var(--color_navy_3);
+  background: var(--color_dark_3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,8 +14,8 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  background: var(--color_you);
-  color: #ffffff;
+  background: var(--color_brand);
+  color: var(--color_on_brand);
   padding: 4px 8px;
   border-radius: 6px;
 }
@@ -34,7 +34,7 @@
   right: 12px;
   font-size: 12px;
   font-weight: 700;
-  background: var(--color_navy_deep);
+  background: var(--color_ink);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -44,8 +44,8 @@
   height: 64px;
   border-radius: 50%;
   border: none;
-  background: #ffffff;
-  color: var(--color_navy);
+  background: var(--color_card);
+  color: var(--color_dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,9 +92,9 @@
   min-height: var(--touch_min);
   padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid var(--color_navy_line);
+  border: 1px solid var(--color_dark_line);
   background: transparent;
-  color: #ffffff;
+  color: var(--color_on_dark);
   font-size: 13px;
   font-weight: 600;
 }
@@ -105,7 +105,7 @@
 
 .status {
   font-size: 12px;
-  color: var(--color_you_light);
+  color: var(--color_brand);
 }
 
 .missing_title {
@@ -116,4 +116,70 @@
 .missing {
   font-size: 14px;
   color: var(--color_text_soft);
+}
+
+/* Desktop: a large highlight at the top of the main column. */
+@media (min-width: 900px) {
+  .video {
+    height: 420px;
+  }
+
+  .tag {
+    top: 20px;
+    left: 20px;
+    font-size: 14px;
+    padding: 4px 10px;
+    border-radius: 0;
+  }
+
+  .placeholder,
+  .duration {
+    font-size: 15px;
+    bottom: 20px;
+  }
+
+  .placeholder {
+    left: 20px;
+  }
+
+  .duration {
+    right: 20px;
+    border-radius: 0;
+  }
+
+  .play {
+    width: 88px;
+    height: 88px;
+  }
+
+  .body {
+    padding: 24px 28px 28px;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 32px;
+    line-height: 1.2;
+  }
+
+  .caption {
+    font-size: 20px;
+  }
+
+  .meta {
+    font-size: 15px;
+  }
+
+  .share {
+    border-radius: var(--radius_desktop);
+    font-size: 16px;
+  }
+
+  .missing_title {
+    font-size: 24px;
+  }
+
+  .missing {
+    font-size: 18px;
+  }
 }

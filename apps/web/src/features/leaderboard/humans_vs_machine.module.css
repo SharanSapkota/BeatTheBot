@@ -25,15 +25,15 @@
 }
 
 .you {
-  background: var(--color_you_tint);
+  background: var(--color_brand_tint);
 }
 
 .you .label {
-  color: var(--color_you_dark);
+  color: var(--color_brand_dark);
 }
 
 .you .value {
-  color: var(--color_you);
+  color: var(--color_brand_text);
 }
 
 .ai {
@@ -61,4 +61,23 @@
   font-size: 13px;
   color: var(--color_text_soft);
   line-height: 1.45;
+}
+
+@media (min-width: 900px) {
+  .box {
+    border-radius: 0;
+    padding: 16px 10px;
+  }
+
+  .label {
+    font-size: 16px;
+  }
+
+  .value {
+    font-size: 44px;
+  }
+
+  .summary {
+    font-size: 17px;
+  }
 }

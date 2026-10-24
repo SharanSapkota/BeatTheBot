@@ -21,3 +21,9 @@
   color: var(--color_text_soft);
   line-height: 1.45;
 }
+
+@media (min-width: 900px) {
+  .empty {
+    border-radius: 0;
+  }
+}

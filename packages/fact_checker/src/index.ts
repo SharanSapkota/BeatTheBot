@@ -1,4 +1,6 @@
-// Placeholder: real logic arrives in a later roadmap step (see CLAUDE.md).
-export function get_package_name(): string {
-  return "fact_checker";
-}
+export * from "./build_fact_sheet";
+export * from "./check_claims";
+export * from "./claims";
+export * from "./escalation";
+export * from "./fact_ids";
+export * from "./fact_sheet";

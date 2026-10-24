@@ -6,6 +6,11 @@ export const before_copy = {
   ai_title: (team: string, percent: string) => `${team} win · ${percent}`,
   team_share: (team: string, percent: string) => `${team} ${percent}`,
   why_title: "Why the AI thinks so",
+  label_with_time: (label: string, time: string) => `${label} · Calculated ${time}`,
+  sample_label: "Sample data: the AI's pick could not be loaded.",
+  ai_not_ready_title: "Kaleva AI's pick is not ready yet",
+  ai_not_ready_text:
+    "The AI calculates its pick from Liiga statistics during the week before puck drop.",
   stakes_title: "What's at stake",
   stake_label: {
     relegation: (team: string) => `${team} relegation risk`,
@@ -14,7 +19,9 @@ export const before_copy = {
   },
   win: "Win",
   lose: "Lose",
-  fans_so_far: (picks: string) => `Fans so far · ${picks} picks`,
+  fans_so_far: (picks: string) => `Fans so far · ${picks} ${picks === "1" ? "pick" : "picks"}`,
+  fans_none: "No fan picks yet. Be the first to pick!",
+  your_picks: "Your picks",
   winner_title: "1 · Who wins?",
   winner_group: "Pick the winner",
   score_title: "2 · Exact score",
@@ -37,5 +44,7 @@ export const before_copy = {
   pick_winner_first: "Pick a winner to lock in",
   saved: (time: string) => `Picks saved · edit until ${time}`,
   locked_at_start: "Picks are locked: the game has started",
-  footer: "Concept demo · sample data · free to play, no real money",
+  saving: "Saving…",
+  save_failed: "Your picks were not saved. Check your connection and try again.",
+  footer: "Concept demo · free to play, no real money",
 } as const;

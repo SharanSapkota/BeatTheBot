@@ -16,11 +16,11 @@ Every sports-data table (`teams`, `players`, `games`, `game_events`, `standings_
 **standings_snapshots**: `season`, `taken_at`, `team_id`, `games_played`, `points`, `goals_for`, `goals_against`, `rank`
 
 ## Model output
-**model_runs**: `run_at`, `model_version`, `simulations`, `input_hash`
+**model_runs**: `run_at`, `model_version`, `season`, `simulations`, `seed`, `input_hash` (indexed; an unchanged hash skips the run), `duration_ms`
 
-**ai_predictions**: `game_id`, `model_run_id`, `home_win_probability`, `away_win_probability`, `predicted_winner_team_id`, `predicted_home_goals`, `predicted_away_goals`, `predicted_top_scorer_id`, `reasons` (jsonb: list of fact ids), `stakes` (jsonb)
+**ai_predictions**: `game_id` (indexed), `model_run_id`, `home_win_probability`, `away_win_probability`, `overtime_probability`, `expected_home_goals`, `expected_away_goals`, `overtime_home_share` (the last three drive the live win chance), `predicted_winner_team_id`, `predicted_home_goals`, `predicted_away_goals`, `predicted_top_scorer_id`, `predicted_top_scorer_form` (jsonb `{ recent_goals, recent_games, season_goals }`), `reasons` (jsonb: `[{ fact_id, type, team_id, values, text_en, relevance, favours_team_id }]`), `stakes` (jsonb: `{ highlights, all }` of `{ team_id, kind, if_win, if_loss }`). The API returns the newest one per game.
 
-**team_season_odds**: `model_run_id`, `team_id`, `playoff_probability`, `relegation_probability`
+**team_season_odds**: `model_run_id`, `team_id`, `playoff_probability`, `top_spots_probability`, `relegation_probability`, `expected_points`
 
 ## Users and accounts
 Designed for account linking: a user is the person, identities are the ways they sign in. See `architecture.md` → Accounts.
@@ -36,9 +36,9 @@ Designed for account linking: a user is the person, identities are the ways they
 ## Games and points
 **user_predictions** (before the game): `user_id`, `game_id`, `predicted_winner_team_id`, `predicted_home_goals`, `predicted_away_goals`, `predicted_scorer_id`, `points_awarded`, `scored_at`. Unique (`user_id`, `game_id`). Locked at `games.start_time`.
 
-**questions** (live picks, result quiz, player vote; daily games LATER): `game_id` (null for daily, later), `phase` (`live` | `after`; `daily` later), `question_type` (MVP: `next_goal` | `period_goal` | `result_quiz` | `player_vote` | `poll`; later: `question_of_day` | `brain_calculator` | `higher_lower` | `quiz`), `prompt` (jsonb per language), `options` (jsonb), `correct_option` (null for votes/polls), `points`, `fact_ids` (jsonb), `opens_at`, `locks_at`, `status` (`draft` | `in_review` | `live` | `closed`)
+**questions** (live picks, result quiz, player vote; daily games LATER): `game_id` (null for daily, later), `phase` (`live` | `after`; `daily` later), `question_type` (MVP: `next_goal` | `period_goal` | `result_quiz` | `player_vote` | `poll`; later: `question_of_day` | `brain_calculator` | `higher_lower` | `quiz`), `question_key` (e.g. `next_goal:2`, `period_goal:3`, `result_quiz:1`, `player_vote`, `poll`; unique per `game_id`, so creating questions on the first request is safe to repeat), `target` (next_goal: goals scored when it opened; period_goal: the period), `prompt` (jsonb per language), `options` (jsonb `[{ id, label }]`), `correct_option` (quiz: set when created; live picks: set by `score_answers` once decided; null for votes/polls), `explanation` (jsonb per language `{ right, wrong }`, quiz only), `points`, `fact_ids` (jsonb), `opens_at`, `locks_at`, `status` (`draft` | `in_review` (failed the fact check, not shown) | `live` | `closed` (decided))
 
-**user_answers**: `user_id`, `question_id`, `answer`, `points_awarded`, `answered_at`. Unique (`user_id`, `question_id`).
+**user_answers**: `user_id`, `question_id`, `answer` (option id), `points_awarded` (null until the question is decided), `answered_at`. Unique (`user_id`, `question_id`): one answer per question. Real games only; demo replay answers stay on the device.
 
 **leagues** (later): `name`, `owner_user_id`, `invite_code` · **league_members** (later): `league_id`, `user_id`
 
@@ -57,8 +57,8 @@ Designed for account linking: a user is the person, identities are the ways they
 
 **corrections**: `target_type`, `target_id`, `what_was_wrong`, `corrected_at`, `corrected_by`
 
-## Views
-**leaderboard_view**: points per user per week/season (predictions + answers; daily cap of 15/day applies once daily games exist), plus AI and Crowd as pseudo-players.
+## Leaderboard (no view)
+Computed in `modules/leaderboard` from finished games, `user_predictions.points_awarded` and the AI's latest pre-game pick per game (scored with `packages/scoring`), per week (Mon–Sun, Helsinki) or season. Answers (step 6) and the daily cap of 15/day (later) are added there. A `leaderboard_view` can replace it if the data grows.
 
 ## Indexes
 - `games(start_time)`, `games(status)`, `game_events(game_id)`

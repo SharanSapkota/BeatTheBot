@@ -26,11 +26,11 @@
   font-weight: 800;
   font-size: 20px;
   width: 28px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
 }
 
 .rank_first {
-  color: var(--color_gold);
+  color: var(--color_brand_text);
 }
 
 .avatar {
@@ -82,19 +82,19 @@
 
 .avatar_ai {
   background: var(--color_ai);
-  color: #ffffff;
+  color: var(--color_on_dark);
 }
 
 .row_you {
   padding: 12px 8px;
   margin: 0 -8px 8px;
   border-radius: 10px;
-  background: var(--color_you_tint);
-  border: 2px solid var(--color_you);
+  background: var(--color_brand_tint);
+  border: 2px solid var(--color_brand);
 }
 
 .row_you .rank {
-  color: var(--color_you);
+  color: var(--color_brand_text);
 }
 
 .row_you .name {
@@ -102,18 +102,71 @@
 }
 
 .avatar_you {
-  background: var(--color_you);
-  color: #ffffff;
+  background: var(--color_brand);
+  color: var(--color_on_brand);
 }
 
 .movement {
   font-size: 12px;
-  color: var(--color_you_dark);
+  color: var(--color_brand_dark);
 }
 
 .gap {
   text-align: center;
-  color: var(--color_text_muted);
+  color: var(--color_label);
   font-size: 13px;
   padding: 6px 0;
+}
+
+/* Desktop: a ranking table with 1 px dividers and square highlights. */
+@media (min-width: 900px) {
+  .card {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .row {
+    padding: 16px 0;
+    border-bottom-color: var(--color_line);
+    gap: 16px;
+  }
+
+  .rank {
+    font-size: 28px;
+    width: 56px;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .name {
+    font-size: 20px;
+  }
+
+  .points {
+    font-family: var(--font_display);
+    font-weight: 800;
+    font-size: 26px;
+  }
+
+  .row_ai,
+  .row_you {
+    padding: 16px 12px;
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 0;
+  }
+
+  .movement {
+    font-size: 16px;
+  }
+
+  .gap {
+    font-size: 16px;
+    padding: 10px 0;
+  }
 }

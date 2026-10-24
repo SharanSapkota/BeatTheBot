@@ -1,5 +1,5 @@
 .bar {
-  background: var(--color_navy_2);
+  background: var(--color_dark_2);
   padding: 10px 16px 14px;
   display: flex;
   flex-direction: column;
@@ -33,7 +33,7 @@
   font-weight: 700;
   background: transparent;
   color: var(--color_on_dark_softer);
-  border: 2px solid var(--color_navy_line);
+  border: 2px solid var(--color_dark_line);
   padding: 0 4px;
 }
 
@@ -43,7 +43,56 @@
 
 .selected,
 .selected:hover {
-  background: #ffffff;
-  color: var(--color_navy);
-  border-color: #ffffff;
+  background: var(--color_card);
+  color: var(--color_dark);
+  border-color: var(--color_on_dark);
+}
+
+/* Desktop: one centered row of pills under the page title. */
+@media (min-width: 900px) {
+  .bar {
+    background: none;
+    padding: 8px 0 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .label_row {
+    gap: 10px;
+  }
+
+  .label {
+    font-size: 14px;
+    color: var(--color_label);
+  }
+
+  .options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .option {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius_pill);
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--color_card);
+    color: var(--color_text);
+    border-color: var(--color_line);
+  }
+
+  .option:hover {
+    border-color: var(--color_label);
+  }
+
+  .selected,
+  .selected:hover {
+    background: var(--color_dark);
+    color: var(--color_on_dark);
+    border-color: var(--color_dark);
+    font-weight: 700;
+  }
 }

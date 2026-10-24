@@ -17,7 +17,7 @@ export function TimeJumpBar() {
     <div className={styles.bar}>
       <div className={styles.label_row}>
         <span className={styles.label}>{game_day_copy.time_jump_label}</span>
-        <DemoBadge />
+        <DemoBadge light_on_desktop />
       </div>
       <div role="group" aria-label={game_day_copy.time_jump_group} className={styles.options}>
         {game_day_copy.moments.map((option) => {

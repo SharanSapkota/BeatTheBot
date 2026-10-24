@@ -2,8 +2,10 @@ import type { ReplayMoment } from "@voita_kone/shared_types";
 
 // Game day hub text from docs/design/source/Main.dc.html.
 export const game_day_copy = {
+  page_title: "Beat the AI",
+  intro: "Pick before, during and after every Liiga game. Can you beat Kaleva's AI tonight?",
   title: "Today's games",
-  game_count: (count: number) => `${String(count)} ${count === 1 ? "game" : "games"}`,
+  game_count: (count: number) => `${String(count)} ${count === 1 ? "game" : "games"} · Liiga`,
   time_jump_label: "PROTOTYPE · JUMP IN TIME",
   time_jump_group: "Demo time",
   moments: [
@@ -18,6 +20,8 @@ export const game_day_copy = {
   live_at: (period: string, clock: string) => `LIVE · ${period} ${clock}`,
   final: "FINAL",
   ai_pick: (team: string, percent: string) => `AI's pick: ${team} win · ${percent}`,
+  ai_pick_pending: "AI's pick: calculated closer to the game",
+  ai_no_pick: "The AI made no pick for this game",
   ai_now: (team: string, percent: string) => `AI win chance now: ${team} ${percent}`,
   ai_was_right: (team: string) => `AI's pick was right: ${team} win`,
   ai_was_wrong: (team: string) => `AI's pick was wrong: it picked ${team}`,
@@ -33,11 +37,36 @@ export const game_day_copy = {
   button_live: "Make live picks",
   button_final: "See result and highlight",
   row_ai: (team: string, percent: string) => `AI: ${team} ${percent}`,
+  row_ai_long: (team: string, percent: string) => `AI's pick: ${team} ${percent}`,
+  row_headline: (home: string, away: string, time: string) => `${home} vs ${away}, ${time}`,
+  category: "Hockey",
+  category_tag: "Hockey · Liiga",
+  stake_noun: {
+    relegation: "relegation risk",
+    top_4: "top-4 chance",
+    playoffs: "playoff chance",
+  },
+  stakes_headline: (home: string, away: string, team: string, noun: string, percent: string) =>
+    `${home} vs ${away}: a win puts ${team}'s ${noun} at ${percent}`,
+  stakes_text: (percent: string, time: string) =>
+    `A loss would make it ${percent}. Make your picks before ${time}, and see if you can beat the AI.`,
+  upcoming_headline: (home: string, away: string, time: string) =>
+    `${home} vs ${away} tonight at ${time}`,
+  upcoming_text: (time: string) =>
+    `Make your picks before ${time}, and see if you can beat the AI.`,
+  live_headline: (home: string, away: string, score: string) =>
+    `${home} vs ${away} is live: ${score}`,
+  live_text: "Pick who scores the next goal and follow the AI's win chance after every goal.",
+  final_headline: (home: string, away: string, score: string) => `${home} ${score} ${away}`,
+  final_text: "See the result, the highlight of the game and how your picks did against the AI.",
+  row_ai_pending: "AI pick soon",
   row_live: "Live picks open",
   row_final: "See result",
   open_game: (home: string, away: string) => `${home} vs ${away}`,
   mini_title: "This week: who's right more?",
+  mini_title_desktop: "This week",
   mini_link: "Leaders",
+  mini_full_link: "See the full leaderboard",
   you: "You",
   ai: "Kaleva AI",
   fans: "All fans",

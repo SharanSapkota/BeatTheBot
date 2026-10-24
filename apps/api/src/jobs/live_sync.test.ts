@@ -123,3 +123,63 @@ describe("LiveSyncPoller", () => {
     expect(run_once).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("LiveSyncJob final-game triggers", () => {
+  class TriggerSpy {
+    reasons: string[] = [];
+    request_run(reason: string): void {
+      this.reasons.push(reason);
+    }
+  }
+
+  class EndedFixtureClient extends LiveFixtureClient {
+    override async get_game(season: number, game_id: number): Promise<LiigaGame> {
+      const game = await super.get_game(season, game_id);
+      return { ...game, ended: true, finishedType: "ENDED_DURING_REGULAR_GAME_TIME" };
+    }
+  }
+
+  it("asks every trigger (model run, scoring) to run when a game has become final", async () => {
+    const trigger = new TriggerSpy();
+    const scoring_trigger = new TriggerSpy();
+    const repository = new FakeLiveSyncRepository([{ external_id: "2701412", season: "2026-27" }]);
+
+    await new LiveSyncJob(new EndedFixtureClient(), repository, logger, () => NOW, [
+      trigger,
+      scoring_trigger,
+    ]).run_once();
+
+    expect(repository.saved[0]?.games[0]?.status).toBe("final");
+    expect(trigger.reasons).toEqual(["game final"]);
+    expect(scoring_trigger.reasons).toEqual(["game final"]);
+  });
+
+  it("does not ask while games are still live", async () => {
+    const trigger = new TriggerSpy();
+    const repository = new FakeLiveSyncRepository([{ external_id: "2701412", season: "2026-27" }]);
+
+    await new LiveSyncJob(new LiveFixtureClient(), repository, logger, () => NOW, [
+      trigger,
+    ]).run_once();
+
+    expect(trigger.reasons).toEqual([]);
+  });
+
+  it("asks the update triggers (live pick scoring) after every update of a live game", async () => {
+    const final_trigger = new TriggerSpy();
+    const update_trigger = new TriggerSpy();
+    const repository = new FakeLiveSyncRepository([{ external_id: "2701412", season: "2026-27" }]);
+
+    await new LiveSyncJob(
+      new LiveFixtureClient(),
+      repository,
+      logger,
+      () => NOW,
+      [final_trigger],
+      [update_trigger],
+    ).run_once();
+
+    expect(final_trigger.reasons).toEqual([]);
+    expect(update_trigger.reasons).toEqual(["live update"]);
+  });
+});

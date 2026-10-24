@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:quiet": "vitest run --reporter=dot --silent=passed-only",
     "backtest": "pnpm --filter @voita_kone/api backtest"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 import type { GameDetail, GameEvent } from "@voita_kone/shared_types";
 import { Card } from "../../components/card";
+import { KalevaSectionTitle } from "../../components/kaleva_section_title";
 import { format_event_time, format_period } from "../../lib/format";
 import type { GamePicks } from "../../lib/picks";
 import { POINTS } from "../../lib/points";
@@ -7,7 +8,7 @@ import { team_mark } from "../../lib/team_colors";
 import { during_copy } from "./copy";
 import styles from "./event_list.module.css";
 
-const PUCK_DROP_COLOR = "#CDD5DE";
+const PUCK_DROP_COLOR = "var(--color_fans_track)";
 
 interface EventRow {
   id: string;
@@ -96,9 +97,13 @@ export function build_event_rows(game: GameDetail, picks: GamePicks): EventRow[]
 export function EventList({ game, picks }: { game: GameDetail; picks: GamePicks }) {
   return (
     <Card gap={4} labelled_by="events_title">
-      <h2 id="events_title" className={styles.title}>
-        {during_copy.events_title}
-      </h2>
+      <div className={styles.title}>
+        <KalevaSectionTitle
+          id="events_title"
+          title={during_copy.events_title}
+          mobile_variant="card"
+        />
+      </div>
       <ol className={styles.list}>
         {build_event_rows(game, picks).map((row) => (
           <li key={row.id} className={styles.row}>

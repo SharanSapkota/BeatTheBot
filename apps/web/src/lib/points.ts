@@ -1,29 +1,26 @@
-import type { GameDetail, GameEvent, ResultQuiz } from "@voita_kone/shared_types";
-import type { GamePicks, Side } from "./picks";
+import type { GameDetail, Question } from "@voita_kone/shared_types";
+import {
+  POINTS,
+  decide_next_goal,
+  decide_period_goal,
+  has_scored,
+  score_ai_pick,
+  score_pre_game,
+  score_after_regulation as regulation_score,
+  winner_team_id as result_winner,
+  type GameResult,
+  type PreGamePick,
+} from "@voita_kone/scoring";
+import type { GamePicks } from "./picks";
 
 // Points for one game, from the user's stored picks and the real result (docs/product.md).
-// Pure, so the same rules can move to the API in step 4.
+// All rules come from @voita_kone/scoring, the same rules the API scores with. Real games save
+// every pick to the API (and copy the saved answers back here), so both show the same points.
 
-export const POINTS = {
-  winner: 10,
-  exact_score: 25,
-  scorer: 15,
-  beat_ai: 5,
-  next_goal: 5,
-  period_goal: 3,
-  quiz_each: 2,
-  vote: 1,
-} as const;
+export { POINTS };
 
-const SHOOTOUT_PERIOD = 5;
-const REGULATION_PERIODS = 3;
-
-export interface AiPick {
-  winner_team_id: string;
-  home_goals: number;
-  away_goals: number;
-  scorer_id: string | null;
-}
+/** The AI's own pre-game pick, in the shape the scoring rules use. */
+export type AiPick = PreGamePick;
 
 /** Points per pick. null = not picked (or not decided yet); 0 = picked and wrong. */
 export interface GamePoints {
@@ -44,65 +41,60 @@ export interface PointsInput {
   picks: GamePicks;
   game: GameDetail;
   ai_pick: AiPick | null;
-  quiz: ResultQuiz | null;
+  /** The result quiz questions (with the right answer once the user has answered). */
+  quiz: readonly Question[];
 }
 
-/** Goals in time order. The shootout winner is not a real goal for picks. */
-function goals_of(game: GameDetail): GameEvent[] {
-  return game.events.filter(
-    (event) => event.event_type === "goal" && event.period < SHOOTOUT_PERIOD,
-  );
-}
-
-function side_of(game: GameDetail, team_id: string | null): Side {
-  if (team_id === game.home_team.id) {
-    return "home";
-  }
-  return team_id === game.away_team.id ? "away" : "none";
+export function to_game_result(game: GameDetail): GameResult {
+  return {
+    home_team_id: game.home_team.id,
+    away_team_id: game.away_team.id,
+    home_goals: game.home_goals ?? 0,
+    away_goals: game.away_goals ?? 0,
+    ended_in: game.ended_in,
+    goals: game.events
+      .filter((event) => event.event_type === "goal")
+      .map((event) => ({
+        team_id: event.team_id,
+        player_id: event.player?.id ?? null,
+        period: event.period,
+      })),
+  };
 }
 
 export function winner_team_id(game: GameDetail): string | null {
-  if (game.home_goals === null || game.away_goals === null || game.home_goals === game.away_goals) {
+  if (game.home_goals === null || game.away_goals === null) {
     return null;
   }
-  return game.home_goals > game.away_goals ? game.home_team.id : game.away_team.id;
+  return result_winner(to_game_result(game));
 }
 
 /** "Exact score" means the score after 60 minutes; overtime and shootout goals don't count. */
 export function score_after_regulation(game: GameDetail): { home: number; away: number } {
-  const goals = goals_of(game);
-  if (goals.length > 0) {
-    const regulation_goals = goals.filter((goal) => goal.period <= REGULATION_PERIODS);
-    return {
-      home: regulation_goals.filter((goal) => side_of(game, goal.team_id) === "home").length,
-      away: regulation_goals.filter((goal) => side_of(game, goal.team_id) === "away").length,
-    };
-  }
-  const home = game.home_goals ?? 0;
-  const away = game.away_goals ?? 0;
-  if (game.ended_in === "regulation" || game.ended_in === null) {
-    return { home, away };
-  }
-  // Without events: the winner scored the deciding goal after 60 minutes.
-  return home > away ? { home: home - 1, away } : { home, away: away - 1 };
+  return regulation_score(to_game_result(game));
 }
 
-function scored(game: GameDetail, player_id: string | null): boolean {
-  return player_id !== null && goals_of(game).some((goal) => goal.player?.id === player_id);
+function live_state(game: GameDetail) {
+  const result = to_game_result(game);
+  return {
+    home_team_id: result.home_team_id,
+    away_team_id: result.away_team_id,
+    goals: result.goals,
+    period: game.period,
+    is_final: game.state === "final",
+  };
 }
 
 function next_goal_points(picks: GamePicks, game: GameDetail): GamePoints["next_goal"] {
-  const goals = goals_of(game);
-  const is_final = game.state === "final";
+  const state = live_state(game);
   let correct = 0;
   let decided = 0;
   for (const pick of picks.next_goal_picks) {
-    const next_goal = goals[pick.goal_index];
-    if (!next_goal && !is_final) {
+    const actual = decide_next_goal(state, pick.goal_index);
+    if (actual === null) {
       continue;
     }
     decided += 1;
-    const actual: Side = next_goal ? side_of(game, next_goal.team_id) : "none";
     if (actual === pick.choice) {
       correct += 1;
     }
@@ -115,62 +107,58 @@ function period_goal_points(picks: GamePicks, game: GameDetail): number | null {
   if (!pick) {
     return null;
   }
-  const had_goal = goals_of(game).some((goal) => goal.period === pick.period);
-  const period_over = game.state === "final" || (game.period ?? 0) > pick.period;
-  if (!had_goal && !period_over) {
+  const actual = decide_period_goal(live_state(game), pick.period);
+  if (actual === null) {
     return null;
   }
-  return had_goal === (pick.answer === "yes") ? POINTS.period_goal : 0;
+  return actual === pick.answer ? POINTS.period_goal : 0;
 }
 
-function quiz_points(picks: GamePicks, quiz: ResultQuiz | null): GamePoints["quiz"] {
-  const questions = quiz?.questions ?? [];
-  const answered = questions.filter((question) => picks.quiz_answers[question.id] !== undefined);
+function quiz_points(picks: GamePicks, quiz: readonly Question[]): GamePoints["quiz"] {
+  const answered = quiz.filter((question) => picks.quiz_answers[question.id] !== undefined);
   const correct = answered.filter(
-    (question) => picks.quiz_answers[question.id] === question.correct_option,
+    (question) =>
+      question.correct_option !== null &&
+      picks.quiz_answers[question.id] === question.correct_option,
   ).length;
-  return { correct, answered: answered.length, points: correct * (quiz?.points_each ?? 0) };
+  return { correct, answered: answered.length, points: correct * POINTS.quiz_each };
 }
 
 function ai_points(game: GameDetail, ai_pick: AiPick | null): number {
   if (!ai_pick || game.state !== "final") {
     return 0;
   }
-  const regulation = score_after_regulation(game);
-  return (
-    (ai_pick.winner_team_id === winner_team_id(game) ? POINTS.winner : 0) +
-    (ai_pick.home_goals === regulation.home && ai_pick.away_goals === regulation.away
-      ? POINTS.exact_score
-      : 0) +
-    (scored(game, ai_pick.scorer_id) ? POINTS.scorer : 0)
-  );
+  return score_ai_pick(ai_pick, to_game_result(game)).total;
 }
 
 export function compute_game_points({ picks, game, ai_pick, quiz }: PointsInput): GamePoints {
   const is_final = game.state === "final";
   const made_prematch_picks = picks.locked_at !== null || picks.winner_team_id !== null;
-  const actual_winner = winner_team_id(game);
-  const regulation = score_after_regulation(game);
+  const result = to_game_result(game);
+  // The before-the-game points once the game is final (winner picked or not).
+  const final_points = is_final
+    ? score_pre_game(
+        {
+          winner_team_id: picks.winner_team_id ?? "",
+          home_goals: picks.home_goals,
+          away_goals: picks.away_goals,
+          scorer_id: picks.scorer_id,
+        },
+        result,
+        ai_pick,
+      )
+    : null;
 
-  const winner_right = picks.winner_team_id !== null && picks.winner_team_id === actual_winner;
-  const winner =
-    is_final && picks.winner_team_id !== null ? (winner_right ? POINTS.winner : 0) : null;
-  const exact_score =
-    is_final && made_prematch_picks
-      ? picks.home_goals === regulation.home && picks.away_goals === regulation.away
-        ? POINTS.exact_score
-        : 0
-      : null;
-  const scorer =
-    picks.scorer_id === null
-      ? null
-      : scored(game, picks.scorer_id)
-        ? POINTS.scorer
-        : is_final
-          ? 0
-          : null;
-  const ai_was_wrong = ai_pick !== null && ai_pick.winner_team_id !== actual_winner;
-  const beat_ai = is_final && winner_right && ai_was_wrong ? POINTS.beat_ai : null;
+  const winner = final_points && picks.winner_team_id !== null ? final_points.winner : null;
+  const exact_score = final_points && made_prematch_picks ? final_points.exact_score : null;
+  // A scorer's points show as soon as the player scores, also during the game.
+  let scorer: number | null = null;
+  if (picks.scorer_id !== null && has_scored(result, picks.scorer_id)) {
+    scorer = POINTS.scorer;
+  } else if (picks.scorer_id !== null && is_final) {
+    scorer = 0;
+  }
+  const beat_ai = final_points && final_points.beat_ai > 0 ? final_points.beat_ai : null;
   const next_goal = next_goal_points(picks, game);
   const period_goal = period_goal_points(picks, game);
   const quiz_result = quiz_points(picks, quiz);

@@ -3,7 +3,8 @@ import { Card } from "../../components/card";
 import { RobotIcon } from "../../components/icons/robot_icon";
 import { LabelNote } from "../../components/label_note";
 import { ProgressSplitBar } from "../../components/progress_split_bar";
-import { format_percent } from "../../lib/format";
+import { format_clock_time, format_percent } from "../../lib/format";
+import { SAMPLE_MODEL_VERSION } from "../../mocks/ai_prediction";
 import { before_copy } from "./copy";
 import styles from "./ai_pick_card.module.css";
 
@@ -47,12 +48,42 @@ export function AiPickCard({ game, prediction }: AiPickCardProps) {
           {prediction.reasons.map((reason) => (
             <li key={reason.fact_id} className={styles.reason}>
               <span className={styles.bullet} aria-hidden="true" />
-              <span>{reason.text}</span>
+              <span>{reason.text_en}</span>
             </li>
           ))}
         </ul>
       </div>
-      <LabelNote text={prediction.label_text} />
+      <LabelNote text={label_text(prediction)} />
+    </Card>
+  );
+}
+
+function label_text(prediction: AiPrediction): string {
+  if (prediction.model_version === SAMPLE_MODEL_VERSION) {
+    return before_copy.sample_label;
+  }
+  return before_copy.label_with_time(
+    prediction.label_text,
+    format_clock_time(prediction.calculated_at),
+  );
+}
+
+/** Shown instead of the pick while the model has not predicted the game yet. */
+export function AiPickPendingCard() {
+  return (
+    <Card accent="ai" gap={8} labelled_by="ai_pending_title">
+      <div className={styles.head}>
+        <span className={styles.icon}>
+          <RobotIcon size={20} />
+        </span>
+        <div className={styles.titles}>
+          <span className={styles.kicker}>{before_copy.ai_kicker}</span>
+          <h2 id="ai_pending_title" className={styles.title}>
+            {before_copy.ai_not_ready_title}
+          </h2>
+        </div>
+      </div>
+      <p className={styles.pending_text}>{before_copy.ai_not_ready_text}</p>
     </Card>
   );
 }

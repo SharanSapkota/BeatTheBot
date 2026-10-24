@@ -1,6 +1,4 @@
 .title {
-  font-size: 17px;
-  font-weight: 700;
   margin-bottom: 8px;
 }
 
@@ -32,12 +30,12 @@
 
 .phase {
   font-size: 12px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
 }
 
 .value {
   font-weight: 700;
-  color: var(--color_text_muted);
+  color: var(--color_label);
 }
 
 .value_won {
@@ -60,5 +58,32 @@
   font-family: var(--font_display);
   font-weight: 800;
   font-size: 24px;
-  color: var(--color_you);
+  color: var(--color_brand_text);
+}
+
+@media (min-width: 900px) {
+  .line {
+    border-bottom-color: var(--color_line);
+  }
+
+  .label {
+    font-size: 18px;
+  }
+
+  .phase {
+    font-size: 15px;
+  }
+
+  .value {
+    font-family: var(--font_display);
+    font-size: 22px;
+  }
+
+  .total_label {
+    font-size: 18px;
+  }
+
+  .total_value {
+    font-size: 32px;
+  }
 }

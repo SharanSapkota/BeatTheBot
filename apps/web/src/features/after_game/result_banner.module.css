@@ -2,7 +2,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--color_you_on_orange);
+  color: var(--color_on_brand_soft);
 }
 
 .headline {
@@ -19,7 +19,7 @@
 }
 
 .box {
-  background: rgb(255 255 255 / 14%);
+  background: var(--color_brand_box);
   border-radius: var(--radius_control);
   padding: 10px 12px;
   display: flex;
@@ -28,7 +28,7 @@
 
 .label {
   font-size: 12px;
-  color: var(--color_you_on_orange);
+  color: var(--color_on_brand_soft);
 }
 
 .points {
@@ -36,4 +36,23 @@
   font-weight: 800;
   font-size: 34px;
   line-height: 1.15;
+}
+
+@media (min-width: 900px) {
+  .box {
+    border-radius: 0;
+  }
+
+  .kicker,
+  .label {
+    font-size: 15px;
+  }
+
+  .headline {
+    font-size: 40px;
+  }
+
+  .points {
+    font-size: 40px;
+  }
 }

@@ -1,6 +1,6 @@
 .hint {
   font-size: 13px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
 }
 
 .list {
@@ -30,8 +30,8 @@
 
 .selected,
 .selected:not(:disabled):hover {
-  background: var(--color_you_tint);
-  border: 2px solid var(--color_you);
+  background: var(--color_brand_tint);
+  border: 2px solid var(--color_brand);
   padding: 9px 11px;
 }
 
@@ -48,7 +48,7 @@
 
 .meta {
   font-size: 12px;
-  color: var(--color_text_muted);
+  color: var(--color_label);
 }
 
 .ai_tag {
@@ -62,4 +62,34 @@
   height: 240px;
   border-radius: var(--radius_control);
   background: var(--color_line_soft);
+}
+
+@media (min-width: 900px) {
+  .hint {
+    font-size: 16px;
+  }
+
+  .row {
+    border-radius: var(--radius_desktop);
+    padding: 8px 14px;
+  }
+
+  .selected,
+  .selected:not(:disabled):hover {
+    padding: 7px 13px;
+  }
+
+  .name {
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .meta,
+  .ai_tag {
+    font-size: 15px;
+  }
+
+  .placeholder {
+    border-radius: 0;
+  }
 }

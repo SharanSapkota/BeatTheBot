@@ -1,3 +1,4 @@
+import type { Question } from "@voita_kone/shared_types";
 import { Card } from "../../components/card";
 import { ChoiceButtons } from "../../components/choice_buttons";
 import { PointsBadge } from "../../components/points_badge";
@@ -14,12 +15,24 @@ export const PERIOD_GOAL_PERIOD = 3;
 interface PeriodGoalPickProps {
   current_period: number | null;
   picks: GamePicks;
-  update: (change: (picks: GamePicks) => GamePicks) => void;
+  /** Real games: the API's question (its lock); one answer only. */
+  question: Question | undefined;
+  /** False in demo replays: the pick stays on this device and can change. */
+  is_saved: boolean;
+  on_answer: (answer: string) => void;
 }
 
-export function PeriodGoalPick({ current_period, picks, update }: PeriodGoalPickProps) {
+export function PeriodGoalPick({
+  current_period,
+  picks,
+  question,
+  is_saved,
+  on_answer,
+}: PeriodGoalPickProps) {
   const period_name = format_period(PERIOD_GOAL_PERIOD);
-  const is_locked = (current_period ?? 1) >= PERIOD_GOAL_PERIOD;
+  const is_locked = is_saved
+    ? (question?.is_locked ?? true)
+    : (current_period ?? 1) >= PERIOD_GOAL_PERIOD;
   const answer = picks.period_goal?.period === PERIOD_GOAL_PERIOD ? picks.period_goal.answer : null;
 
   return (
@@ -37,13 +50,8 @@ export function PeriodGoalPick({ current_period, picks, update }: PeriodGoalPick
           { id: "no", label: during_copy.no },
         ]}
         selected_id={answer}
-        disabled={is_locked}
-        on_select={(choice) =>
-          update((current) => ({
-            ...current,
-            period_goal: { period: PERIOD_GOAL_PERIOD, answer: choice === "yes" ? "yes" : "no" },
-          }))
-        }
+        disabled={is_locked || (is_saved && answer !== null)}
+        on_select={on_answer}
       />
       <p className={styles.note}>
         {is_locked

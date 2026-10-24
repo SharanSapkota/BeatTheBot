@@ -1,0 +1,56 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap_cards);
+}
+
+/* On mobile the two columns dissolve, so their items share one ordered column. */
+.main,
+.sidebar {
+  display: contents;
+}
+
+.item {
+  order: var(--mobile_order);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap_cards);
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 400px);
+    gap: 48px;
+    align-items: start;
+  }
+
+  .main,
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    min-width: 0;
+  }
+
+  .sidebar {
+    gap: 28px;
+  }
+
+  .item {
+    order: 0;
+    gap: 40px;
+  }
+
+  .sidebar .item {
+    gap: 24px;
+  }
+}
+
+@media (min-width: 900px) {
+  .sidebar {
+    --card_divider: 1px solid var(--color_line);
+    --card_divider_space: 20px;
+  }
+}

@@ -2,15 +2,20 @@
   text-decoration: none;
   color: var(--color_text);
   display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 72px;
-  padding: 8px 0;
   border-bottom: 1px solid var(--color_line_soft);
 }
 
 .row:hover {
   color: var(--color_text);
+}
+
+.compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+  min-height: 72px;
+  padding: 8px 0;
 }
 
 .teams {
@@ -55,5 +60,74 @@
 
 .chevron {
   display: flex;
-  color: var(--color_text_muted);
+  color: var(--color_label);
+}
+
+.media {
+  display: none;
+}
+
+/* Desktop: kaleva.fi list item, rows separated by 1 px lines. */
+@media (min-width: 900px) {
+  .row {
+    border-bottom: none;
+    border-top: 1px solid var(--color_line);
+  }
+
+  .row:last-child {
+    border-bottom: 1px solid var(--color_line);
+  }
+
+  .row:hover .headline {
+    color: var(--color_brand_text);
+  }
+
+  .compact {
+    display: none;
+  }
+
+  .media {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+  }
+
+  .thumb {
+    width: 120px;
+    height: 84px;
+    flex-shrink: 0;
+    background: var(--color_dark_2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .texts {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .headline {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color_ink);
+  }
+
+  .detail {
+    font-size: 17px;
+    font-weight: 300;
+    color: var(--color_text_soft);
+  }
+
+  .category {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--color_label);
+  }
 }

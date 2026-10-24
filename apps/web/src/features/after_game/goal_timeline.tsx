@@ -1,6 +1,6 @@
 import type { GameDetail } from "@voita_kone/shared_types";
 import { Card } from "../../components/card";
-import { SectionTitle } from "../../components/section_title";
+import { KalevaSectionTitle } from "../../components/kaleva_section_title";
 import { format_compact_score, format_game_time } from "../../lib/format";
 import { team_mark } from "../../lib/team_colors";
 import { after_copy } from "./copy";
@@ -55,12 +55,15 @@ export function GoalTimeline({ game }: { game: GameDetail }) {
 
   return (
     <Card>
-      <SectionTitle
+      <KalevaSectionTitle
+        mobile_variant="card"
         title={after_copy.timeline_title}
         right={<span className={styles.note}>{after_copy.timeline_note}</span>}
       />
       <svg
+        className={styles.chart}
         width="100%"
+        preserveAspectRatio="xMinYMid meet"
         height="96"
         viewBox="0 0 340 96"
         role="img"
@@ -71,12 +74,12 @@ export function GoalTimeline({ game }: { game: GameDetail }) {
           y1={LINE_Y}
           x2={RIGHT_X}
           y2={LINE_Y}
-          stroke="#CDD5DE"
+          className={styles.track}
           strokeWidth="4"
           strokeLinecap="round"
         />
         {period_ticks.map((x) => (
-          <line key={x} x1={x} y1="38" x2={x} y2="58" stroke="#9AA7B5" strokeWidth="2" />
+          <line key={x} x1={x} y1="38" x2={x} y2="58" className={styles.tick} strokeWidth="2" />
         ))}
         {goals.map((goal, index) => {
           const is_home = goal.team_id === game.home_team.id;
@@ -94,25 +97,29 @@ export function GoalTimeline({ game }: { game: GameDetail }) {
                 cx={x}
                 cy={LINE_Y}
                 r="9"
-                fill={mark.fill}
-                stroke={mark.stroke ?? "none"}
+                style={{ fill: mark.fill, stroke: mark.stroke ?? "none" }}
                 strokeWidth="2"
               />
               {score && (
-                <text x={x - 12} y={label_rows[index] ?? LABEL_Y} fontSize="11" fill="#0E1B2C">
+                <text
+                  x={x - 12}
+                  y={label_rows[index] ?? LABEL_Y}
+                  fontSize="11"
+                  className={styles.score_label}
+                >
                   {format_compact_score(score.home, score.away)}
                 </text>
               )}
             </g>
           );
         })}
-        <text x="10" y="86" fontSize="11" fill="#5B6B7E">
+        <text x="10" y="86" fontSize="11" className={styles.axis_label}>
           1st
         </text>
-        <text x="160" y="86" fontSize="11" fill="#5B6B7E">
+        <text x="160" y="86" fontSize="11" className={styles.axis_label}>
           2nd
         </text>
-        <text x="300" y="86" fontSize="11" fill="#5B6B7E">
+        <text x="300" y="86" fontSize="11" className={styles.axis_label}>
           3rd
         </text>
       </svg>

@@ -1,17 +1,17 @@
-import type { GameDetail } from "@voita_kone/shared_types";
+import type { GameDetail, Question } from "@voita_kone/shared_types";
 import { useEffect, type CSSProperties } from "react";
 import { Card } from "../../components/card";
 import { ChoiceButtons } from "../../components/choice_buttons";
 import { PointsBadge } from "../../components/points_badge";
 import { SectionTitle } from "../../components/section_title";
 import { format_short_countdown } from "../../lib/format";
-import { side_schema, type GamePicks } from "../../lib/picks";
+import type { GamePicks } from "../../lib/picks";
 import { POINTS } from "../../lib/points";
 import { useNow } from "../../lib/use_now";
 import { during_copy } from "./copy";
 import styles from "./next_goal_pick.module.css";
 
-/** The pick window: 2 minutes from when the pick opened (first shown after a goal). */
+/** Demo replays: the pick window is 2 minutes from when the pick was first shown on this device. */
 export const NEXT_GOAL_WINDOW_MS = 2 * 60 * 1000;
 
 interface NextGoalPickProps {
@@ -19,9 +19,22 @@ interface NextGoalPickProps {
   goal_count: number;
   picks: GamePicks;
   update: (change: (picks: GamePicks) => GamePicks) => void;
+  /** Real games: the API's question for this goal (its window and lock); one answer only. */
+  question: Question | undefined;
+  /** False in demo replays: the window is kept on this device and the pick can change. */
+  is_saved: boolean;
+  on_answer: (choice: string) => void;
 }
 
-export function NextGoalPick({ game, goal_count, picks, update }: NextGoalPickProps) {
+export function NextGoalPick({
+  game,
+  goal_count,
+  picks,
+  update,
+  question,
+  is_saved,
+  on_answer,
+}: NextGoalPickProps) {
   const now = useNow();
   const key = String(goal_count);
   const opened_at = picks.next_goal_opened_at[key];
@@ -36,25 +49,15 @@ export function NextGoalPick({ game, goal_count, picks, update }: NextGoalPickPr
     }
   }, [opened_at, key, update]);
 
-  const remaining_ms = opened_at
-    ? new Date(opened_at).getTime() + NEXT_GOAL_WINDOW_MS - now.getTime()
-    : NEXT_GOAL_WINDOW_MS;
-  const is_open = remaining_ms > 0;
+  const closes_at = is_saved
+    ? new Date(question?.locks_at ?? 0).getTime()
+    : new Date(opened_at ?? now).getTime() + NEXT_GOAL_WINDOW_MS;
+  const remaining_ms = closes_at - now.getTime();
+  const is_open = remaining_ms > 0 && !(is_saved && (question?.is_locked ?? true));
   const progress: CSSProperties = {
     width: `${String(Math.max(0, Math.min(1, remaining_ms / NEXT_GOAL_WINDOW_MS)) * 100)}%`,
   };
   const current_pick = picks.next_goal_picks.find((pick) => pick.goal_index === goal_count);
-
-  const choose = (choice_id: string) => {
-    const choice = side_schema.parse(choice_id);
-    update((current) => ({
-      ...current,
-      next_goal_picks: [
-        ...current.next_goal_picks.filter((pick) => pick.goal_index !== goal_count),
-        { goal_index: goal_count, choice },
-      ],
-    }));
-  };
 
   return (
     <Card accent="you">
@@ -82,8 +85,8 @@ export function NextGoalPick({ game, goal_count, picks, update }: NextGoalPickPr
           { id: "none", label: during_copy.no_more_goals },
         ]}
         selected_id={current_pick?.choice ?? null}
-        on_select={choose}
-        disabled={!is_open}
+        on_select={on_answer}
+        disabled={!is_open || (is_saved && current_pick !== undefined)}
       />
       <p className={styles.note}>{during_copy.next_goal_note}</p>
     </Card>

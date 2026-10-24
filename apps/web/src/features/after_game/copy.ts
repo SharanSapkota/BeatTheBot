@@ -19,6 +19,7 @@ export const after_copy = {
   ai: "Kaleva AI",
   points: (points: number) => `${String(points)} pts`,
   your_points: "Your points",
+  your_result: "Your result",
   before_game: "Before the game",
   during_game: "During the game",
   after_game: "After the game",
@@ -34,6 +35,9 @@ export const after_copy = {
   no_picks: "You made no picks for this game.",
   unknown_player: "your pick",
   what_it_means: "WHAT IT MEANS",
+  story_pending_title: "The story is being checked",
+  story_pending_text:
+    "Kaleva's AI writes it from Liiga data. A sports desk editor checks every fact before it is published.",
   timeline_title: "Goal timeline",
   timeline_note: "animated recap",
   timeline_label: (goals: string) => `Goals: ${goals}`,

@@ -19,3 +19,9 @@
   color: var(--color_text_soft);
   line-height: 1.45;
 }
+
+@media (min-width: 900px) {
+  .error {
+    border-radius: 0;
+  }
+}

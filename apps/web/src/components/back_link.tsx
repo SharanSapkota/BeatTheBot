@@ -4,13 +4,14 @@ import { shared_copy } from "./copy";
 import { ChevronLeftIcon } from "./icons/chevron_left_icon";
 import styles from "./back_link.module.css";
 
-/** "‹ Game day" back to the hub, on the game screens. */
+/** Back to the hub on the game screens: "‹ Game day" (mobile), "‹ Today's games" (desktop). */
 export function BackLink() {
   const { link_to } = useDemoMode();
   return (
     <Link to={link_to("/")} className={styles.link}>
       <ChevronLeftIcon />
-      {shared_copy.back_to_game_day}
+      <span className="mobile_only">{shared_copy.back_to_game_day}</span>
+      <span className="desktop_only">{shared_copy.back_to_today}</span>
     </Link>
   );
 }

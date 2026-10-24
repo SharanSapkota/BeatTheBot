@@ -72,8 +72,8 @@ Dependencies are passed through **constructors**. A single `container.ts` builds
 | `name` / `short_name` | `Voita kone` / `Voita kone` |
 | `display` | `standalone` |
 | `start_url` | `/` |
-| `theme_color` | `#0E1B2C` |
-| `background_color` | `#EEF2F6` |
+| `theme_color` | `#111111` |
+| `background_color` | `#F3F3F3` |
 | `icons` | 192×192, 512×512, plus a `maskable` 512 |
 
 Also: `apple-touch-icon`, and iOS meta tags (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`).

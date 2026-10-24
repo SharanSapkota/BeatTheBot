@@ -27,12 +27,17 @@ export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 export interface AiPredictions {
   away_win_probability: number;
   created_at: Generated<Timestamp>;
+  expected_away_goals: Generated<number>;
+  expected_home_goals: Generated<number>;
   game_id: string;
   home_win_probability: number;
   id: Generated<string>;
   model_run_id: string;
+  overtime_home_share: Generated<number>;
+  overtime_probability: Generated<number>;
   predicted_away_goals: number;
   predicted_home_goals: number;
+  predicted_top_scorer_form: Json | null;
   predicted_top_scorer_id: string | null;
   predicted_winner_team_id: string;
   reasons: Generated<Json>;
@@ -165,10 +170,13 @@ export interface Leagues {
 
 export interface ModelRuns {
   created_at: Generated<Timestamp>;
+  duration_ms: number | null;
   id: Generated<string>;
   input_hash: string;
   model_version: string;
   run_at: Timestamp;
+  season: Generated<string>;
+  seed: Generated<number>;
   simulations: number;
   updated_at: Generated<Timestamp>;
 }
@@ -190,6 +198,7 @@ export interface Players {
 export interface Questions {
   correct_option: string | null;
   created_at: Generated<Timestamp>;
+  explanation: Json | null;
   fact_ids: Generated<Json>;
   game_id: string | null;
   id: Generated<string>;
@@ -199,8 +208,10 @@ export interface Questions {
   phase: string;
   points: Generated<number>;
   prompt: Json;
+  question_key: string;
   question_type: string;
   status: Generated<string>;
+  target: number | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -238,11 +249,14 @@ export interface Stories {
   fact_sheet_id: string;
   game_id: string;
   generation_attempts: Generated<number>;
+  headline: string | null;
   id: Generated<string>;
   label_text: string | null;
   language: string;
+  model_name: string | null;
   prompt_version: string | null;
   published_at: Timestamp | null;
+  raw_output: string | null;
   status: Generated<string>;
   story_type: string;
   traffic_light: string;
@@ -275,11 +289,13 @@ export interface Teams {
 
 export interface TeamSeasonOdds {
   created_at: Generated<Timestamp>;
+  expected_points: Generated<number>;
   id: Generated<string>;
   model_run_id: string;
   playoff_probability: number;
   relegation_probability: number;
   team_id: string;
+  top_spots_probability: Generated<number>;
   updated_at: Generated<Timestamp>;
 }
 

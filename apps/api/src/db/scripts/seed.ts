@@ -4,6 +4,9 @@ import {
   liiga_source_from_args,
   type LiigaSource,
 } from "../../integrations/liiga_client/create_liiga_client";
+import { create_logger } from "../../common/logger";
+import { ScorePredictionsJob } from "../../jobs/score_predictions";
+import { KyselyScorePredictionsRepository } from "../../jobs/score_predictions_repository";
 import { describe_sync_summary, SyncGamesJob } from "../../jobs/sync_games";
 import { KyselySyncGamesRepository } from "../../jobs/sync_games_repository";
 import type { Database } from "../kysely";
@@ -54,6 +57,13 @@ export async function run_seed(source: LiigaSource): Promise<void> {
   try {
     await sync_liiga(db, source);
     print_seed_summary(await seed_demo_data(db, { now: new Date(), editor_email }));
+    // The demo users' picks are on a finished game, so they get their points now.
+    const scoring = await new ScorePredictionsJob(
+      new KyselyScorePredictionsRepository(db),
+      create_logger({ level: "warn", pretty: false }),
+      () => new Date(),
+    ).run();
+    console.log(`Scored ${String(scoring.scored_prediction_count)} demo picks.`);
   } finally {
     await db.destroy();
   }

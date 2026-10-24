@@ -1,6 +1,9 @@
 .header {
-  background: var(--color_navy);
-  color: #ffffff;
+  background: var(--color_dark);
+  color: var(--color_on_dark);
+}
+
+.inner {
   padding: 16px 20px;
   display: flex;
   align-items: center;
@@ -27,13 +30,91 @@
   color: var(--color_on_dark_soft);
 }
 
+.nav {
+  display: none;
+}
+
 .points {
-  background: var(--color_you);
-  color: #ffffff;
+  background: var(--color_brand);
+  color: var(--color_on_brand);
   font-family: var(--font_display);
   font-weight: 700;
   font-size: 18px;
   padding: 4px 12px;
   border-radius: var(--radius_pill);
   white-space: nowrap;
+}
+
+.desktop_only {
+  display: none;
+}
+
+/* Desktop: Kaleva's white header, wordmark left, nav center, points right. */
+@media (min-width: 900px) {
+  .header,
+  .desktop_only {
+    display: block;
+    background: var(--color_card);
+    color: var(--color_ink);
+    border-bottom: 1px solid var(--color_line);
+  }
+
+  .inner {
+    max-width: var(--content_max_width);
+    margin: 0 auto;
+    padding: 14px var(--desktop_gutter);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+  }
+
+  .brand {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .name {
+    font-size: 32px;
+    letter-spacing: 0;
+  }
+
+  .tagline {
+    font-size: 16px;
+    color: var(--color_label);
+  }
+
+  .nav {
+    display: flex;
+    gap: 28px;
+  }
+
+  .nav_link {
+    text-decoration: none;
+    font-family: var(--font_display);
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 8px 0;
+    color: var(--color_text_soft);
+    border-bottom: 4px solid transparent;
+  }
+
+  .nav_link:hover {
+    color: var(--color_ink);
+  }
+
+  .active,
+  .active:hover {
+    color: var(--color_ink);
+    border-bottom-color: var(--color_brand);
+  }
+
+  .points {
+    justify-self: end;
+    font-weight: 800;
+    font-size: 20px;
+    padding: 6px 16px;
+  }
 }
