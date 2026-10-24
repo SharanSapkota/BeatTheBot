@@ -1,0 +1,59 @@
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color_line_soft);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.time {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 16px;
+  width: 48px;
+  flex-shrink: 0;
+  color: var(--color_text_soft);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.text {
+  font-size: 14px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.win {
+  font-size: 12px;
+  color: var(--color_good);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.missed {
+  font-size: 12px;
+  color: var(--color_text_muted);
+  white-space: nowrap;
+}

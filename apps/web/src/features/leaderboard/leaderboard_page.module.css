@@ -1,0 +1,15 @@
+.header {
+  background: var(--color_navy);
+  color: #ffffff;
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1;
+}

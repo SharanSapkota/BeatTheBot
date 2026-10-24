@@ -1,0 +1,6 @@
+.note {
+  font-size: 11px;
+  color: var(--color_text_muted);
+  padding: 0 4px;
+  line-height: 1.45;
+}

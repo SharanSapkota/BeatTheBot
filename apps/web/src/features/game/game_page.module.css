@@ -1,0 +1,5 @@
+.header {
+  background: var(--color_navy);
+  color: #ffffff;
+  padding: 14px 16px 18px;
+}

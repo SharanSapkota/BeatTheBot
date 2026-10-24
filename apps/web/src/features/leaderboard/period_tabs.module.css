@@ -1,0 +1,29 @@
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--color_navy_2);
+  border-radius: var(--radius_control);
+  padding: 4px;
+  gap: 4px;
+}
+
+.tab {
+  min-height: var(--touch_min);
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--color_on_dark_softer);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tab:hover {
+  color: #ffffff;
+}
+
+.selected,
+.selected:hover {
+  background: #ffffff;
+  color: var(--color_navy);
+  font-weight: 700;
+}

@@ -1,13 +1,15 @@
 # Data Model (PostgreSQL, snake_case)
 
-All tables have `id` (uuid, PK), `created_at` and `updated_at` unless noted. `external_id` = ID from the Liiga API. `language` is always `fi` | `sv` | `en`.
+All tables have `id` (uuid, PK), `created_at` and `updated_at` unless noted. `external_id` = ID from the Liiga API. `language` is always `fi` | `sv` | `en` (MVP uses `fi` only).
 
 ## Sports data (from Liiga sync)
+Every sports-data table (`teams`, `players`, `games`, `game_events`, `standings_snapshots`) also has `data_source` (`liiga_api` | `demo`). Real Liiga data first; `demo` rows only fill gaps and are never written over `liiga_api` rows.
+
 **teams**: `external_id`, `name`, `short_name`, `city`, `logo_url`
 
 **players**: `external_id`, `team_id` → teams, `first_name`, `last_name`, `jersey_number`, `position`, `birth_year`
 
-**games**: `external_id`, `season`, `home_team_id`, `away_team_id`, `start_time`, `status` (`scheduled` | `live` | `final`), `home_goals`, `away_goals`, `ended_in` (`regulation` | `overtime` | `shootout`)
+**games**: `external_id`, `season`, `home_team_id`, `away_team_id`, `start_time`, `status` (`scheduled` | `live` | `final`), `home_goals`, `away_goals`, `ended_in` (`regulation` | `overtime` | `shootout`), `period` (current period while live, last period when final), `game_clock_seconds` (seconds since game start, live only). The API shows `status` as `state`: `upcoming` | `live` | `final`.
 
 **game_events**: `game_id`, `event_type` (`goal` | `penalty` | `period_end` ...), `period`, `game_time_seconds`, `team_id`, `player_id`, `assist_player_ids` (uuid[]), `raw` (jsonb)
 
@@ -20,17 +22,21 @@ All tables have `id` (uuid, PK), `created_at` and `updated_at` unless noted. `ex
 
 **team_season_odds**: `model_run_id`, `team_id`, `playoff_probability`, `relegation_probability`
 
-## Users and sign-in
-**users**: `email` (unique, lowercased), `email_verified_at`, `display_name`, `preferred_language`, `role` (`player` | `editor` | `admin`), `is_subscriber`, `marketing_opt_in` (default false), `deleted_at`
+## Users and accounts
+Designed for account linking: a user is the person, identities are the ways they sign in. See `architecture.md` → Accounts.
 
-**login_codes**: `email`, `code_hash` (never the plain code), `expires_at` (10 min), `attempt_count` (max 5), `used_at`, `ip_hash`
+**users**: `display_name`, `role` (`player` | `editor` | `admin`, default `player`), `email` (nullable, lowercased; contact only), `preferred_language` (default `fi`), `is_subscriber` (default false), `deleted_at`. **No login data in `users`.**
 
-**sessions**: `user_id`, `token_hash`, `expires_at` (90 days), `last_used_at`, `user_agent`, `revoked_at`
+**auth_identities**: `user_id` → users, `provider` (`device` | `email` | `kaleva`), `provider_subject` (device: random id; email: lowercased email; kaleva: OIDC `sub`), `created_at`, `last_used_at`. Unique (`provider`, `provider_subject`). One user can have many identities. MVP creates only `device`.
+
+**sessions**: `user_id`, `token_hash` (SHA-256 of a random 32-byte token; the plain token is never stored), `expires_at` (90 days), `last_used_at`, `user_agent`, `revoked_at`
+
+**login_codes** (LATER, email OTP): `email`, `code_hash` (never the plain code), `expires_at` (10 min), `attempt_count` (max 5), `used_at`, `ip_hash`. `marketing_opt_in` (default false) is added to `users` with it.
 
 ## Games and points
 **user_predictions** (before the game): `user_id`, `game_id`, `predicted_winner_team_id`, `predicted_home_goals`, `predicted_away_goals`, `predicted_scorer_id`, `points_awarded`, `scored_at`. Unique (`user_id`, `game_id`). Locked at `games.start_time`.
 
-**questions** (live picks, result quiz, daily games): `game_id` (null for daily), `phase` (`live` | `after` | `daily`), `question_type` (`next_goal` | `period_goal` | `result_quiz` | `question_of_day` | `brain_calculator` | `higher_lower` | `quiz` | `player_vote` | `poll`), `prompt` (jsonb per language), `options` (jsonb), `correct_option` (null for votes/polls), `points`, `fact_ids` (jsonb), `opens_at`, `locks_at`, `status` (`draft` | `in_review` | `live` | `closed`)
+**questions** (live picks, result quiz, player vote; daily games LATER): `game_id` (null for daily, later), `phase` (`live` | `after`; `daily` later), `question_type` (MVP: `next_goal` | `period_goal` | `result_quiz` | `player_vote` | `poll`; later: `question_of_day` | `brain_calculator` | `higher_lower` | `quiz`), `prompt` (jsonb per language), `options` (jsonb), `correct_option` (null for votes/polls), `points`, `fact_ids` (jsonb), `opens_at`, `locks_at`, `status` (`draft` | `in_review` | `live` | `closed`)
 
 **user_answers**: `user_id`, `question_id`, `answer`, `points_awarded`, `answered_at`. Unique (`user_id`, `question_id`).
 
@@ -52,10 +58,11 @@ All tables have `id` (uuid, PK), `created_at` and `updated_at` unless noted. `ex
 **corrections**: `target_type`, `target_id`, `what_was_wrong`, `corrected_at`, `corrected_by`
 
 ## Views
-**leaderboard_view**: points per user per week/season (predictions + answers, daily capped at 15/day), plus AI and Crowd as pseudo-players.
+**leaderboard_view**: points per user per week/season (predictions + answers; daily cap of 15/day applies once daily games exist), plus AI and Crowd as pseudo-players.
 
 ## Indexes
 - `games(start_time)`, `games(status)`, `game_events(game_id)`
 - `user_predictions(game_id)`, `user_answers(question_id)`, `user_answers(user_id)`
-- `login_codes(email, expires_at)`, `sessions(token_hash)`
+- `auth_identities(provider, provider_subject)` unique, `auth_identities(user_id)`, `sessions(token_hash)`, `sessions(user_id)`
+- Later: `login_codes(email, expires_at)`
 - `stories(status, traffic_light)`, `highlights(game_id, status)`

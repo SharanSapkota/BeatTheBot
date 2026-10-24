@@ -1,0 +1,7 @@
+.badge {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color_you);
+  white-space: nowrap;
+}

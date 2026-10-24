@@ -1,0 +1,50 @@
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--color_on_dark_soft);
+}
+
+.points {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 30px;
+  color: var(--color_you_light);
+}
+
+.bonus {
+  font-size: 13px;
+  color: var(--color_on_dark_softer);
+  line-height: 1.4;
+}
+
+.strong {
+  color: #ffffff;
+}
+
+.saved,
+.closed {
+  min-height: 52px;
+  border-radius: var(--radius_control);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.saved {
+  background: var(--color_good);
+}
+
+.closed {
+  background: var(--color_navy_2);
+}

@@ -1,0 +1,65 @@
+.hint {
+  font-size: 13px;
+  color: var(--color_text_muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  border-radius: var(--radius_control);
+  background: var(--color_card);
+  border: 1px solid var(--color_line);
+  color: var(--color_text);
+  text-align: left;
+}
+
+.row:not(:disabled):hover {
+  border-color: var(--color_fans_track);
+}
+
+.selected,
+.selected:not(:disabled):hover {
+  background: var(--color_you_tint);
+  border: 2px solid var(--color_you);
+  padding: 9px 11px;
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--color_text_muted);
+}
+
+.ai_tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color_ai);
+  white-space: nowrap;
+}
+
+.placeholder {
+  height: 240px;
+  border-radius: var(--radius_control);
+  background: var(--color_line_soft);
+}

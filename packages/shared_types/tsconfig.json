@@ -1,0 +1,4 @@
+{
+  "extends": "@voita_kone/config/tsconfig.base.json",
+  "include": ["src"]
+}

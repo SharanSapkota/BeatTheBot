@@ -1,0 +1,19 @@
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color_ai_tint);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.icon {
+  display: flex;
+  color: var(--color_ai);
+}
+
+.text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color_ai_dark);
+}

@@ -1,0 +1,77 @@
+.card {
+  text-decoration: none;
+  color: var(--color_text);
+  background: var(--color_card);
+  border: 2px solid var(--color_you);
+  border-radius: var(--radius_card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card:hover {
+  color: var(--color_text);
+}
+
+.card:hover .button {
+  background: var(--color_you_dark);
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color_you_dark);
+}
+
+.teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 96px;
+}
+
+.team_name {
+  font-weight: 600;
+  font-size: 15px;
+  text-align: center;
+}
+
+.center {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 40px;
+  white-space: nowrap;
+}
+
+.your_line {
+  font-size: 13px;
+  color: var(--color_text_soft);
+}
+
+.button {
+  min-height: 48px;
+  border-radius: var(--radius_control);
+  background: var(--color_you);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

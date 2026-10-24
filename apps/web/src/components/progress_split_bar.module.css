@@ -1,0 +1,23 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bar {
+  display: flex;
+  border-radius: var(--radius_pill);
+  overflow: hidden;
+}
+
+.labels,
+.labels_bold {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color_text_soft);
+}
+
+.labels_bold {
+  font-weight: 600;
+}

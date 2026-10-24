@@ -1,0 +1,23 @@
+.button {
+  min-height: 52px;
+  width: 100%;
+  border-radius: var(--radius_control);
+  border: none;
+  background: var(--color_you);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0 16px;
+}
+
+.button:not(:disabled):hover {
+  background: var(--color_you_dark);
+}
+
+.button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  background: var(--color_fans);
+}

@@ -1,0 +1,51 @@
+.badge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font_display);
+  font-weight: 800;
+}
+
+.row {
+  width: 28px;
+  height: 28px;
+  font-family: var(--font_body);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.header {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+.score {
+  width: 48px;
+  height: 48px;
+  font-size: 17px;
+}
+
+.featured {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
+}
+
+.karpat {
+  background: var(--team_karpat_bg);
+  color: var(--team_karpat_fg);
+  border: 2px solid var(--team_karpat_fg);
+}
+
+.ilves {
+  background: var(--team_ilves_bg);
+  color: var(--team_ilves_fg);
+}
+
+.neutral {
+  background: var(--team_neutral_bg);
+  color: var(--team_neutral_fg);
+}

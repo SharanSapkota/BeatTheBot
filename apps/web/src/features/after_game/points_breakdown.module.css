@@ -1,0 +1,64 @@
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.empty {
+  font-size: 14px;
+  color: var(--color_text_soft);
+  padding: 4px 0 10px;
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color_line_soft);
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.phase {
+  font-size: 12px;
+  color: var(--color_text_muted);
+}
+
+.value {
+  font-weight: 700;
+  color: var(--color_text_muted);
+}
+
+.value_won {
+  color: var(--color_good);
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0 0;
+}
+
+.total_label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.total_value {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--color_you);
+}

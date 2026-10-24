@@ -1,0 +1,38 @@
+.header {
+  background: var(--color_navy);
+  color: #ffffff;
+  padding: 14px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.teams {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.score {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 56px;
+  text-align: center;
+  letter-spacing: 2px;
+  line-height: 1.1;
+  white-space: nowrap;
+}

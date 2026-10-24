@@ -1,0 +1,39 @@
+.kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color_you_on_orange);
+}
+
+.headline {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.box {
+  background: rgb(255 255 255 / 14%);
+  border-radius: var(--radius_control);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--color_you_on_orange);
+}
+
+.points {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.15;
+}

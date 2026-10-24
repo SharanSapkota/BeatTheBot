@@ -1,0 +1,18 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--color_text_muted);
+  padding-top: 24px;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--color_text_muted);
+}

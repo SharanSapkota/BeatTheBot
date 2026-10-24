@@ -1,0 +1,59 @@
+.row {
+  text-decoration: none;
+  color: var(--color_text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color_line_soft);
+}
+
+.row:hover {
+  color: var(--color_text);
+}
+
+.teams {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team_name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.center {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.ai_line {
+  font-size: 11px;
+  color: var(--color_ai);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chevron {
+  display: flex;
+  color: var(--color_text_muted);
+}

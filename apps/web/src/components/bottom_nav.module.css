@@ -1,0 +1,28 @@
+.nav {
+  background: var(--color_card);
+  border-top: 1px solid var(--color_line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.link {
+  text-decoration: none;
+  color: var(--color_text_soft);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 14px 0;
+  text-align: center;
+  border-top: 3px solid transparent;
+  margin-top: -1px;
+}
+
+.link:hover {
+  color: var(--color_text);
+}
+
+.active,
+.active:hover {
+  color: var(--color_you);
+  font-weight: 700;
+  border-top-color: var(--color_you);
+}

@@ -1,0 +1,18 @@
+.title_row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 26px;
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--color_text_soft);
+}

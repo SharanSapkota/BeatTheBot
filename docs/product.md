@@ -1,12 +1,24 @@
 # Product — Voita kone (Beat the AI)
 
+## Hackathon MVP scope
+- We ship a **Progressive Web App first** (`apps/web`). Later the **same app** is embedded on kaleva.fi, and accounts are connected (see `architecture.md` → Accounts).
+- **5 screens only:**
+  1. **Game day hub:** today's games. Tapping a game opens the screen for its state: upcoming → Before, live → During, final → After. Bottom nav: **Games**, **Leaders**.
+  2. **Before the game:** AI pick + reasons + stakes. The user picks winner, exact score and scorer, then taps **"Lock in my picks"**.
+  3. **During the game:** next-goal pick, goal-in-period pick, live AI win chance, game events.
+  4. **After the game:** result, highlight (added by a Kaleva editor), points breakdown, "what it means" story, result quiz, player vote.
+  5. **Leaderboard:** You vs AI vs all fans, weekly/season ranking, sponsor prize slot.
+- **Data:** real Liiga data first; demo data only to fill gaps (`data_source = 'liiga_api' | 'demo'`).
+- **Sign-in:** none to browse. On the first "Lock in my picks" the app asks for a display name and creates a device account (`POST /auth/device`).
+- **LATER (do not build unless asked):** daily games, email OTP, languages (sv, en), private leagues, full admin app, web push.
+
 ## Problem
 - Results apps (e.g. Flashscore) show scores but not **what they mean**.
 - Fans want quick, personal, fun sports content.
 - Kaleva Media needs more **digital subscribers** and new **ad inventory**.
 
 ## Solution
-A Liiga prediction game embedded in Kaleva sports pages. Fans compete against Kaleva's AI. Every game comes with useful insights about what's at stake.
+A Liiga prediction game, shipped as a PWA and later embedded in Kaleva sports pages. Fans compete against Kaleva's AI. Every game comes with useful insights about what's at stake.
 
 ## Target users
 | User | Need |
@@ -18,25 +30,27 @@ A Liiga prediction game embedded in Kaleva sports pages. Fans compete against Ka
 | Sponsor | Brand visibility with engaged, logged-in fans |
 
 ## User flow
-1. **Before the game**: the prediction card shows the AI pick (%), 3 reasons, what's at stake, and the crowd split. The fan picks the winner and top scorer.
-2. **After the game**: the result card shows the score, points earned, the "what it means" story, a clip or animated recap, and AI vs Humans.
-3. **Weekly / monthly**: leaderboard, and sponsor prizes for the top skilled players.
+1. **Game day hub**: today's games with their state; tap one to open it.
+2. **Before the game**: the AI pick (%), 3 reasons, what's at stake, and the crowd split. The fan picks winner, exact score and scorer, and locks in.
+3. **During the game**: next-goal and goal-in-period picks, live AI win chance, game events.
+4. **After the game**: the score, the editor's highlight, points breakdown, the "what it means" story, result quiz and player vote.
+5. **Weekly / season**: leaderboard (You vs AI vs all fans), and sponsor prizes for the top skilled players.
 
 ## Features
 | MVP (hackathon) | Later |
 |---|---|
-| Prediction card + picks | Private leagues (friends, workplaces) |
-| AI pick with reasons + stakes | Daily AI audio brief per team |
-| Result card + "what it means" story | Clip pipeline with real footage |
-| Scoring + leaderboard (AI vs Humans vs Crowd) | Lower divisions and juniors |
-| Live picks, result quiz, daily games | Other sports (football, floorball, pesäpallo) |
-| Email OTP sign-in, remembered in browser | Kaleva Media SSO |
-| Admin: review queue + game highlight | More languages |
-| Languages: fi, sv, en | |
-| Widget + Chrome extension demo | |
+| PWA: installable, offline banner, update toast | Web push ("Game starts in 30 min", "Next-goal pick open") |
+| Game day hub | Daily games (max 15 pts/day) |
+| Before: AI pick + reasons + stakes, user picks | Email OTP sign-in |
+| During: next goal, goal in period, live AI win chance | Kaleva Media SSO + account linking |
+| After: result, highlight, points, story, quiz, vote | Languages sv, en (and more) |
+| Leaderboard (You vs AI vs all fans) + sponsor slot | Private leagues (friends, workplaces) |
+| Device sign-in (name on first lock-in) | Full admin app (review queue, corrections UI) |
+| Minimal editor form: highlight + story approval | Clip pipeline, daily AI audio brief, other sports |
+| Embed on kaleva.fi via demo extension (step 10) | Lower divisions and juniors |
 
 ## Games and scoring
-Big points for game picks, small points for daily games, so skill on real games always matters most.
+Big points before the game, medium during, small after, so skill on real games matters most. (Daily games are LATER.)
 
 | Phase | Game | Points |
 |---|---|---|
@@ -49,31 +63,24 @@ Big points for game picks, small points for daily games, so skill on real games 
 | | Fan poll: best player so far | 0 |
 | After (small) | Result quiz, 3 questions from the "what it means" facts | 2 each |
 | | Vote player of the game | 1 |
-| Daily (small, max 15/day) | Question of the day | 2 |
-| | Brain calculator (mental math with real standings) | 3 |
-| | Liiga quiz, 5 questions | 1 each |
-| | Higher or lower, 5 rounds | 1 each |
-| | 7-day streak bonus | +10 |
 
-All quiz and calculator questions are built from the fact sheet and pass the fact checker before going live.
-UI design: Design canvas "Voita kone — UI design" (13 screens, incl. sign-in, language and admin).
+All quiz questions are built from the fact sheet and pass the fact checker before going live.
+UI design: Design canvas "Voita kone — UI design". The MVP builds only the 5 screens above (390px phone first).
 
-## Sign-in (email + one-time code)
-- Anyone can read AI picks and stories without signing in.
-- The first time a fan **locks in a pick or votes**, they enter their email and get a 6-digit code (no password).
-- After verifying, the browser remembers them for 90 days. Points and full history stay with the email for good, so the same email on any device shows everything.
-- "I have a Kaleva Media account" option for subscribers (production: Kaleva SSO, so subscriber status is known).
-- Marketing emails are opt-in (unchecked by default).
+## Sign-in (MVP: device account)
+- Anyone can browse games, AI picks and stories without signing in.
+- The first time a fan **locks in a pick or votes**, the app asks for a display name only. `POST /auth/device` creates the user and returns a session token, stored in the browser (90 days).
+- Later the fan can **connect a Kaleva Media account**; points and history move with them (see `architecture.md` → Accounts).
+- LATER: email + 6-digit code as a cross-device option; marketing emails opt-in (unchecked by default).
 
 ## Highlight of the game (added by Kaleva staff)
-- After the final horn, an editor opens the admin, picks the moment from the game events, uploads the clip, writes the headline and caption, confirms rights, and publishes.
+- After the final horn, an editor opens the minimal editor form, picks the moment from the game events, uploads the clip, writes the headline and caption, confirms rights, and publishes.
 - The clip time is checked against the event time; the caption goes through the fact checker.
 - Shown at the top of the After screen: "Chosen by Kaleva sports desk".
 
-## Languages
-- Launch: **Suomi, Svenska, English** (Oulu's international residents and students, Finland's two official languages).
-- The language button is in the header; the choice is saved in the browser and on the account.
-- AI stories are generated in each language from the same fact sheet and checked per language. Highlight captions: editor writes one, AI drafts the others, an editor approves each.
+## Languages (LATER)
+- MVP: Finnish UI only. UI strings still live in locale files so more languages are easy to add.
+- Later: **Suomi, Svenska, English** (Oulu's international residents and students, Finland's two official languages). AI stories generated per language from the same fact sheet and checked per language; highlight captions drafted by AI and approved per language by an editor.
 - New languages (e.g. Eesti, Русский, Українська, العربية) only when an editor who speaks them can review.
 
 ## Business model
@@ -95,9 +102,10 @@ They tell you *what* happened. We tell you *what it means*, whether you beat the
 - Published error rate (target: 0) and editor review time per item
 
 ## Demo script (5 min)
-1. Real kaleva.fi article with the widget (via extension)
-2. Make a pick
-3. Result card from a past game
-4. Leaderboard: AI vs Humans
-5. Reliability slide (test results)
-6. Business slide
+1. PWA on a phone: game day hub, install to home screen
+2. Before: make picks and lock in
+3. During and After screens from real games
+4. The same app embedded on a kaleva.fi article (via demo extension)
+5. Leaderboard: You vs AI vs all fans
+6. Reliability slide (test results)
+7. Business slide

@@ -4,15 +4,22 @@
 A hackathon prototype for **Kaleva Media** (Finnish regional media group, Oulu).
 Challenge: an AI-powered sports content product that people subscribe to and advertisers pay for, built on **Liiga** (Finnish ice hockey league) data.
 
-**Product:** before every Liiga game, fans predict the winner and top scorer and compete against Kaleva's AI.
+**Product:** before every Liiga game, fans predict the winner, exact score and a scorer, and compete against Kaleva's AI.
 - The AI shows its pick with reasons and **what's at stake** (playoff / relegation odds).
-- After the game: result, short clip or animated recap, a "what it means" story, points, and a Humans vs AI scoreboard.
-- Games in 3 phases + daily: before (big points), during (live picks), after (result quiz, vote), daily games (max 15 pts/day). Full table: `docs/product.md`.
-- Sign-in with **email + 6-digit code** when a fan first locks in a pick; the browser remembers them for 90 days, history stays with the email.
-- **Highlight of the game** is chosen and published by a Kaleva editor in the admin.
-- Languages: **fi, sv, en**.
-- Leaderboards and private leagues. Sponsors give prizes to the most skilled predictors.
-- Delivered as an **embeddable widget**: one `<script>` line in production. For the demo, a Chrome extension shows it on kaleva.fi in our own browser only.
+- Delivered as a **Progressive Web App first** (`apps/web`). Later the **same app** is embedded on kaleva.fi and accounts are connected (Kaleva identity).
+
+**Hackathon MVP = 5 screens only** (details: `docs/product.md`):
+1. **Game day hub:** today's games; tapping a game opens the screen for its state (upcoming → Before, live → During, final → After). Bottom nav: Games, Leaders.
+2. **Before the game:** AI pick + reasons + stakes; user picks winner, exact score, scorer; "Lock in my picks".
+3. **During the game:** next-goal pick, goal-in-period pick, live AI win chance, game events.
+4. **After the game:** result, highlight (added by a Kaleva editor), points breakdown, "what it means" story, result quiz, player vote.
+5. **Leaderboard:** You vs AI vs all fans, weekly/season ranking, sponsor prize slot.
+
+- **Data:** real Liiga data first; demo data only to fill gaps (`data_source = 'liiga_api' | 'demo'`).
+- **Accounts:** device sign-in (`POST /auth/device`, name asked on first lock-in), Bearer token, designed so a Kaleva identity can be linked later.
+- **LATER (do NOT build unless asked):** daily games, email OTP, languages (sv, en), private leagues, full admin app, web push.
+
+
 
 Season context: Liiga 2026/27 is a one-off 17-team "superseason" with 3 relegated teams, so stakes are high every game.
 
@@ -29,13 +36,15 @@ Season context: Liiga 2026/27 is a one-off 17-team "superseason" with 3 relegate
 7. Follow the Finnish **Journalist's Guidelines (JSN)**. Editorial decisions always stay with humans.
 
 ## 3. Tech stack
-- **Monorepo:** pnpm workspaces. Node.js 20+, TypeScript `strict`.
+- **Monorepo:** pnpm workspaces (versions pinned once in the `catalog:` of `pnpm-workspace.yaml`). Node.js 24 (`.nvmrc`), TypeScript `strict`.
+- **Internal packages** have no build step: they export TypeScript source (`"exports": "./src/index.ts"`).
 - **API:** Express, zod (validation), Kysely + PostgreSQL (snake_case columns), pino (logging).
-- **Frontend:** React + Vite + TanStack Query.
-- **Widget:** React, built as a single `widget.js` (Vite library mode), mounted in a **Shadow DOM** so Kaleva's CSS can't affect it.
-- **Extension:** Chrome Manifest V3. The content script mounts the widget; the background script calls the API.
-- **Email:** nodemailer. **Local:** Mailpit in Docker catches all emails (no real sending in dev).
-- **i18n:** i18next + react-i18next; UI strings in `packages/i18n/locales/{fi,sv,en}.json`. No hardcoded UI text.
+- **Frontend:** `apps/web` is the main app, a **PWA**: React + Vite + TanStack Query + react-router. Mobile-first (390px phone design), works up to desktop.
+- **PWA:** `vite-plugin-pwa` (Workbox), `registerType: 'autoUpdate'`, web app manifest (name/short_name "Voita kone", `display: standalone`, `start_url: "/"`, `theme_color #0E1B2C`, `background_color #EEF2F6`, icons 192/512 + maskable, apple-touch-icon, iOS meta tags). App shell precached; GET games/standings/predictions/leaderboard use NetworkFirst (short timeout, cache fallback); never cache POST/PUT or auth endpoints. Offline banner, picks blocked offline, "Update available" toast. Lighthouse PWA/installability must pass. Details: `docs/architecture.md`.
+- **Auth:** always `Authorization: Bearer <token>` (no cookies), so the same API works in the PWA and in an embed on another domain.
+- **Embed (step 10):** the same `apps/web` components built as a single `widget.js` (Vite library mode), mounted in a **Shadow DOM** so Kaleva's CSS can't affect it. Demo via Chrome MV3 extension.
+- **i18n:** i18next + react-i18next; UI strings in `packages/i18n/locales/`. No hardcoded UI text. MVP ships `fi` only; `sv`/`en` later.
+- **Email (later):** nodemailer + Mailpit in Docker, only when email OTP is built.
 - **Tests:** Vitest + Supertest. **Lint/format:** ESLint + Prettier.
 - **Local infra:** Docker Compose (Postgres, Mailpit).
 
@@ -43,15 +52,15 @@ Season context: Liiga 2026/27 is a one-off 17-team "superseason" with 3 relegate
 ```
 voita_kone/
 ├── CLAUDE.md
-├── package.json / pnpm-workspace.yaml / tsconfig.base.json
+├── package.json / pnpm-workspace.yaml
 ├── .env.example                 # never commit .env
-├── infra/docker-compose.yml     # postgres
+├── infra/docker-compose.yml     # postgres + mailpit
 ├── apps/
 │   ├── api/
 │   │   └── src/
-│   │       ├── app.ts / server.ts
+│   │       ├── app.ts / server.ts / container.ts / routes.ts
 │   │       ├── config/env.ts                  # zod-validated env
-│   │       ├── common/                        # app_error.ts, error_middleware.ts, logger.ts
+│   │       ├── common/                        # app_error, error/not_found/request_id middleware, logger
 │   │       ├── db/                            # kysely.ts, migrations/, seed/
 │   │       ├── integrations/
 │   │       │   ├── liiga_client/              # Liiga API client (+ interface)
@@ -65,17 +74,18 @@ voita_kone/
 │   │           │   ├── games_repository.ts
 │   │           │   ├── games_schemas.ts       # zod request/response
 │   │           │   └── games_service.test.ts
-│   │           ├── auth/                      # email OTP, sessions, role guard
-│   │           ├── users/                     # profile, language, history, delete
+│   │           ├── auth/                      # device sign-in, identities, sessions, role guard (email OTP / Kaleva SSO later)
+│   │           ├── users/                     # profile, history, delete
 │   │           ├── predictions/               # before-game picks + scoring
-│   │           ├── questions/                 # live picks, result quiz, daily games
+│   │           ├── questions/                 # live picks, result quiz, player vote (daily games later)
 │   │           ├── ai_predictions/            # model output + explanation
 │   │           ├── leaderboard/
 │   │           ├── stories/                   # AI content + status/label
 │   │           ├── highlights/                # editor-added game highlight
 │   │           └── review/                    # editor queue (traffic light), corrections
-│   ├── widget/                                # embeddable React widget -> widget.js
-│   ├── editor/                                # React admin: review queue, highlights, questions
+│   ├── web/                                   # main app, PWA (Vite + vite-plugin-pwa, port 5173)
+│   ├── widget/                                # step 10: embed build -> widget.js, reuses apps/web components
+│   ├── editor/                                # MVP: minimal highlight form + story approval (full admin later)
 │   ├── demo_site/                             # Kaleva-style localhost article page
 │   └── extension/                             # manifest.json, content_script.ts, background.ts
 ├── packages/
@@ -83,7 +93,7 @@ voita_kone/
 │   ├── prediction_model/    # pure functions: team strength, Monte Carlo season sim
 │   ├── fact_checker/        # build_fact_sheet(), check_claims() (pure, fully tested)
 │   ├── i18n/                # locale files fi/sv/en + helpers
-│   └── config/              # shared eslint, prettier, tsconfig
+│   └── config/              # shared eslint, prettier, tsconfig.base.json
 ├── README.md
 └── docs/
     ├── product.md               # idea, user flow, scoring, business model
@@ -116,6 +126,7 @@ voita_kone/
 ## 6. Coding conventions
 - **snake_case** for variables, functions, file names, DB tables and columns, JSON fields.
 - **PascalCase** only for types, interfaces, classes and React component names (React requires this).
+- Exception: React custom hooks are camelCase `useSomething` (the react-hooks lint rules require it). ESLint enforces naming.
 - Descriptive names, small functions, readable code over clever one-liners. No `any`.
 - Config only from `config/env.ts`. No secrets in code. No hardcoded URLs.
 - Every service and every pure package function gets unit tests. Controllers get Supertest tests.
@@ -129,24 +140,24 @@ voita_kone/
 5. Do not add features or dependencies outside the current step without asking.
 
 ## 8. Roadmap
-- [ ] 0. Monorepo setup, tooling, docker Postgres, empty api with `/health`
-- [ ] 1. Liiga API client + `sync_games` job (teams, players, games, events into DB)
-- [ ] 2. Games module (list, detail) + tests
+- [x] 0. Monorepo setup, tooling, docker Postgres, empty api with `/health`
+- [ ] 1. Database schema + Liiga API sync + demo fill-ins (`data_source = 'liiga_api' | 'demo'`)
+- [ ] 2. Games API: today's games with state, game detail, standings
 - [ ] 3. `prediction_model` package + `ai_predictions` module (pick, %, reasons, stakes)
-- [ ] 4. Email OTP sign-in + sessions, before-game predictions, scoring, leaderboard (Humans vs AI)
-- [ ] 5. `fact_checker` + LLM story writer + traffic light status
-- [ ] 6. Questions module: live picks, result quiz, daily games (15/day cap), generated from fact sheets
-- [ ] 7. Admin app: review queue, game highlights (upload, checks, per-language approval), corrections
-- [ ] 7b. Widget (Shadow DOM) with i18n fi/sv/en + demo_site page
-- [ ] 8. Chrome extension for the kaleva.fi demo
-- [ ] 9. Reliability report: past-season golden set + planted-error test
-- [ ] 10. (Optional) clip pipeline: real footage + event timestamps + human approval
+- [ ] 4. Accounts (`users`, `auth_identities`, `sessions`, `POST /auth/device`) + before-game predictions + scoring + leaderboard (Humans vs AI vs Crowd)
+- [ ] 5. `fact_checker` + LLM "what it means" story + traffic light
+- [ ] 6. Questions: live picks (next goal, period goal), result quiz, player vote
+- [ ] 7. Highlights: minimal editor form + editor approval for stories
+- [x] 8. PWA UI: 5 screens (matches docs/design). Pulled forward: built right after step 2 with sample data behind the future API hooks; later steps swap in the real endpoints
+- [ ] 9. PWA features: manifest, icons, service worker, offline, update toast, install button, Lighthouse check
+- [ ] 10. Embed on kaleva.fi: widget build of the same app + demo Chrome extension + account linking (Kaleva identity)
+- [ ] 11. Reliability report (golden set + planted errors)
 
 ## 9. Commands
 ```
 pnpm install
 docker compose -f infra/docker-compose.yml up -d
-pnpm dev          # all apps
+pnpm dev          # all apps (api :3000, web :5173)
 pnpm test | pnpm lint | pnpm typecheck
 pnpm --filter api db:migrate
 ```
@@ -165,4 +176,4 @@ When compacting, keep: current roadmap step, files changed, failing tests and er
 - Does the API include player stats per game?
 - Can we use real highlight clips, or data only?
 - Any sponsor or prize partners? A staging environment or widget guidelines?
-- Can we link to Kaleva Media accounts (SSO), or is email OTP fine for the demo?
+- Kaleva Media SSO (OIDC) details for account linking (step 10)? Device sign-in is used for the MVP.

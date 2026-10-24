@@ -1,0 +1,53 @@
+{
+  "name": "@voita_kone/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "db:migrate": "tsx src/db/scripts/migrate.ts latest",
+    "db:migrate:down": "tsx src/db/scripts/migrate.ts down",
+    "db:codegen": "kysely-codegen --dialect postgres --env-file ../../.env --exclude-pattern \"kysely_migration*\" --out-file src/db/database_types.ts && prettier --write src/db/database_types.ts",
+    "db:seed": "tsx src/db/scripts/seed.ts",
+    "db:reset": "tsx src/db/scripts/reset.ts",
+    "sync:liiga": "tsx src/jobs/scripts/sync_games.ts",
+    "backtest": "tsx src/jobs/scripts/backtest.ts",
+    "model:run": "tsx src/jobs/scripts/run_model.ts"
+  },
+  "dependencies": {
+    "@voita_kone/prediction_model": "workspace:*",
+    "@voita_kone/shared_types": "workspace:*",
+    "cors": "catalog:",
+    "date-fns": "catalog:",
+    "date-fns-tz": "catalog:",
+    "dotenv": "catalog:",
+    "express": "catalog:",
+    "helmet": "catalog:",
+    "kysely": "catalog:",
+    "pg": "catalog:",
+    "pino": "catalog:",
+    "pino-http": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/cors": "catalog:",
+    "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "@types/supertest": "catalog:",
+    "@voita_kone/config": "workspace:*",
+    "eslint": "catalog:",
+    "kysely-codegen": "catalog:",
+    "pino-pretty": "catalog:",
+    "supertest": "catalog:",
+    "tsup": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

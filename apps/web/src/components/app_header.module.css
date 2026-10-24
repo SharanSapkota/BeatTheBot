@@ -1,0 +1,39 @@
+.header {
+  background: var(--color_navy);
+  color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.tagline {
+  font-size: 12px;
+  color: var(--color_on_dark_soft);
+}
+
+.points {
+  background: var(--color_you);
+  color: #ffffff;
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 18px;
+  padding: 4px 12px;
+  border-radius: var(--radius_pill);
+  white-space: nowrap;
+}

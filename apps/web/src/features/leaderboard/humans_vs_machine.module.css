@@ -1,0 +1,64 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.box {
+  border-radius: var(--radius_control);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.value {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 32px;
+}
+
+.you {
+  background: var(--color_you_tint);
+}
+
+.you .label {
+  color: var(--color_you_dark);
+}
+
+.you .value {
+  color: var(--color_you);
+}
+
+.ai {
+  background: var(--color_ai_tint);
+}
+
+.ai .label {
+  color: var(--color_ai_dark);
+}
+
+.ai .value {
+  color: var(--color_ai);
+}
+
+.fans {
+  background: var(--color_surface_gray);
+}
+
+.fans .label,
+.fans .value {
+  color: var(--color_text_soft);
+}
+
+.summary {
+  font-size: 13px;
+  color: var(--color_text_soft);
+  line-height: 1.45;
+}

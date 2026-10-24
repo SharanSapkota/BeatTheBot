@@ -1,0 +1,42 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius_card);
+  min-width: 0;
+}
+
+.white {
+  background: var(--color_card);
+  border: 1px solid var(--color_line);
+}
+
+.navy {
+  background: var(--color_navy);
+  color: #ffffff;
+}
+
+.orange {
+  background: var(--color_you);
+  color: #ffffff;
+}
+
+.padding_normal {
+  padding: var(--space_card);
+}
+
+.padding_list {
+  padding: 4px 16px;
+}
+
+.padding_none {
+  padding: 0;
+  overflow: hidden;
+}
+
+.accent_ai {
+  border-top: 4px solid var(--color_ai);
+}
+
+.accent_you {
+  border-top: 4px solid var(--color_you);
+}

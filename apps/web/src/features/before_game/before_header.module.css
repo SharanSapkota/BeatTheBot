@@ -1,0 +1,34 @@
+.header {
+  background: var(--color_navy);
+  color: #ffffff;
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.time {
+  font-size: 13px;
+  color: var(--color_on_dark_soft);
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+uploads/
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
+
+# Playwright run output (screenshots in apps/web/e2e/screenshots are kept)
+apps/web/e2e/test_results/
+playwright-report/

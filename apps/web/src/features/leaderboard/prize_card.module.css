@@ -1,0 +1,47 @@
+.card {
+  background: var(--color_navy);
+  color: #ffffff;
+  border-radius: var(--radius_card);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius_control);
+  border: 2px dashed var(--color_text_muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--color_on_dark_soft);
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color_you_light);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--color_on_dark_soft);
+}

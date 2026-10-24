@@ -1,0 +1,66 @@
+/* Design tokens from docs/design/README.md. Color meaning: You = orange, AI = blue, all fans = gray. */
+:root {
+  --color_navy: #0e1b2c;
+  --color_navy_2: #1c2e45;
+  --color_navy_3: #16263a;
+  --color_navy_deep: #0b1522;
+  --color_navy_line: #3a4e66;
+  --color_page: #eef2f6;
+  --color_card: #ffffff;
+  --color_line: #dce3ea;
+  --color_line_soft: #eef2f6;
+  --color_track: #e3e9ef;
+  --color_surface_soft: #f6f8fb;
+  --color_surface_gray: #f1f4f8;
+  --color_text: #0e1b2c;
+  --color_text_strong: #24313f;
+  --color_text_soft: #3e4c5c;
+  --color_text_muted: #5b6b7e;
+  --color_on_dark_soft: #b8c4d2;
+  --color_on_dark_softer: #d5dee8;
+  --color_warning_on_dark: #ffd27a;
+
+  --color_you: #c2410c;
+  --color_you_dark: #9a3412;
+  --color_you_tint: #fff4ec;
+  --color_you_light: #ffb37a;
+  --color_you_on_orange: #ffe2cf;
+
+  --color_ai: #1d5fd1;
+  --color_ai_hover: #174ba6;
+  --color_ai_dark: #173a73;
+  --color_ai_tint: #e8f0fc;
+  --color_ai_track: #b9c9e3;
+
+  --color_fans: #6b7785;
+  --color_fans_track: #cdd5de;
+
+  --color_live: #c8102e;
+  --color_good: #15803d;
+  --color_good_dark: #14532d;
+  --color_good_tint: #eaf6ee;
+  --color_bad: #b42318;
+  --color_bad_dark: #7a1b12;
+  --color_bad_tint: #fdecec;
+  --color_gold: #b45309;
+  --color_tick: #9aa7b5;
+
+  --team_karpat_bg: #111111;
+  --team_karpat_fg: #ffd200;
+  --team_ilves_bg: #0f6b3a;
+  --team_ilves_fg: #ffffff;
+  --team_neutral_bg: #dce3ea;
+  --team_neutral_fg: #0e1b2c;
+
+  --font_display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font_body: "Inter", system-ui, sans-serif;
+
+  --radius_card: 16px;
+  --radius_control: 12px;
+  --radius_pill: 999px;
+  --space_page: 16px;
+  --space_card: 16px;
+  --gap_cards: 16px;
+  --touch_min: 44px;
+  --app_max_width: 430px;
+}
