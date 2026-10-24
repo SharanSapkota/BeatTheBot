@@ -7,6 +7,10 @@ Challenge: an AI-powered sports content product that people subscribe to and adv
 **Product:** before every Liiga game, fans predict the winner and top scorer and compete against Kaleva's AI.
 - The AI shows its pick with reasons and **what's at stake** (playoff / relegation odds).
 - After the game: result, short clip or animated recap, a "what it means" story, points, and a Humans vs AI scoreboard.
+- Games in 3 phases + daily: before (big points), during (live picks), after (result quiz, vote), daily games (max 15 pts/day). Full table: `docs/product.md`.
+- Sign-in with **email + 6-digit code** when a fan first locks in a pick; the browser remembers them for 90 days, history stays with the email.
+- **Highlight of the game** is chosen and published by a Kaleva editor in the admin.
+- Languages: **fi, sv, en**.
 - Leaderboards and private leagues. Sponsors give prizes to the most skilled predictors.
 - Delivered as an **embeddable widget**: one `<script>` line in production. For the demo, a Chrome extension shows it on kaleva.fi in our own browser only.
 
@@ -30,8 +34,10 @@ Season context: Liiga 2026/27 is a one-off 17-team "superseason" with 3 relegate
 - **Frontend:** React + Vite + TanStack Query.
 - **Widget:** React, built as a single `widget.js` (Vite library mode), mounted in a **Shadow DOM** so Kaleva's CSS can't affect it.
 - **Extension:** Chrome Manifest V3. The content script mounts the widget; the background script calls the API.
+- **Email:** nodemailer. **Local:** Mailpit in Docker catches all emails (no real sending in dev).
+- **i18n:** i18next + react-i18next; UI strings in `packages/i18n/locales/{fi,sv,en}.json`. No hardcoded UI text.
 - **Tests:** Vitest + Supertest. **Lint/format:** ESLint + Prettier.
-- **Local DB:** Docker Compose (Postgres).
+- **Local infra:** Docker Compose (Postgres, Mailpit).
 
 ## 4. Folder structure
 ```
@@ -59,31 +65,44 @@ voita_kone/
 │   │           │   ├── games_repository.ts
 │   │           │   ├── games_schemas.ts       # zod request/response
 │   │           │   └── games_service.test.ts
-│   │           ├── predictions/               # user picks + scoring
+│   │           ├── auth/                      # email OTP, sessions, role guard
+│   │           ├── users/                     # profile, language, history, delete
+│   │           ├── predictions/               # before-game picks + scoring
+│   │           ├── questions/                 # live picks, result quiz, daily games
 │   │           ├── ai_predictions/            # model output + explanation
 │   │           ├── leaderboard/
 │   │           ├── stories/                   # AI content + status/label
-│   │           ├── review/                    # editor queue (traffic light)
-│   │           └── users/                     # fake demo login
+│   │           ├── highlights/                # editor-added game highlight
+│   │           └── review/                    # editor queue (traffic light), corrections
 │   ├── widget/                                # embeddable React widget -> widget.js
-│   ├── editor/                                # React review dashboard for editors
+│   ├── editor/                                # React admin: review queue, highlights, questions
 │   ├── demo_site/                             # Kaleva-style localhost article page
 │   └── extension/                             # manifest.json, content_script.ts, background.ts
 ├── packages/
 │   ├── shared_types/        # zod schemas + TS types shared by api and frontends
 │   ├── prediction_model/    # pure functions: team strength, Monte Carlo season sim
 │   ├── fact_checker/        # build_fact_sheet(), check_claims() (pure, fully tested)
+│   ├── i18n/                # locale files fi/sv/en + helpers
 │   └── config/              # shared eslint, prettier, tsconfig
+├── README.md
 └── docs/
-    ├── product.md               # idea, user flow, business model
-    ├── architecture.md          # layers, data flow, diagrams
+    ├── product.md               # idea, user flow, scoring, business model
+    ├── architecture.md          # layers, data flow, content pipeline
     ├── editorial_rules.md       # traffic light, labels, JSN, corrections
     ├── data_model.md            # tables + relations
     ├── api.md                   # endpoints
+    ├── data_sources.md          # Liiga API mapping, season config
+    ├── prediction_model.md      # Poisson + Monte Carlo, stakes, back-test
+    ├── fact_checker.md          # fact sheet format, check_claims rules
+    ├── content_generation.md    # LLM prompt rules, story types
+    ├── widget_and_extension.md  # embed, Shadow DOM, demo extension
     ├── reliability_testing.md   # golden set, planted errors, results
+    ├── judging_criteria.md      # Kaleva criteria → our answers
+    ├── setup.md                 # local run, URLs, seed data
     ├── progress.md              # what is done / next step
-    └── decisions/               # short ADRs: 0001_use_kysely.md ...
+    └── decisions/               # short ADRs (0001–0004)
 ```
+**Read only the doc for the current step**, e.g. step 5 → `fact_checker.md` + `content_generation.md`.
 
 ## 5. Layer rules (api)
 - **routes** → wire URL to controller. Nothing else.
@@ -114,10 +133,11 @@ voita_kone/
 - [ ] 1. Liiga API client + `sync_games` job (teams, players, games, events into DB)
 - [ ] 2. Games module (list, detail) + tests
 - [ ] 3. `prediction_model` package + `ai_predictions` module (pick, %, reasons, stakes)
-- [ ] 4. Fake login, user predictions, scoring, leaderboard (Humans vs AI)
+- [ ] 4. Email OTP sign-in + sessions, before-game predictions, scoring, leaderboard (Humans vs AI)
 - [ ] 5. `fact_checker` + LLM story writer + traffic light status
-- [ ] 6. Editor dashboard (review queue: approve / edit / reject, labels, corrections)
-- [ ] 7. Widget (Shadow DOM) + demo_site page
+- [ ] 6. Questions module: live picks, result quiz, daily games (15/day cap), generated from fact sheets
+- [ ] 7. Admin app: review queue, game highlights (upload, checks, per-language approval), corrections
+- [ ] 7b. Widget (Shadow DOM) with i18n fi/sv/en + demo_site page
 - [ ] 8. Chrome extension for the kaleva.fi demo
 - [ ] 9. Reliability report: past-season golden set + planted-error test
 - [ ] 10. (Optional) clip pipeline: real footage + event timestamps + human approval
@@ -145,3 +165,4 @@ When compacting, keep: current roadmap step, files changed, failing tests and er
 - Does the API include player stats per game?
 - Can we use real highlight clips, or data only?
 - Any sponsor or prize partners? A staging environment or widget guidelines?
+- Can we link to Kaleva Media accounts (SSO), or is email OTP fine for the demo?
