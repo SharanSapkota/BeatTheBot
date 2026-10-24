@@ -5,36 +5,42 @@ Based on the Finnish Journalist's Guidelines (JSN) and EU AI Act Art. 50. **Huma
 ## 1. Traffic light
 | Level | Content | Human role | Publish |
 |---|---|---|---|
-| 🟢 Green | Scores, standings, schedule, AI win %, leaderboard | Daily spot-check (10% sample) | Automatically |
-| 🟡 Yellow | "What it means" stories, AI pick reasons, clips/recaps | One-tap approve / edit / reject | After approval (target < 10 min) |
-| 🔴 Red | Injuries, penalties/fights/discipline, quotes, minors, prize winners, anything negative about a named person | Full review and edit | After full review |
+| 🟢 Green | Scores, standings, schedule, "Data says" win chance and stakes, leaderboard. AI preview / AI summary (LLM or template) where **every claim is verified**, no tip, no sensitive topic | Daily spot-check (10% sample) | Automatically |
+| 🟡 Yellow | AI text with any claim `not_found` in the fact sheet; story types not in the auto-publish list (`preview`, `summary`); clips/recaps; any story a reader reported | One-tap approve / edit / reject | After approval (target < 10 min) |
+| 🔴 Red | Any `wrong` claim; a tip or prediction of a winner; injuries, penalties/fights/discipline, minors, legal (court, police, arrest, lawsuit), personal topics (illness, family, private life, divorce, pregnancy); quotes; prize winners; anything negative about a named person; LLM errors (empty / unusable output, wrong length) | Full review and edit | After full review, never automatically |
 
-**Automatic escalation to red** when text or data contains: injury words, match penalties, game misconduct, player age < 18, or a checker failure after 2 retries.
+The reasons for each story's light are stored in `stories.check_result.traffic_light_reasons` and shown to the editor.
+
+**Automatic escalation to red** when text or data contains: injury words, match penalties, game misconduct, player age < 18, legal or personal topics, a tip on the winner, or a `wrong` claim after 2 retries.
+
+**Reader reports:** a report sends a published story back to 🟡 `in_review`. It is hidden until an editor approves it again.
 
 ## 2. Earn trust
-A content type moves from yellow to green only after **200 approved items in a row with zero edits to facts**. One published fact error sends it back to yellow. Changes are logged in `docs/decisions/`.
+AI preview and AI summary auto-publish as green **only** when the fact checker verifies every claim; anything else goes to an editor. Other content types move from yellow to green only after **200 approved items in a row with zero edits to facts**. One published fact error sends a type back to yellow. Changes are logged in `docs/decisions/`.
 
 ## 3. Fact rules
 - Numbers come from code (`prediction_model`, Liiga data). **The LLM never calculates.**
 - The LLM may only use facts from the fact sheet.
-- `check_claims` must pass: every number, player name, team name, date and score must match the fact sheet.
-- No speculation presented as fact. Predictions are always phrased as probabilities.
+- `classify_claims` marks every number, %, score, date, time, ordinal, weekday, team and player name as `verified`, `not_found` or `wrong` against the fact sheet. An unknown person-like name counts as an invented player (`wrong`).
+- No speculation presented as fact. The AI never tips or predicts a winner; probabilities only as "Data says … %".
+- The AI is not a player: no AI pick, no AI score, no AI scorer.
 
 ## 4. Labels
-| Content | Label (FI / EN) |
+| Content | Label (EN) |
 |---|---|
-| Green | "Automaattinen, Liigan datasta klo 21.47" / "Automatic, from Liiga data, 21:47" |
-| Yellow/Red story | "Tekoälyn kirjoittama Liigan datasta. Tarkistanut Kalevan urheilutoimitus klo 21.47." / "AI-written from Liiga data. Checked by Kaleva sports desk, 21:47." |
-| AI pick | "Tekoälyn veikkaus, laskettu ottelutilastoista" / "AI's pick, calculated from game statistics" |
+| AI preview / AI summary written by the LLM | "Written with AI from Liiga data · checked by Kaleva" (after editor approval: with the time) |
+| Template text (no LLM) | "Automatic preview from Liiga data" / "Automatic summary from Liiga data" |
+| Model numbers | "Data says · calculated from Liiga data HH:MM" |
+| Corrected story | "Corrected HH:MM: …" (the correction note) |
 | Video | On-screen tag "AI-edited" + "AI voice" in description |
 
-Every item has a **"Report an error"** button.
+Every AI item has a **"Report an error"** button (with a reason form). Nothing published yet → "Preview coming soon" / "Summary coming soon" (never sample text).
 
 ## 5. Corrections (JSN 35)
-1. A reader reports, or an editor finds, an error.
-2. The editor fixes it. The item is updated in **every channel** (widget, site, notifications, video description).
-3. A correction note is shown: what was wrong, and when and how it was fixed.
-4. The error is logged in `error_reports` for the reliability stats.
+1. A reader reports (story goes back to 🟡 `in_review`, hidden), or an editor finds, an error.
+2. The editor fixes it on the `/editor` page. The fact checker re-runs; a `wrong` claim blocks publishing. The item is updated in **every channel** (widget, site, notifications, video description).
+3. If the story was published before, it becomes `corrected` and shows a correction note with the time ("Corrected HH:MM: …"), also stored in `corrections`.
+4. The report is logged in `error_reports` for the reliability stats; every editor action and report is logged in `audit_log` (who, what, target, when, details).
 
 ## 6. Video rules
 - Only **real** footage, cut and captioned by AI. No synthetic footage of real people.

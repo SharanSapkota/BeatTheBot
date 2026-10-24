@@ -12,6 +12,7 @@ const NOW = new Date("2026-10-24T12:00:00.000Z");
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const GAME: PickableGameRow = {
   id: "22222222-2222-4222-8222-222222222222",
+  sport: "hockey",
   start_time: new Date("2026-10-24T15:00:00.000Z"),
   home_team_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   away_team_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -24,6 +25,7 @@ const PICK: PredictionRequest = {
   predicted_home_goals: 3,
   predicted_away_goals: 2,
   predicted_scorer_id: HOME_PLAYER,
+  predicted_margin_band: null,
 };
 
 class FakePredictionsRepository implements PredictionsRepository {

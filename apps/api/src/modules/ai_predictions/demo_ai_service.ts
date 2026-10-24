@@ -1,8 +1,8 @@
-import type { AiPrediction, ReplayMoment, WinChance } from "@voita_kone/shared_types";
+import type { DataSays, ReplayMoment, WinChance } from "@voita_kone/shared_types";
 import type { Clock } from "../../common/clock";
 import type { DemoReplayService } from "../demo/demo_replay_service";
 import {
-  to_ai_prediction,
+  to_data_says,
   to_crowd,
   to_live_model,
   to_stored_prediction,
@@ -32,11 +32,11 @@ export class DemoAiService {
     private readonly clock: Clock,
   ) {}
 
-  async get_prediction(game_id: string, moment: ReplayMoment): Promise<AiPrediction> {
+  async get_data_says(game_id: string, moment: ReplayMoment): Promise<DataSays> {
     const game = await this.demo_replay_service.get_game_detail(game_id, moment);
     const row = await this.pre_game_prediction(game_id);
     const crowd = await this.repository.count_crowd_picks(game_id, game.home_team.id);
-    return to_ai_prediction(row, to_crowd(crowd));
+    return to_data_says(row, to_crowd(crowd));
   }
 
   async get_win_chance(game_id: string, moment: ReplayMoment): Promise<WinChance> {

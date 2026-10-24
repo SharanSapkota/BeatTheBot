@@ -2,6 +2,9 @@ import { season_config } from "@voita_kone/prediction_model";
 import type { Transaction } from "kysely";
 import type { DB } from "../database_types";
 import type { Database } from "../kysely";
+import { insert_demo_election } from "./demo_election";
+import { insert_demo_room } from "./demo_room";
+import { insert_sample_sports } from "./demo_sports";
 import { build_demo_fill, type FillTeam, type HubState } from "./demo_fill";
 import {
   build_demo_predictions,
@@ -31,6 +34,13 @@ export interface SeedSummary {
   unfilled_states: HubState[];
   user_count: number;
   prediction_count: number;
+  /** Picks in the demo election (made by the demo voters). */
+  election_pick_count: number;
+  /** Answers in the demo room (made by its 8 demo members). */
+  room_answer_count: number;
+  /** Sample football and basketball games and the demo users' picks on them. */
+  sample_game_count: number;
+  sample_pick_count: number;
 }
 
 /** Demo games and all users are recreated on every seed. Liiga rows are never touched. */
@@ -38,12 +48,21 @@ async function delete_previous_demo_data(trx: Transaction<DB>): Promise<void> {
   // Cascades to their events, predictions and editorial rows.
   await trx.deleteFrom("games").where("data_source", "=", DEMO).execute();
   await trx.deleteFrom("game_events").where("data_source", "=", DEMO).execute();
-  // Cascades to identities, sessions, predictions and answers.
+  // Cascades to candidates, picks and results.
+  await trx.deleteFrom("elections").where("is_demo", "=", true).execute();
+  // Cascades to members, questions, answers and reactions.
+  await trx.deleteFrom("rooms").where("is_demo", "=", true).execute();
+  // Cascades to identities, sessions, predictions, answers and election picks.
   await trx.deleteFrom("users").execute();
 }
 
+/** Hockey fill-ins use Liiga teams only (football and basketball have sample fixtures). */
 async function load_fill_teams(trx: Transaction<DB>): Promise<FillTeam[]> {
-  const teams = await trx.selectFrom("teams").select(["id", "name"]).execute();
+  const teams = await trx
+    .selectFrom("teams")
+    .select(["id", "name"])
+    .where("sport", "=", "hockey")
+    .execute();
   if (teams.length === 0) {
     throw new Error(
       "No teams in the database. Run the Liiga sync first: pnpm --filter api sync:liiga",
@@ -67,6 +86,7 @@ async function load_todays_games(trx: Transaction<DB>, now: Date) {
   return trx
     .selectFrom("games")
     .select(["status", "home_team_id", "away_team_id"])
+    .where("sport", "=", "hockey")
     .where("start_time", ">=", helsinki_time(today, 0, 0))
     .where("start_time", "<", helsinki_time(add_days(today, 1), 0, 0))
     .execute();
@@ -76,6 +96,7 @@ async function load_season(trx: Transaction<DB>): Promise<string> {
   const latest = await trx
     .selectFrom("games")
     .select("season")
+    .where("sport", "=", "hockey")
     .orderBy("start_time", "desc")
     .limit(1)
     .executeTakeFirst();
@@ -85,7 +106,7 @@ async function load_season(trx: Transaction<DB>): Promise<string> {
 async function insert_demo_games(
   trx: Transaction<DB>,
   options: SeedOptions,
-): Promise<Omit<SeedSummary, "user_count" | "prediction_count">> {
+): Promise<Pick<SeedSummary, "demo_game_count" | "demo_event_count" | "unfilled_states">> {
   const teams = await load_fill_teams(trx);
   const todays_games = await load_todays_games(trx, options.now);
   const fill = build_demo_fill({
@@ -159,6 +180,7 @@ async function find_prediction_target(
     .selectFrom("games")
     .select(["id", "home_team_id", "away_team_id", "home_goals", "away_goals", "start_time"])
     .where("status", "=", "final")
+    .where("sport", "=", "hockey")
     .orderBy((eb) => eb.case().when("external_id", "=", "demo_final").then(0).else(1).end())
     .orderBy("start_time", "desc")
     .limit(1)
@@ -196,7 +218,8 @@ async function insert_predictions(trx: Transaction<DB>, user_ids: ReadonlyMap<st
 }
 
 /**
- * Fills gaps in the synced Liiga data with demo rows, and recreates the demo users.
+ * Fills gaps in the synced Liiga data with demo rows, recreates the demo users, the demo
+ * election, the demo room and the sample football and basketball fixtures.
  * Run the Liiga sync first. Runs in one transaction, so a failed seed changes nothing.
  */
 export async function seed_demo_data(db: Database, options: SeedOptions): Promise<SeedSummary> {
@@ -206,6 +229,17 @@ export async function seed_demo_data(db: Database, options: SeedOptions): Promis
     const users = build_demo_users(options.editor_email);
     const user_ids = await insert_users(trx, users);
     const prediction_count = await insert_predictions(trx, user_ids);
-    return { ...games_summary, user_count: users.length, prediction_count };
+    const election_pick_count = await insert_demo_election(trx, options.now);
+    const room_answer_count = await insert_demo_room(trx, options.now);
+    const samples = await insert_sample_sports(trx, options.now, user_ids);
+    return {
+      ...games_summary,
+      user_count: users.length,
+      prediction_count,
+      election_pick_count,
+      room_answer_count,
+      sample_game_count: samples.game_count,
+      sample_pick_count: samples.pick_count,
+    };
   });
 }

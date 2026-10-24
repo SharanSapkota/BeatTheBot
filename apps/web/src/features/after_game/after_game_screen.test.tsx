@@ -8,16 +8,22 @@ import { render_at } from "../../test_helpers/render_app";
 import { AfterGameScreen } from "./after_game_screen";
 
 const GAME = build_game("final");
-const STORY_PATH = `/games/${GAME.id}/stories?type=what_it_means`;
+const STORY_PATH = `/games/${GAME.id}/stories?type=summary`;
 
-describe("AfterGameScreen: what it means", () => {
-  it("shows the published story with its label", async () => {
+describe("AfterGameScreen: AI summary", () => {
+  it("shows the published summary with its label and report button", async () => {
     mock_api({
       [STORY_PATH]: {
         id: "33333333-3333-4333-8333-333333333333",
+        story_type: "summary",
         headline: "Kärpät's relegation risk drops to 27%",
         body: "Kärpät beat Ilves 3–1 at home.",
-        label_text: "AI-written from Liiga data. Checked by Kaleva sports desk, 21:47.",
+        bullets: [],
+        label_text: "Written with AI from Liiga data · checked by Kaleva",
+        source: "llm",
+        last_meetings: [],
+        correction: { corrected_at: "2026-10-24T19:47:00.000Z", note: "The scorer was fixed" },
+        published_at: "2026-10-24T19:30:00.000Z",
       },
     });
     render_at(<AfterGameScreen game={GAME} />);
@@ -25,18 +31,19 @@ describe("AfterGameScreen: what it means", () => {
     expect(
       await screen.findByRole("heading", { name: "Kärpät's relegation risk drops to 27%" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("AI SUMMARY")).toBeInTheDocument();
     expect(
-      screen.getByText("AI-written from Liiga data. Checked by Kaleva sports desk, 21:47."),
+      screen.getByText("Written with AI from Liiga data · checked by Kaleva"),
     ).toBeInTheDocument();
+    expect(screen.getByText(/^Corrected \d\d:\d\d: The scorer was fixed$/)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Report an error" }).length).toBeGreaterThan(0);
   });
 
-  it("says the story is being checked until an editor approves it", async () => {
+  it("says the summary is coming soon until it is published (no sample text)", async () => {
     mock_api({ [STORY_PATH]: null });
     render_at(<AfterGameScreen game={GAME} />);
 
-    expect(
-      await screen.findByRole("heading", { name: "The story is being checked" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Summary coming soon" })).toBeInTheDocument();
   });
 });
 

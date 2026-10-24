@@ -1,50 +1,66 @@
-import type { GameSummary } from "@voita_kone/shared_types";
+import type { Crowd, GameSummary } from "@voita_kone/shared_types";
 import { Link } from "react-router";
+import { shared_copy } from "../../components/copy";
 import { ChevronRightIcon } from "../../components/icons/chevron_right_icon";
+import { SampleBadge } from "../../components/sample_badge";
 import { StatusPill } from "../../components/status_pill";
 import { TeamBadge } from "../../components/team_badge";
 import { useDemoMode } from "../../lib/demo_mode";
 import { format_percent } from "../../lib/format";
-import { useAiPrediction } from "../game/api";
+import { useCrowd } from "../game/api";
 import { center_text, game_status } from "./game_status";
 import { game_day_copy } from "./copy";
 import styles from "./game_row.module.css";
 
-/** "AI: Tappara 57%" (mobile) or "AI's pick: Tappara 57%" (desktop list). */
-function useAiLine(game: GameSummary, is_long: boolean): string {
-  const prediction = useAiPrediction(game).data;
+/**
+ * "Fans: 62% Kärpät" (the outcome most fans picked; "Fans: 40% draw" in football), or
+ * "Be the first to pick". A tie goes to the home team.
+ */
+export function crowd_line(game: GameSummary, crowd: Crowd | null | undefined): string {
+  if (crowd === undefined) {
+    return "…";
+  }
+  if (crowd === null) {
+    return game_day_copy.fans_none;
+  }
+  const share = (picks: number) => format_percent(picks / crowd.total_picks);
+  if (crowd.draw_picks > Math.max(crowd.home_picks, crowd.away_picks)) {
+    return game_day_copy.fans_draw(share(crowd.draw_picks));
+  }
+  const home_ahead = crowd.home_picks >= crowd.away_picks;
+  const team = home_ahead ? game.home_team : game.away_team;
+  return game_day_copy.fans_split(
+    team.name,
+    share(home_ahead ? crowd.home_picks : crowd.away_picks),
+  );
+}
+
+/** "Hockey · Liiga" */
+export function category_of(game: GameSummary): string {
+  return game_day_copy.category_tag(shared_copy.sport_names[game.sport], game.league.name);
+}
+
+function useRowLine(game: GameSummary): string {
+  const crowd = useCrowd(game.id).data;
   if (game.state === "live") {
     return game_day_copy.row_live;
   }
   if (game.state === "final") {
     return game_day_copy.row_final;
   }
-  if (prediction === undefined) {
-    return "…";
-  }
-  if (prediction === null) {
-    return game_day_copy.row_ai_pending;
-  }
-  const home_favoured = prediction.predicted_winner_team_id === game.home_team.id;
-  const team = home_favoured ? game.home_team : game.away_team;
-  const share = home_favoured ? prediction.home_win_probability : prediction.away_win_probability;
-  return (is_long ? game_day_copy.row_ai_long : game_day_copy.row_ai)(
-    team.name,
-    format_percent(share),
-  );
+  return crowd_line(game, crowd);
 }
 
 /**
- * One of the other games of the day. Mobile: both teams, status and AI line. Desktop: a
- * kaleva.fi list item (dark thumbnail with the badges, headline, AI line, category label).
+ * One of the other games of the day. Mobile: both teams, status and fans line. Desktop: a
+ * kaleva.fi list item (dark thumbnail with the badges, headline, fans line, category label).
  */
 export function GameRow({ game }: { game: GameSummary }) {
   const { link_to } = useDemoMode();
   const status = game_status(game, false);
   const center = center_text(game);
   const headline_time = game.state === "upcoming" ? status.label : center;
-  const ai_line = useAiLine(game, false);
-  const ai_line_long = useAiLine(game, true);
+  const ai_line = useRowLine(game);
 
   return (
     <Link
@@ -65,6 +81,7 @@ export function GameRow({ game }: { game: GameSummary }) {
           <StatusPill tone={status.tone}>{status.label}</StatusPill>
           <span className={styles.center}>{center}</span>
           <span className={styles.ai_line}>{ai_line}</span>
+          {game.data_source === "demo" && <SampleBadge />}
         </span>
         <span className={styles.chevron}>
           <ChevronRightIcon />
@@ -79,8 +96,11 @@ export function GameRow({ game }: { game: GameSummary }) {
           <span className={styles.headline}>
             {game_day_copy.row_headline(game.home_team.name, game.away_team.name, headline_time)}
           </span>
-          <span className={styles.detail}>{ai_line_long}</span>
-          <span className={styles.category}>{game_day_copy.category}</span>
+          <span className={styles.detail}>{ai_line}</span>
+          <span className={styles.category}>
+            {category_of(game)}
+            {game.data_source === "demo" && <SampleBadge />}
+          </span>
         </span>
       </span>
     </Link>

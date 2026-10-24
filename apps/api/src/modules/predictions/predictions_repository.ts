@@ -2,16 +2,20 @@ import type { Database } from "../../db/kysely";
 
 export interface PickableGameRow {
   id: string;
+  sport: string;
   start_time: Date;
   home_team_id: string;
   away_team_id: string;
 }
 
 export interface PredictionValues {
-  predicted_winner_team_id: string;
-  predicted_home_goals: number;
-  predicted_away_goals: number;
+  /** Null = a draw (football only). */
+  predicted_winner_team_id: string | null;
+  /** Null in basketball (no exact score). */
+  predicted_home_goals: number | null;
+  predicted_away_goals: number | null;
   predicted_scorer_id: string | null;
+  predicted_margin_band: string | null;
 }
 
 export interface PredictionRow extends PredictionValues {
@@ -47,6 +51,7 @@ const PREDICTION_COLUMNS = [
   "user_predictions.predicted_home_goals",
   "user_predictions.predicted_away_goals",
   "user_predictions.predicted_scorer_id",
+  "user_predictions.predicted_margin_band",
   "user_predictions.points_awarded",
   "user_predictions.created_at",
   "user_predictions.updated_at",
@@ -58,7 +63,7 @@ export class KyselyPredictionsRepository implements PredictionsRepository {
   find_game(game_id: string): Promise<PickableGameRow | undefined> {
     return this.db
       .selectFrom("games")
-      .select(["id", "start_time", "home_team_id", "away_team_id"])
+      .select(["id", "sport", "start_time", "home_team_id", "away_team_id"])
       .where("id", "=", game_id)
       .executeTakeFirst();
   }

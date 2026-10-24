@@ -6,7 +6,7 @@ import { UsersService } from "./users_service";
 const USER: UserRow = {
   id: "11111111-1111-4111-8111-111111111111",
   display_name: "Mika",
-  role: "player",
+  role: "user",
 };
 
 class FakeUsersRepository implements UsersRepository {

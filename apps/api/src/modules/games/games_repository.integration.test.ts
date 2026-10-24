@@ -28,7 +28,10 @@ describe("KyselyGamesRepository (test database)", () => {
   });
 
   it("lists the games of one Helsinki day with both teams", async () => {
-    const games = await repository.list_games(helsinki_day_range("2026-10-24"));
+    const games = await repository.list_games({
+      ...helsinki_day_range("2026-10-24"),
+      sport: "hockey",
+    });
 
     expect(games.map((game) => [game.external_id, game.status, game.data_source])).toEqual([
       ["demo_final", "final", "demo"],
@@ -37,6 +40,18 @@ describe("KyselyGamesRepository (test database)", () => {
     ]);
     expect(games[2]?.home_team).toMatchObject({ name: "Kärpät", city: "Oulu" });
     expect(games[2]?.start_time).toEqual(new Date("2026-10-24T14:00:00Z"));
+  });
+
+  it("filters by sport and returns the league", async () => {
+    const games = await repository.list_games({
+      ...helsinki_day_range("2026-10-24"),
+      sport: "football",
+    });
+
+    expect(games.length).toBeGreaterThan(0);
+    expect(games.every((game) => game.sport === "football")).toBe(true);
+    expect(games[0]?.league.name).toBe("Veikkausliiga");
+    expect(games[0]?.home_team.sport).toBe("football");
   });
 
   it("filters by team and status", async () => {
@@ -75,7 +90,7 @@ describe("KyselyGamesRepository (test database)", () => {
     const game = await repository.find_latest_final_game(KARPAT_EXTERNAL_ID, "liiga_api");
 
     expect(game).toMatchObject({ external_id: "2701405", home_goals: 5, away_goals: 2 });
-    await expect(repository.find_latest_demo_final()).resolves.toMatchObject({
+    await expect(repository.find_latest_demo_final("hockey")).resolves.toMatchObject({
       external_id: "demo_final",
     });
   });

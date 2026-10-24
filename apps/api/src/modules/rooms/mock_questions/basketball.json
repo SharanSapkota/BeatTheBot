@@ -1,0 +1,254 @@
+[
+  {
+    "type": "trivia",
+    "prompt": "How many players does a basketball team have on the court?",
+    "options": ["5", "6", "7", "11"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the nickname of Finland's men's national basketball team?",
+    "options": ["Leijonat", "Huuhkajat", "Susijengi", "Helmarit"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which NBA team did Lauri Markkanen join in 2022?",
+    "options": ["Chicago Bulls", "Cleveland Cavaliers", "Utah Jazz", "Boston Celtics"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many points is a shot from behind the three-point line worth?",
+    "options": ["1", "2", "3", "4"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many points is one free throw worth?",
+    "options": ["1", "2", "3", "0.5"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is one quarter in the NBA?",
+    "options": ["10 minutes", "12 minutes", "15 minutes", "20 minutes"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is one quarter in a FIBA game (like Korisliiga)?",
+    "options": ["8 minutes", "10 minutes", "12 minutes", "15 minutes"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How high is the basketball hoop?",
+    "options": ["2.75 m", "3.05 m", "3.35 m", "3.50 m"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Who invented basketball?",
+    "options": ["James Naismith", "Michael Jordan", "Walter Camp", "Abner Doubleday"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which year was basketball invented?",
+    "options": ["1851", "1891", "1921", "1946"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is Finland's top men's basketball league called?",
+    "options": ["Korisliiga", "Veikkausliiga", "Superpesis", "Mestis"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "With which team did Michael Jordan win his six NBA titles?",
+    "options": ["Chicago Bulls", "Washington Wizards", "Los Angeles Lakers", "Detroit Pistons"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which NBA team plays in purple and gold?",
+    "options": ["Los Angeles Lakers", "Boston Celtics", "Miami Heat", "New York Knicks"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Who holds the NBA all-time points record?",
+    "options": ["Kareem Abdul-Jabbar", "Michael Jordan", "LeBron James", "Kobe Bryant"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is the shot clock in the NBA?",
+    "options": ["14 seconds", "24 seconds", "30 seconds", "35 seconds"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which country did Finland play its group games at the 2023 FIBA World Cup?",
+    "options": ["Philippines", "Japan", "Indonesia", "China"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won the 2023 FIBA men's World Cup?",
+    "options": ["USA", "Serbia", "Germany", "Canada"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many personal fouls does it take to foul out of a FIBA game?",
+    "options": ["4", "5", "6", "7"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many personal fouls does it take to foul out of an NBA game?",
+    "options": ["4", "5", "6", "7"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is a shot that goes in without touching the rim called?",
+    "options": ["Swish", "Brick", "Airball", "Layup"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is it called when a player slams the ball down through the hoop?",
+    "options": ["Dunk", "Hook shot", "Alley", "Free throw"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which team won the 2024 NBA title?",
+    "options": ["Dallas Mavericks", "Boston Celtics", "Denver Nuggets", "Golden State Warriors"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which team won the 2023 NBA title?",
+    "options": ["Miami Heat", "Denver Nuggets", "Milwaukee Bucks", "Phoenix Suns"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Who is known as \"The Greek Freak\"?",
+    "options": ["Giannis Antetokounmpo", "Nikola Jokić", "Luka Dončić", "Kostas Antetokounmpo"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "For which team has Stephen Curry played his whole NBA career?",
+    "options": [
+      "Golden State Warriors",
+      "Charlotte Hornets",
+      "Sacramento Kings",
+      "Los Angeles Clippers"
+    ],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won men's basketball gold at the Paris 2024 Olympics?",
+    "options": ["France", "Serbia", "USA", "Germany"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "A triple-double means double figures in how many stats in one game?",
+    "options": ["2", "3", "4", "5"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many seconds does a team have to bring the ball over half court?",
+    "options": ["5", "8", "10", "24"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country is Dirk Nowitzki from?",
+    "options": ["Germany", "Austria", "Netherlands", "Switzerland"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the top professional women's basketball league in the USA called?",
+    "options": ["WNBA", "NCAA", "EuroLeague", "G League"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "For which team did Kobe Bryant play his whole NBA career?",
+    "options": [
+      "Los Angeles Lakers",
+      "Philadelphia 76ers",
+      "Chicago Bulls",
+      "Los Angeles Clippers"
+    ],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the painted area under the basket often called?",
+    "options": ["The paint", "The box", "The arc", "The court"],
+    "correct": 0
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best basketball player of all time?",
+    "options": ["Michael Jordan", "LeBron James", "Kareem Abdul-Jabbar", "Stephen Curry"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best Finnish basketball player of all time?",
+    "options": ["Lauri Markkanen", "Hanno Möttölä", "Petteri Koponen", "Shawn Huff"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "The most exciting play in basketball?",
+    "options": ["A big dunk", "A buzzer-beater three", "A chase-down block", "A no-look pass"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which do you watch more?",
+    "options": ["NBA", "Korisliiga", "EuroLeague", "National team games"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "How far will Susijengi go at the next EuroBasket?",
+    "options": ["A medal", "Quarter-finals", "Round of 16", "Group stage"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Should the NBA move the three-point line further back?",
+    "options": ["Yes", "No", "Don't care"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which position would you want to play?",
+    "options": ["Point guard", "Shooting guard", "Forward", "Centre"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best place to watch a basketball game?",
+    "options": ["Courtside", "At home", "At a bar with friends", "On my phone"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Should Finland have more outdoor basketball courts?",
+    "options": ["Yes, in every park", "There are enough", "Indoor courts are better"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Your shot of choice in a pickup game?",
+    "options": ["Three-pointer", "Layup", "Mid-range jumper", "Hook shot"]
+  }
+]

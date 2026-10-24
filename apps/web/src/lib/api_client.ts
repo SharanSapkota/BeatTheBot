@@ -77,7 +77,8 @@ export async function api_request<T extends z.ZodType>(
   if (!response.ok) {
     throw await to_api_error(response, method, path);
   }
-  return schema.parse(await response.json());
+  // 204 No Content (e.g. a DELETE) has no JSON body.
+  return schema.parse(response.status === 204 ? null : await response.json());
 }
 
 /** GET a path under /api/v1 and validate the body with the shared zod schema. */

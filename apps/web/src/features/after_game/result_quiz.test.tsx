@@ -30,7 +30,7 @@ const QUESTIONS: Question[] = [
 ];
 
 function Quiz({ questions = QUESTIONS }: { questions?: Question[] }) {
-  const [picks, update] = useGamePicks("quiz_game");
+  const [picks, update] = useGamePicks({ id: "quiz_game", sport: "hockey" });
   return (
     <ResultQuiz
       questions={questions}

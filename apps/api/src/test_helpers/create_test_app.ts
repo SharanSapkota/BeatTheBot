@@ -16,8 +16,9 @@ export interface TestAppOptions {
 
 export function create_test_dependencies(options: TestAppOptions = {}): AppDependencies {
   const now = options.now ?? TEST_NOW;
+  const logger = pino({ level: "silent" });
   return {
-    logger: pino({ level: "silent" }),
+    logger,
     cors_allowed_origins: ["http://localhost:5173"],
     ...build_services(
       options.db ?? create_test_database(),
@@ -27,6 +28,7 @@ export function create_test_dependencies(options: TestAppOptions = {}): AppDepen
         ...options.config,
       },
       () => now,
+      logger,
     ),
   };
 }

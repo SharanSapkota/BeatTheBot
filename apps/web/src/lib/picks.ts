@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
-import type { Question } from "@voita_kone/shared_types";
+import { MARGIN_BANDS } from "@voita_kone/scoring";
+import type { Question, Sport } from "@voita_kone/shared_types";
 import { z } from "zod";
 import { read_stored, write_stored } from "./storage";
 
@@ -9,11 +10,18 @@ import { read_stored, write_stored } from "./storage";
 
 export const side_schema = z.enum(["home", "away", "none"]);
 
+/** `winner_team_id` of a draw pick (football 1X2). */
+export const DRAW_PICK = "draw";
+
 export const game_picks_schema = z.object({
+  /** A team id, DRAW_PICK (football), or null = not picked yet. */
   winner_team_id: z.string().nullable(),
   home_goals: z.number().int().min(0).max(9),
   away_goals: z.number().int().min(0).max(9),
+  /** Hockey / football: a scorer. Basketball: the top scorer. */
   scorer_id: z.string().nullable(),
+  /** Basketball: the winning margin band. */
+  margin_band: z.enum(MARGIN_BANDS).nullable().default(null),
   /** ISO time of "Lock in my picks"; any change clears it. */
   locked_at: z.string().nullable(),
   /** goal_index = goals already scored when the pick was made, so it predicts goal number goal_index + 1. */
@@ -37,6 +45,7 @@ export const EMPTY_PICKS: GamePicks = {
   home_goals: 3,
   away_goals: 2,
   scorer_id: null,
+  margin_band: null,
   locked_at: null,
   next_goal_picks: [],
   next_goal_opened_at: {},
@@ -46,6 +55,17 @@ export const EMPTY_PICKS: GamePicks = {
   poll_answer: null,
 };
 
+/** Where the exact-score stepper starts: hockey 3–2, football 1–1 (basketball has no score pick). */
+const START_SCORE: Record<Sport, { home_goals: number; away_goals: number }> = {
+  hockey: { home_goals: 3, away_goals: 2 },
+  football: { home_goals: 1, away_goals: 1 },
+  basketball: { home_goals: 0, away_goals: 0 },
+};
+
+export function empty_picks(sport: Sport): GamePicks {
+  return { ...EMPTY_PICKS, ...START_SCORE[sport] };
+}
+
 const cache = new Map<string, GamePicks>();
 const listeners = new Set<() => void>();
 
@@ -53,12 +73,12 @@ function storage_key(game_id: string): string {
   return `picks_${game_id}`;
 }
 
-export function read_picks(game_id: string): GamePicks {
+export function read_picks(game_id: string, sport: Sport = "hockey"): GamePicks {
   const cached = cache.get(game_id);
   if (cached) {
     return cached;
   }
-  const stored = read_stored(storage_key(game_id), game_picks_schema) ?? EMPTY_PICKS;
+  const stored = read_stored(storage_key(game_id), game_picks_schema) ?? empty_picks(sport);
   cache.set(game_id, stored);
   return stored;
 }
@@ -69,23 +89,6 @@ export function save_picks(game_id: string, picks: GamePicks): void {
   for (const listener of listeners) {
     listener();
   }
-}
-
-const MAX_GOALS = 9;
-
-/**
- * Starts the exact-score pick at the AI's predicted score, only while the user has never
- * changed this game's picks.
- */
-export function prefill_score(game_id: string, home_goals: number, away_goals: number): void {
-  if (read_stored(storage_key(game_id), game_picks_schema) !== null) {
-    return;
-  }
-  save_picks(game_id, {
-    ...read_picks(game_id),
-    home_goals: Math.min(MAX_GOALS, home_goals),
-    away_goals: Math.min(MAX_GOALS, away_goals),
-  });
 }
 
 /** Forgets the in-memory copy, as a page reload would (used by tests). */
@@ -150,15 +153,18 @@ export function with_prematch_change(picks: GamePicks, change: Partial<GamePicks
   return { ...picks, ...change, locked_at: null };
 }
 
-export function useGamePicks(
-  game_id: string,
-): [GamePicks, (update: (picks: GamePicks) => GamePicks) => void] {
-  const picks = useSyncExternalStore(subscribe, () => read_picks(game_id));
+/** The game's picks on this device; new picks start from the sport's defaults. */
+export function useGamePicks(game: {
+  id: string;
+  sport: Sport;
+}): [GamePicks, (update: (picks: GamePicks) => GamePicks) => void] {
+  const { id: game_id, sport } = game;
+  const picks = useSyncExternalStore(subscribe, () => read_picks(game_id, sport));
   const update = useCallback(
     (change: (current: GamePicks) => GamePicks) => {
-      save_picks(game_id, change(read_picks(game_id)));
+      save_picks(game_id, change(read_picks(game_id, sport)));
     },
-    [game_id],
+    [game_id, sport],
   );
   return [picks, update];
 }

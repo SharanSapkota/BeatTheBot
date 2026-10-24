@@ -8,7 +8,7 @@ export const DISPLAY_NAME_MAX_LENGTH = 30;
 /** 1–30 characters after trimming. */
 export const display_name_schema = z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH);
 
-export const user_role_schema = z.enum(["player", "editor", "admin"]);
+export const user_role_schema = z.enum(["user", "editor", "admin"]);
 
 /** POST /auth/device */
 export const device_sign_in_request_schema = z.object({ display_name: display_name_schema });

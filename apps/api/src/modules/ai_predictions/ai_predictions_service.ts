@@ -1,10 +1,10 @@
-import type { AiPrediction, SeasonOdds, WinChance } from "@voita_kone/shared_types";
+import type { Crowd, DataSays, SeasonOdds, WinChance } from "@voita_kone/shared_types";
 import { AppError } from "../../common/app_error";
 import type { Clock } from "../../common/clock";
 import type { GamesRepository } from "../games/games_repository";
 import { game_not_found, type GamesService } from "../games/games_service";
 import {
-  to_ai_prediction,
+  to_data_says,
   to_crowd,
   to_live_model,
   to_season_odds,
@@ -16,7 +16,7 @@ export function prediction_not_ready(game_id: string): AppError {
   return new AppError(
     "PREDICTION_NOT_READY",
     404,
-    `The AI has not made its pick for game ${game_id} yet. Picks are calculated up to 7 days before puck drop.`,
+    `The data for game ${game_id} is not ready yet. It is calculated up to 7 days before puck drop.`,
   );
 }
 
@@ -37,7 +37,8 @@ export class AiPredictionsService {
     private readonly clock: Clock,
   ) {}
 
-  async get_prediction(game_id: string): Promise<AiPrediction> {
+  /** The model's win chance and stakes ("Data says"), with the fans' crowd split. */
+  async get_data_says(game_id: string): Promise<DataSays> {
     const game = await this.games_repository.find_game(game_id);
     if (!game) {
       throw game_not_found(game_id);
@@ -47,7 +48,16 @@ export class AiPredictionsService {
       throw prediction_not_ready(game_id);
     }
     const crowd = await this.repository.count_crowd_picks(game_id, game.home_team.id);
-    return to_ai_prediction(row, to_crowd(crowd));
+    return to_data_says(row, to_crowd(crowd));
+  }
+
+  /** How the fans picked the winner, or null before the first pick. */
+  async get_crowd(game_id: string): Promise<Crowd | null> {
+    const game = await this.games_repository.find_game(game_id);
+    if (!game) {
+      throw game_not_found(game_id);
+    }
+    return to_crowd(await this.repository.count_crowd_picks(game_id, game.home_team.id));
   }
 
   /** Home win chance at puck drop, after every goal and now (live) or at the end (final). */

@@ -7,22 +7,26 @@ import { KyselyStoriesRepository } from "../../modules/stories/stories_repositor
 import { StoryGenerationService } from "../../modules/stories/story_generation_service";
 import { GenerateStoriesJob } from "../generate_stories";
 
-// Usage: tsx src/jobs/scripts/generate_stories.ts [game_id]
-// Without a game id: every game finished in the last 7 days that has no story yet.
+// Usage: tsx src/jobs/scripts/generate_stories.ts [preview|summary <game_id>]
+// Without arguments: the same run as the API's job (previews in the 7-day window, summaries
+// of finished games). With a type and a game id: writes that story again.
 async function main(): Promise<void> {
-  const game_id = process.argv[2];
+  const [type, game_id] = process.argv.slice(2);
   const db = create_database(env.DATABASE_URL);
   try {
     const repository = new KyselyStoriesRepository(db);
     const service = new StoryGenerationService(
       repository,
       new KyselyModelInputsRepository(db),
-      create_llm_client(),
+      create_llm_client(env),
       () => new Date(),
     );
-    if (game_id) {
-      const result = await service.generate(game_id);
-      console.log(`Story ${result.status}: ${result.story_id} (${result.traffic_light}).`);
+    if (type && game_id) {
+      const result =
+        type === "preview"
+          ? await service.generate_preview(game_id)
+          : await service.generate_summary(game_id);
+      console.log(`Story ${result.story_id}: ${result.traffic_light} (${result.source}).`);
       return;
     }
     const logger = create_logger({ level: "warn", pretty: false });
@@ -33,7 +37,7 @@ async function main(): Promise<void> {
       () => new Date(),
     ).run();
     console.log(
-      `Stories written: ${String(result.created_count)}, failed: ${String(result.failed_count)}. They wait for an editor.`,
+      `Previews: ${String(result.previews)}, summaries: ${String(result.summaries)}, failed: ${String(result.failed_count)}.`,
     );
   } finally {
     await db.destroy();

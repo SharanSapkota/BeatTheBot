@@ -1,10 +1,19 @@
-import type { GameDay, GameDetail, GameSummary, ReplayMoment } from "@voita_kone/shared_types";
+import type {
+  GameDay,
+  GameDetail,
+  GameSummary,
+  ReplayMoment,
+  Sport,
+  SportsDay,
+} from "@voita_kone/shared_types";
+import { SPORT_IDS } from "@voita_kone/scoring";
 import { AppError } from "../../common/app_error";
 import type { Clock } from "../../common/clock";
 import { helsinki_day_range, to_helsinki_date } from "../../common/helsinki_date";
 import { order_game_day } from "../games/games_mapper";
 import type { GameRow, GamesRepository } from "../games/games_repository";
-import { game_not_found, type GamesService } from "../games/games_service";
+import { count_by_sport, game_not_found, type GamesService } from "../games/games_service";
+import { to_sport } from "../teams/teams_mapper";
 import { choose_live_cut, replay_game } from "./replay_game";
 
 const MINUTE_MS = 60 * 1000;
@@ -41,21 +50,37 @@ export class DemoReplayService {
     private readonly clock: Clock,
   ) {}
 
-  /** The real day of the source game, replayed at `moment` and shifted to today. */
-  async get_game_day(moment: ReplayMoment): Promise<GameDay> {
-    const source = await this.find_source_game();
+  /**
+   * The real day of the sport's source game, replayed at `moment` and shifted to today: the
+   * finished games of that sport on that day. Football and basketball replay sample games; a
+   * sport without one has an empty day.
+   */
+  async get_game_day(moment: ReplayMoment, sport: Sport = "hockey"): Promise<GameDay> {
+    const date = to_helsinki_date(this.clock());
+    const source = await this.find_source_game(sport);
+    if (!source) {
+      return { date, games: [], demo_replay: true };
+    }
     const context = await this.build_context(source, moment);
-    const day_games = await this.games_repository.list_games(helsinki_day_range(context.day));
-    const finished = day_games.filter((game) => game.status === "final");
-
+    const finished = await this.list_replay_day(context.day, sport);
     const details = await Promise.all(
       finished.map((game) => this.replay(game.id, moment, context)),
     );
-    return {
-      date: to_helsinki_date(this.clock()),
-      games: order_game_day(details.map(to_summary)),
-      demo_replay: true,
-    };
+    return { date, games: order_game_day(details.map(to_summary)), demo_replay: true };
+  }
+
+  /** The sport tabs in demo mode: each sport's replay day. */
+  async get_sports_day(): Promise<SportsDay> {
+    const days = await Promise.all(
+      SPORT_IDS.map(async (sport) => {
+        const source = await this.find_source_game(sport);
+        return source ? this.list_replay_day(to_helsinki_date(source.start_time), sport) : [];
+      }),
+    );
+    // Every replayed game is shown as live, upcoming or final at the same moment; none is live
+    // on the real clock.
+    const games = days.flat().map((game) => ({ sport: game.sport, status: "final" }));
+    return { date: to_helsinki_date(this.clock()), sports: count_by_sport(games) };
   }
 
   /** One finished game replayed at `moment`; games of the replay day share its shift. */
@@ -64,14 +89,27 @@ export class DemoReplayService {
     if (game?.status !== "final") {
       throw game_not_found(game_id);
     }
-    const source = await this.find_source_game();
-    const same_day = to_helsinki_date(game.start_time) === to_helsinki_date(source.start_time);
+    const source = await this.find_source_game(to_sport(game.sport));
+    const same_day =
+      source !== undefined &&
+      to_helsinki_date(game.start_time) === to_helsinki_date(source.start_time);
     const context = await this.build_context(same_day ? source : game, moment);
     return this.replay(game_id, moment, context);
   }
 
-  /** Latest finished featured-team Liiga game with goals; else the featured demo game. */
-  private async find_source_game(): Promise<GameRow> {
+  private async list_replay_day(day: string, sport: Sport): Promise<GameRow[]> {
+    const games = await this.games_repository.list_games({ ...helsinki_day_range(day), sport });
+    return games.filter((game) => game.status === "final");
+  }
+
+  /**
+   * Hockey: the latest finished featured-team Liiga game with goals; else the featured demo
+   * game; else any finished demo game. Other sports: their latest finished sample game.
+   */
+  private async find_source_game(sport: Sport): Promise<GameRow | undefined> {
+    if (sport !== "hockey") {
+      return this.games_repository.find_latest_demo_final(sport);
+    }
     const source =
       (await this.games_repository.find_latest_final_game(
         this.featured_team_external_id,
@@ -81,7 +119,7 @@ export class DemoReplayService {
         this.featured_team_external_id,
         "demo",
       )) ??
-      (await this.games_repository.find_latest_demo_final());
+      (await this.games_repository.find_latest_demo_final("hockey"));
     if (!source) {
       throw new AppError("DEMO_REPLAY_UNAVAILABLE", 404, "No finished game to replay");
     }

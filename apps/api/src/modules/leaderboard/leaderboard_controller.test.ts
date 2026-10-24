@@ -27,18 +27,21 @@ afterAll(async () => {
 });
 
 describe("GET /api/v1/leaderboard", () => {
-  it("ranks the demo users and the AI for the season, publicly cacheable", async () => {
-    const response = await request(app).get("/api/v1/leaderboard?period=season");
+  it("ranks only the demo users (no AI, no 'all fans' row) for the season, publicly cacheable", async () => {
+    const response = await request(app).get("/api/v1/leaderboard?period=season&sport=hockey");
 
     expect(response.status).toBe(200);
     expect(response.headers["cache-control"]).toBe("public, max-age=60");
     const { data } = leaderboard_response_schema.parse(response.body);
     expect(data.period).toBe("season");
-    expect(data.rows.filter((row) => row.kind === "user")).toHaveLength(5);
-    expect(data.rows.some((row) => row.kind === "ai")).toBe(true);
+    expect(data.sport).toBe("hockey");
+    expect(data.rows).toHaveLength(5);
+    expect(data.rows.every((row) => row.kind === "user")).toBe(true);
+    expect(response.text).not.toContain("Kaleva AI");
     expect(data.rows[0]?.display_name).toBe("MikaK_Oulu");
-    expect(data.accuracy.you).toBeNull();
-    expect(data.accuracy.fans).toBeCloseTo(3 / 5);
+    expect(data.summary.you_accuracy).toBeNull();
+    expect(data.summary.fans_accuracy).toBeCloseTo(3 / 5);
+    expect(data.summary.games_count).toBeGreaterThan(0);
   });
 
   it("defaults to the week, and is private when signed in", async () => {
@@ -57,9 +60,43 @@ describe("GET /api/v1/leaderboard", () => {
     expect(data.rows.some((row) => row.kind === "you")).toBe(false);
   });
 
+  it("adds every sport on the Games tab (default) and filters one sport", async () => {
+    const games_tab = leaderboard_response_schema.parse(
+      (await request(app).get("/api/v1/leaderboard?period=season")).body,
+    ).data;
+    const football = leaderboard_response_schema.parse(
+      (await request(app).get("/api/v1/leaderboard?period=season&sport=football")).body,
+    ).data;
+    const hockey = leaderboard_response_schema.parse(
+      (await request(app).get("/api/v1/leaderboard?period=season&sport=hockey")).body,
+    ).data;
+
+    expect(games_tab.sport).toBe("all");
+    expect(football.sport).toBe("football");
+    // 3 finished sample football games; the Games tab counts every sport's finished games.
+    expect(football.summary.games_count).toBe(3);
+    expect(games_tab.summary.games_count).toBe(
+      hockey.summary.games_count + football.summary.games_count + 3,
+    );
+    const points_of = (board: typeof games_tab, name: string) =>
+      board.rows.find((row) => row.display_name === name)?.points ?? 0;
+    expect(points_of(games_tab, "MikaK_Oulu")).toBeGreaterThan(points_of(hockey, "MikaK_Oulu"));
+    expect(response_has_no_ai(football)).toBe(true);
+  });
+
+  it("returns 400 VALIDATION_ERROR for an unknown sport", async () => {
+    const response = await request(app).get("/api/v1/leaderboard?sport=curling");
+
+    expect(response.status).toBe(400);
+  });
+
   it("returns 400 VALIDATION_ERROR for an unknown period", async () => {
     const response = await request(app).get("/api/v1/leaderboard?period=year");
 
     expect(response.status).toBe(400);
   });
 });
+
+function response_has_no_ai(board: { rows: { display_name: string }[] }): boolean {
+  return board.rows.every((row) => !/AI|all fans/i.test(row.display_name));
+}

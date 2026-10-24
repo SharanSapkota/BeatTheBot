@@ -9,11 +9,9 @@ import {
   type TimelineGoal,
 } from "@voita_kone/prediction_model";
 import {
-  ai_reason_schema,
   stake_schema,
-  type AiPrediction,
-  type AiReason,
   type Crowd,
+  type DataSays,
   type GameDetail,
   type SeasonOdds,
   type WinChance,
@@ -30,17 +28,12 @@ import type {
   StoredPredictionRow,
 } from "./ai_predictions_repository";
 
-/** Shown with every AI pick (editorial rule 4: label all AI content). */
-export const AI_PICK_LABEL = "AI's pick, calculated from game statistics";
+/** Shown with the model's numbers: neutral info, not a pick (editorial rule 4: label it). */
+export const DATA_SAYS_LABEL = "Data says · calculated from Liiga data";
 
 const SHOOTOUT_PERIOD = 5;
 
 const stored_stakes_schema = z.object({ highlights: z.array(stake_schema) });
-const scorer_form_schema = z.object({
-  recent_goals: z.number().int(),
-  recent_games: z.number().int(),
-  season_goals: z.number().int(),
-});
 
 /** The facts stored for a reason (relevance and side kept for audits, not sent to the app). */
 function to_stored_reason(reason: Reason): Json {
@@ -121,35 +114,23 @@ export function to_crowd(counts: CrowdCounts): Crowd | null {
     return null;
   }
   return {
-    home_pick_share: counts.home_picks / counts.total_picks,
     total_picks: counts.total_picks,
+    home_picks: counts.home_picks,
+    away_picks: counts.total_picks - counts.home_picks - counts.draw_picks,
+    draw_picks: counts.draw_picks,
+    home_pick_share: counts.home_picks / counts.total_picks,
   };
 }
 
-export function to_ai_prediction(row: StoredPredictionRow, crowd: Crowd | null): AiPrediction {
-  const reasons: AiReason[] = z.array(ai_reason_schema).parse(row.reasons);
-  const form = row.scorer_form === null ? null : scorer_form_schema.parse(row.scorer_form);
+export function to_data_says(row: StoredPredictionRow, crowd: Crowd | null): DataSays {
   return {
     game_id: row.game_id,
-    predicted_winner_team_id: row.predicted_winner_team_id,
     home_win_probability: row.home_win_probability,
     away_win_probability: row.away_win_probability,
     overtime_probability: row.overtime_probability,
-    predicted_home_goals: row.predicted_home_goals,
-    predicted_away_goals: row.predicted_away_goals,
-    predicted_scorer:
-      row.scorer && form
-        ? {
-            ...row.scorer,
-            recent_goals: form.recent_goals,
-            recent_games: form.recent_games,
-            season_goals: form.season_goals,
-          }
-        : null,
-    reasons,
     stakes: stored_stakes_schema.parse(row.stakes).highlights,
     crowd,
-    label_text: AI_PICK_LABEL,
+    label_text: DATA_SAYS_LABEL,
     model_version: row.model_version,
     calculated_at: row.calculated_at.toISOString(),
   };

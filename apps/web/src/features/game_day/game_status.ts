@@ -17,8 +17,8 @@ export function game_status(
     const label =
       is_featured && game.period !== null && game.game_clock_seconds !== null
         ? game_day_copy.live_at(
-            format_period(game.period),
-            format_period_clock(game.game_clock_seconds, game.period),
+            format_period(game.period, game.sport),
+            format_period_clock(game.game_clock_seconds, game.period, game.sport),
           )
         : game_day_copy.live;
     return { label, tone: "live" };

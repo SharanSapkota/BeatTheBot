@@ -45,6 +45,16 @@ export interface AiPredictions {
   updated_at: Generated<Timestamp>;
 }
 
+export interface AuditLog {
+  action: string;
+  actor_user_id: string | null;
+  created_at: Generated<Timestamp>;
+  details: Generated<Json>;
+  id: Generated<string>;
+  target_id: string | null;
+  target_type: string;
+}
+
 export interface AuthIdentities {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
@@ -66,6 +76,55 @@ export interface Corrections {
   what_was_wrong: string;
 }
 
+export interface ElectionCandidates {
+  candidate_number: number | null;
+  created_at: Generated<Timestamp>;
+  election_id: string;
+  full_name: string;
+  id: Generated<string>;
+  party_or_group: string | null;
+  photo_url: string | null;
+  short_bio: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ElectionPicks {
+  candidate_id: string;
+  created_at: Generated<Timestamp>;
+  election_id: string;
+  id: Generated<string>;
+  points_awarded: number | null;
+  scored_at: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface ElectionResults {
+  election_id: string;
+  entered_at: Generated<Timestamp>;
+  entered_by: string | null;
+  id: Generated<string>;
+  vote_counts: Json | null;
+  winner_candidate_id: string;
+}
+
+export interface Elections {
+  area_name: string;
+  area_type: string;
+  created_at: Generated<Timestamp>;
+  created_by: string | null;
+  election_date: Timestamp;
+  election_type: string;
+  id: Generated<string>;
+  is_demo: Generated<boolean>;
+  poll_closes_at: Timestamp;
+  poll_opens_at: Timestamp;
+  question_text: string;
+  status: Generated<string>;
+  title: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface ErrorReports {
   created_at: Generated<Timestamp>;
   description: string;
@@ -84,6 +143,7 @@ export interface FactSheets {
   facts: Json;
   game_id: string;
   id: Generated<string>;
+  kind: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
 
@@ -113,10 +173,13 @@ export interface Games {
   home_goals: number | null;
   home_team_id: string;
   id: Generated<string>;
+  league_id: Generated<string>;
   period: number | null;
   season: string;
+  sport: Generated<string>;
   start_time: Timestamp;
   status: Generated<string>;
+  top_scorer_player_id: string | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -151,20 +214,14 @@ export interface HighlightTexts {
   updated_at: Generated<Timestamp>;
 }
 
-export interface LeagueMembers {
-  created_at: Generated<Timestamp>;
-  id: Generated<string>;
-  league_id: string;
-  updated_at: Generated<Timestamp>;
-  user_id: string;
-}
-
 export interface Leagues {
+  country: Generated<string>;
   created_at: Generated<Timestamp>;
+  data_source: string;
   id: Generated<string>;
-  invite_code: string;
+  key: string;
   name: string;
-  owner_user_id: string;
+  sport: string;
   updated_at: Generated<Timestamp>;
 }
 
@@ -195,6 +252,23 @@ export interface Players {
   updated_at: Generated<Timestamp>;
 }
 
+export interface PrivateLeagueMembers {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  league_id: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface PrivateLeagues {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  invite_code: string;
+  name: string;
+  owner_user_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Questions {
   correct_option: string | null;
   created_at: Generated<Timestamp>;
@@ -212,6 +286,66 @@ export interface Questions {
   question_type: string;
   status: Generated<string>;
   target: number | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface RoomAnswers {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  option: string;
+  points_awarded: number;
+  question_id: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface RoomMembers {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  joined_at: Generated<Timestamp>;
+  role: Generated<string>;
+  room_id: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface RoomQuestions {
+  correct_option: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  locks_at: Timestamp;
+  opens_at: Timestamp;
+  options: Json;
+  points: number;
+  prompt: string;
+  question_type: string;
+  room_id: string;
+  slot_index: number;
+  source: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface RoomReactions {
+  created_at: Generated<Timestamp>;
+  emoji: string;
+  id: Generated<string>;
+  question_id: string;
+  user_id: string;
+}
+
+export interface Rooms {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  is_demo: Generated<boolean>;
+  join_key: string;
+  max_members: Generated<number>;
+  name: string;
+  owner_id: string;
+  question_interval_seconds: number;
+  schedule_started_at: Generated<Timestamp>;
+  slot_base: Generated<number>;
+  status: Generated<string>;
+  topic: string;
   updated_at: Generated<Timestamp>;
 }
 
@@ -245,6 +379,8 @@ export interface StandingsSnapshots {
 export interface Stories {
   body: string;
   check_result: Json | null;
+  corrected_at: Timestamp | null;
+  correction_note: string | null;
   created_at: Generated<Timestamp>;
   fact_sheet_id: string;
   game_id: string;
@@ -257,6 +393,7 @@ export interface Stories {
   prompt_version: string | null;
   published_at: Timestamp | null;
   raw_output: string | null;
+  source: Generated<string>;
   status: Generated<string>;
   story_type: string;
   traffic_light: string;
@@ -281,9 +418,11 @@ export interface Teams {
   data_source: Generated<string>;
   external_id: string;
   id: Generated<string>;
+  league_id: Generated<string>;
   logo_url: string | null;
   name: string;
   short_name: string;
+  sport: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
 
@@ -315,11 +454,13 @@ export interface UserPredictions {
   game_id: string;
   id: Generated<string>;
   points_awarded: number | null;
-  predicted_away_goals: number;
-  predicted_home_goals: number;
+  predicted_away_goals: number | null;
+  predicted_home_goals: number | null;
+  predicted_margin_band: string | null;
   predicted_scorer_id: string | null;
-  predicted_winner_team_id: string;
+  predicted_winner_team_id: string | null;
   scored_at: Timestamp | null;
+  scoring_version: Generated<number>;
   updated_at: Generated<Timestamp>;
   user_id: string;
 }
@@ -338,19 +479,30 @@ export interface Users {
 
 export interface DB {
   ai_predictions: AiPredictions;
+  audit_log: AuditLog;
   auth_identities: AuthIdentities;
   corrections: Corrections;
+  election_candidates: ElectionCandidates;
+  election_picks: ElectionPicks;
+  election_results: ElectionResults;
+  elections: Elections;
   error_reports: ErrorReports;
   fact_sheets: FactSheets;
   game_events: GameEvents;
   games: Games;
   highlight_texts: HighlightTexts;
   highlights: Highlights;
-  league_members: LeagueMembers;
   leagues: Leagues;
   model_runs: ModelRuns;
   players: Players;
+  private_league_members: PrivateLeagueMembers;
+  private_leagues: PrivateLeagues;
   questions: Questions;
+  room_answers: RoomAnswers;
+  room_members: RoomMembers;
+  room_questions: RoomQuestions;
+  room_reactions: RoomReactions;
+  rooms: Rooms;
   sessions: Sessions;
   standings_snapshots: StandingsSnapshots;
   stories: Stories;

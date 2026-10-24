@@ -1,197 +1,177 @@
 import {
   build_fact_sheet,
-  check_claims,
-  find_escalation_words,
-  find_strong_words,
-  find_unknown_fact_ids,
-  strip_fact_ids,
-  type CheckResult,
+  build_preview_fact_sheet,
+  MEETING_COUNT,
   type FactSheet,
-  type FailedClaim,
-  type KnownName,
 } from "@voita_kone/fact_checker";
-import { model_config } from "@voita_kone/prediction_model";
+import { model_config, type GamePrediction } from "@voita_kone/prediction_model";
 import { AppError } from "../../common/app_error";
 import type { Clock } from "../../common/clock";
 import type { LlmClient } from "../../integrations/llm_client/llm_client";
-import { to_season_data, type SeasonData } from "../ai_predictions/model_inputs";
+import { game_not_found } from "../games/games_service";
+import {
+  predict_from_season,
+  to_season_data,
+  type SeasonData,
+} from "../ai_predictions/model_inputs";
 import type { ModelInputsRepository } from "../ai_predictions/model_inputs_repository";
-import {
-  compute_season_facts,
-  known_names_of,
-  to_fact_sheet_input,
-  type StoryGame,
-} from "./fact_sheet_input";
-import type { StoriesRepository } from "./stories_repository";
+import { compute_season_facts, to_fact_sheet_input, type StoryGame } from "./fact_sheet_input";
+import { to_preview_input } from "./preview_facts";
+import type { StoriesRepository, StoryGameRow, StoryType } from "./stories_repository";
 import { build_headline } from "./story_headline";
-import {
-  PROMPT_VERSION,
-  STORY_MAX_TOKENS,
-  STORY_TEMPERATURE,
-  SYSTEM_PROMPT,
-  build_story_prompt,
-} from "./story_prompt";
-import { decide_traffic_light, to_traffic_light, type TrafficLight } from "./traffic_light";
+import { write_story } from "./story_writer";
+import type { TrafficLight } from "./traffic_light";
 
-/** The first try plus at most 2 retries with the failed claims (docs/fact_checker.md). */
-export const MAX_GENERATION_ATTEMPTS = 3;
 export const STORY_LANGUAGE = "en";
+/** Editorial rule 4: every AI text is labelled. */
+export const AI_STORY_LABEL = "Written with AI from Liiga data · checked by Kaleva";
+export const TEMPLATE_LABELS: Record<StoryType, string> = {
+  preview: "Automatic preview from Liiga data",
+  summary: "Automatic summary from Liiga data",
+};
+/** A loaded season is reused for this long (one job run writes many previews). */
+const SEASON_CACHE_MS = 60 * 1000;
 
 export interface GenerationResult {
-  status: "created" | "exists";
   story_id: string;
   traffic_light: TrafficLight;
+  source: "llm" | "template";
 }
 
-export interface Draft {
-  body: string;
-  raw_output: string;
-  model_name: string;
-  check: CheckResult;
-  attempts: number;
+export interface GenerationOptions {
+  /** Season simulations per odds estimate and per stake (fewer in tests). */
+  season_simulations?: number;
+  stakes_simulations?: number;
 }
 
 function game_not_final(game_id: string): AppError {
   return new AppError("GAME_NOT_FINAL", 409, `Game ${game_id} is not finished yet`);
 }
 
-/** Unknown fact ids count as failed claims: the model cited a fact that doesn't exist. */
-function check_draft(
-  raw: string,
-  sheet: FactSheet,
-  known_names: readonly KnownName[],
-): CheckResult {
-  const body = strip_fact_ids(raw);
-  const result = check_claims(body, sheet, known_names);
-  const unknown_ids: FailedClaim[] = find_unknown_fact_ids(raw, sheet).map((fact_id) => ({
-    claim: `[${fact_id}]`,
-    type: "number",
-    reason: "cites a fact that is not in the fact sheet",
-  }));
-  const failed_claims = [...result.failed_claims, ...unknown_ids];
-  return { ...result, passed: failed_claims.length === 0, failed_claims };
+function to_story_game(game: StoryGameRow): StoryGame | undefined {
+  if (game.home_goals === null || game.away_goals === null || game.ended_in === null) {
+    return undefined;
+  }
+  return {
+    ...game,
+    home_goals: game.home_goals,
+    away_goals: game.away_goals,
+    ended_in: game.ended_in,
+  };
 }
 
-/**
- * fact sheet → prompt → LLM → strip ids → check_claims → retry (max 2) → traffic light.
- * Pure apart from the LLM call, so the retry rules are tested with a scripted client.
- */
-export async function write_checked_draft(
-  llm: LlmClient,
-  sheet: FactSheet,
-  known_names: readonly KnownName[],
-): Promise<Draft> {
-  let failed: FailedClaim[] = [];
-  let draft: Draft | undefined;
-  for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
-    const response = await llm.complete({
-      system: SYSTEM_PROMPT,
-      prompt: build_story_prompt(sheet, failed),
-      temperature: STORY_TEMPERATURE,
-      max_tokens: STORY_MAX_TOKENS,
-    });
-    const check = check_draft(response.text, sheet, known_names);
-    draft = {
-      body: strip_fact_ids(response.text),
-      raw_output: response.text,
-      model_name: response.model_name,
-      check,
-      attempts: attempt,
-    };
-    if (check.passed) {
-      break;
-    }
-    failed = check.failed_claims;
-  }
-  if (!draft) {
-    throw new Error("No generation attempt ran");
-  }
-  return draft;
-}
-
-/** Writes the "what it means" story of a finished game and queues it for the editor. */
+/** Writes the AI preview (before) and the AI summary (after) of a game from its fact sheet. */
 export class StoryGenerationService {
+  private readonly season_cache = new Map<
+    string,
+    { loaded_at: number; data: Promise<SeasonData> }
+  >();
+
   constructor(
     private readonly repository: StoriesRepository,
     private readonly inputs_repository: ModelInputsRepository,
-    private readonly llm: LlmClient,
+    private readonly llm: LlmClient | undefined,
     private readonly clock: Clock,
-    /** Season simulations per odds estimate (fewer in tests). */
-    private readonly season_simulations: number = model_config.season_simulations,
+    private readonly options: GenerationOptions = {},
   ) {}
 
-  async generate(game_id: string): Promise<GenerationResult> {
-    const existing = await this.repository.find_story(game_id, "what_it_means", STORY_LANGUAGE);
-    if (existing) {
-      return {
-        status: "exists",
-        story_id: existing.id,
-        traffic_light: to_traffic_light(existing.traffic_light),
-      };
+  /** Form, meetings, table and "Data says" as of puck drop (also for past games: demo replays). */
+  async generate_preview(game_id: string): Promise<GenerationResult> {
+    const game = await this.repository.find_game(game_id);
+    if (!game) {
+      throw game_not_found(game_id);
     }
-    const game = await this.repository.find_final_game(game_id);
+    const data = await this.load_season(game.season);
+    const meetings = await this.repository.list_meetings(
+      game.home_team_id,
+      game.away_team_id,
+      game.start_time,
+      MEETING_COUNT,
+    );
+    const sheet = build_preview_fact_sheet(
+      to_preview_input(data, game, meetings, this.predict(data, game), this.clock()),
+    );
+    return this.write_and_save("preview", game_id, sheet, `${game.home_team} vs ${game.away_team}`);
+  }
+
+  async generate_summary(game_id: string): Promise<GenerationResult> {
+    const row = await this.repository.find_game(game_id);
+    if (!row) {
+      throw game_not_found(game_id);
+    }
+    const game = row.status === "final" ? to_story_game(row) : undefined;
     if (!game) {
       throw game_not_final(game_id);
     }
-    const data = await this.load_season(game_id);
+    const data = row.data_source === "liiga_api" ? await this.load_season(row.season) : undefined;
     const sheet = build_fact_sheet(
       to_fact_sheet_input(
         game,
         await this.repository.list_goals(game_id),
         data
-          ? compute_season_facts(data, game, this.season_simulations)
+          ? compute_season_facts(
+              data,
+              game,
+              this.options.season_simulations ?? model_config.season_simulations,
+            )
           : { standings: [], odds: [], next_games: [] },
         this.clock(),
       ),
     );
-    const known_names = data ? known_names_of(data) : names_of_game(game);
+    return this.write_and_save("summary", game_id, sheet, build_headline(sheet));
+  }
+
+  private async write_and_save(
+    story_type: StoryType,
+    game_id: string,
+    sheet: FactSheet,
+    headline: string,
+  ): Promise<GenerationResult> {
     const fact_sheet_id = await this.repository.save_fact_sheet(sheet);
-
-    const headline = build_headline(sheet);
-    const draft = await write_checked_draft(this.llm, sheet, known_names);
-    const headline_check = check_claims(headline, sheet, known_names);
-    const escalation_words = find_escalation_words(draft.body);
-    const check_passed = draft.check.passed && headline_check.passed;
-    const traffic_light = decide_traffic_light({ check_passed, escalation_words });
-
+    const known_names = await this.repository.list_known_names();
+    const written = await write_story(this.llm, story_type, sheet, known_names);
+    const label_text = written.source === "template" ? TEMPLATE_LABELS[story_type] : AI_STORY_LABEL;
     const story_id = await this.repository.insert_story({
       game_id,
-      story_type: "what_it_means",
+      story_type,
       language: STORY_LANGUAGE,
       headline,
-      body: draft.body,
+      body: written.body,
       fact_sheet_id,
-      traffic_light,
-      check_result: {
-        ...draft.check,
-        passed: check_passed,
-        failed_claims: [...draft.check.failed_claims, ...headline_check.failed_claims],
-        escalation_words,
-        strong_words: find_strong_words(draft.body),
-      },
-      generation_attempts: draft.attempts,
-      prompt_version: PROMPT_VERSION,
-      model_name: draft.model_name,
-      raw_output: draft.raw_output,
+      traffic_light: written.traffic_light,
+      check_result: written.check,
+      generation_attempts: written.attempts,
+      prompt_version: written.prompt_version,
+      model_name: written.model_name,
+      raw_output: written.raw_output,
+      source: written.source,
+      publish: written.traffic_light === "green" ? { label_text, at: this.clock() } : null,
     });
-    return { status: "created", story_id, traffic_light };
+    return { story_id, traffic_light: written.traffic_light, source: written.source };
   }
 
-  /** The game's season (real Liiga games only), or undefined for a demo fill-in. */
-  private async load_season(game_id: string): Promise<SeasonData | undefined> {
-    const season =
-      (await this.inputs_repository.find_game_season(game_id)) ??
-      (await this.inputs_repository.find_current_season());
-    if (season === undefined) {
-      return undefined;
+  /** The model's numbers for the game, or null when it can't be predicted (not in the season). */
+  private predict(data: SeasonData, game: StoryGameRow): GamePrediction | null {
+    try {
+      return predict_from_season(
+        data,
+        { ...game, status: "scheduled", home_goals: null, away_goals: null, ended_in: null },
+        { stakes_simulations: this.options.stakes_simulations },
+      );
+    } catch {
+      return null;
     }
-    return to_season_data(await this.inputs_repository.load_season(season));
   }
-}
 
-function names_of_game(game: StoryGame): KnownName[] {
-  return [
-    { name: game.home_team, kind: "team" },
-    { name: game.away_team, kind: "team" },
-  ];
+  private load_season(season: string): Promise<SeasonData> {
+    const now = Date.now();
+    const cached = this.season_cache.get(season);
+    if (cached && now - cached.loaded_at < SEASON_CACHE_MS) {
+      return cached.data;
+    }
+    const data = this.inputs_repository.load_season(season).then(to_season_data);
+    data.catch(() => this.season_cache.delete(season));
+    this.season_cache.set(season, { loaded_at: now, data });
+    return data;
+  }
 }

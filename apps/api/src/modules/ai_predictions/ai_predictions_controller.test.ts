@@ -1,5 +1,6 @@
 import {
-  ai_prediction_response_schema,
+  crowd_response_schema,
+  data_says_response_schema,
   api_error_schema,
   game_day_response_schema,
   season_odds_response_schema,
@@ -62,13 +63,13 @@ describe("before the model has run", () => {
     expect(error_of(response.body).code).toBe("ODDS_NOT_READY");
   });
 
-  it("GET /games/:id/ai_prediction says the pick is not ready, in plain words", async () => {
-    const response = await request(app).get(`/api/v1/games/${karpat_game_id}/ai_prediction`);
+  it("GET /games/:id/data_says says the data is not ready, in plain words", async () => {
+    const response = await request(app).get(`/api/v1/games/${karpat_game_id}/data_says`);
 
     expect(response.status).toBe(404);
     expect(error_of(response.body)).toMatchObject({
       code: "PREDICTION_NOT_READY",
-      message: expect.stringContaining("has not made its pick"),
+      message: expect.stringContaining("is not ready yet"),
     });
   });
 });
@@ -78,31 +79,25 @@ describe("after the model has run", () => {
     await run_model();
   });
 
-  it("GET /games/:id/ai_prediction returns the AI's pick for an upcoming game", async () => {
-    const response = await request(app).get(`/api/v1/games/${karpat_game_id}/ai_prediction`);
+  it("GET /games/:id/data_says returns the win chance and stakes for an upcoming game", async () => {
+    const response = await request(app).get(`/api/v1/games/${karpat_game_id}/data_says`);
 
     expect(response.status).toBe(200);
-    const { data } = ai_prediction_response_schema.parse(response.body);
+    const { data } = data_says_response_schema.parse(response.body);
     expect(data.game_id).toBe(karpat_game_id);
     expect(data.home_win_probability + data.away_win_probability).toBeCloseTo(1, 10);
-    expect(data.reasons.length).toBeGreaterThan(0);
     expect(data.stakes).toHaveLength(2);
-    expect(data.label_text).toBe("AI's pick, calculated from game statistics");
+    expect(data.label_text).toBe("Data says · calculated from Liiga data");
+    expect(response.text).not.toMatch(/predicted_winner|predicted_scorer|reasons/);
     expect(data.calculated_at).toBe(TEST_NOW.toISOString());
     expect(response.headers["cache-control"]).toBe("public, max-age=60");
   });
 
-  it("names a real player of the predicted winner as the scorer", async () => {
-    const { data } = ai_prediction_response_schema.parse(
-      (await request(app).get(`/api/v1/games/${karpat_game_id}/ai_prediction`)).body,
-    );
-    const player = await db
-      .selectFrom("players")
-      .select(["team_id", "data_source"])
-      .where("id", "=", data.predicted_scorer?.id ?? "")
-      .executeTakeFirst();
+  it("GET /games/:id/crowd is null before the first pick", async () => {
+    const response = await request(app).get(`/api/v1/games/${karpat_game_id}/crowd`);
 
-    expect(player).toEqual({ team_id: data.predicted_winner_team_id, data_source: "liiga_api" });
+    expect(response.status).toBe(200);
+    expect(crowd_response_schema.parse(response.body).data).toBeNull();
   });
 
   it("404 PREDICTION_NOT_READY for a game more than 7 days ahead", async () => {
@@ -112,7 +107,7 @@ describe("after the model has run", () => {
         .orderBy("start_time"),
     );
 
-    const response = await request(app).get(`/api/v1/games/${later_id}/ai_prediction`);
+    const response = await request(app).get(`/api/v1/games/${later_id}/data_says`);
 
     expect(response.status).toBe(404);
     expect(error_of(response.body).code).toBe("PREDICTION_NOT_READY");
@@ -121,16 +116,16 @@ describe("after the model has run", () => {
   it("never predicts demo fill-in games", async () => {
     const demo_id = await game_id_where((query) => query.where("data_source", "=", "demo"));
 
-    const response = await request(app).get(`/api/v1/games/${demo_id}/ai_prediction`);
+    const response = await request(app).get(`/api/v1/games/${demo_id}/data_says`);
 
     expect(error_of(response.body).code).toBe("PREDICTION_NOT_READY");
   });
 
   it("404 GAME_NOT_FOUND for an unknown or malformed id", async () => {
     const unknown = await request(app).get(
-      "/api/v1/games/00000000-0000-4000-8000-000000000000/ai_prediction",
+      "/api/v1/games/00000000-0000-4000-8000-000000000000/data_says",
     );
-    const malformed = await request(app).get("/api/v1/games/not-a-uuid/ai_prediction");
+    const malformed = await request(app).get("/api/v1/games/not-a-uuid/data_says");
 
     expect(error_of(unknown.body).code).toBe("GAME_NOT_FOUND");
     expect(malformed.status).toBe(404);
@@ -177,13 +172,13 @@ describe("demo replay with the same model", () => {
     source_id = day.games.find((game) => game.featured)?.id ?? "";
   });
 
-  it("before: the real pre-game pick, never cached", async () => {
+  it("before: the real pre-game data, never cached", async () => {
     const response = await request(app).get(
-      `/api/v1/demo/games/${source_id}/ai_prediction?moment=before`,
+      `/api/v1/demo/games/${source_id}/data_says?moment=before`,
     );
 
     expect(response.status).toBe(200);
-    const { data } = ai_prediction_response_schema.parse(response.body);
+    const { data } = data_says_response_schema.parse(response.body);
     expect(data.game_id).toBe(source_id);
     expect(response.headers["cache-control"]).toBe("no-store");
   });

@@ -1,29 +1,76 @@
 # Progress
 
-**Current step:** 6. Questions ✅ done · step 5 code is in place but not logged or reviewed yet (🟨) · next: finish/log 5, then 7. Highlights
-**Last updated:** 2026-10-24
+**Current step:** 9. Rooms ✅ done · step 8 (sport categories) is still open (uncommitted work in the tree) · next: ask
+**Last updated:** 2026-10-25
 
 | # | Step | Status |
 |---|---|---|
 | 0 | Monorepo setup, tooling, docker Postgres, `/health` | ✅ done |
 | 1 | Database schema + Liiga API sync + demo fill-ins | ✅ done |
 | 2 | Games API: today's games with state, game detail, standings | ✅ done |
-| 3 | `prediction_model` + `ai_predictions` (pick, %, reasons, stakes) | ✅ done |
-| 4 | Accounts (`users`, `auth_identities`, `sessions`, `POST /auth/device`) + before-game predictions + scoring + leaderboard (Humans vs AI vs Crowd) | ✅ done |
-| 5 | `fact_checker` + LLM "what it means" story + traffic light | 🟨 |
+| 3 | `prediction_model` + `ai_predictions` (now shown as "Data says": win chance + stakes) | ✅ done |
+| 4 | Accounts (`users`, `auth_identities`, `sessions`, `POST /auth/device`) + before-game predictions + scoring + leaderboard (fans only) | ✅ done |
+| 5 | AI preview + AI summary + `fact_checker` + traffic light + editor page (the unfinished parts move to step 10) | 🟨 partly |
 | 6 | Questions: live picks (next goal, period goal), result quiz, player vote | ✅ done |
-| 7 | Highlights: minimal editor form + editor approval for stories | ⬜ |
-| 8 | PWA UI: 5 screens (matches docs/design), pulled forward | ✅ done |
-| 9 | PWA features: manifest, icons, service worker, offline, update toast, install button, Lighthouse check | ⬜ |
-| 10 | Embed on kaleva.fi: widget build + demo Chrome extension + account linking (Kaleva identity) | ⬜ |
-| 11 | Reliability report (golden set + planted errors) | ⬜ |
+| – | PWA UI: 5 screens (matches docs/design), pulled forward (old step 8) | ✅ done |
+| 7 | Elections: 4-menu navigation, admin role + `/admin` (elections tab), elections + candidates + picks + results, election leaderboard | ✅ done |
+| 8 | Games: sport categories (hockey, football, basketball) + fans vs fans (the AI is not a player anymore) | ⬜ |
+| 9 | Rooms (join key, rotating questions from mock data, LLM later; room scoreboard; reactions) | ✅ done |
+| 10 | AI preview + summary (finish the half-done step 5 code) | ⬜ |
+| 11 | Share + referral | ⬜ |
+| 12 | Highlights editor | ⬜ |
+| 13 | PWA features: manifest, icons, service worker, offline, update toast, install button, Lighthouse check | ⬜ |
+| 14 | Embed on kaleva.fi: widget build + demo Chrome extension + account linking (Kaleva identity) | ⬜ |
+| 15 | Reliability report (golden set + planted errors) | ⬜ |
 
 Status: ⬜ todo · 🟨 in progress · ✅ done
 
-LATER (not on the roadmap unless asked): daily games, email OTP, languages sv/en, private leagues, full admin app, web push, clip pipeline.
+LATER (not on the roadmap unless asked): daily games, email OTP, languages sv/en, private leagues beyond rooms, full admin app, web push, clip pipeline.
 
 ## Log
 <!-- Newest first. One short entry per finished step: what was built, files, tests, open issues. -->
+
+### 2026-10-25 · Fix: flaky elections result bars after the first pick ✅
+- Cause: on the first pick, signing in changes the results query key, so a results fetch starts before the pick is saved. `invalidateQueries` reuses an in-flight fetch when the query has no data yet (TanStack only cancels when there is data), so that fetch's "pick first" answer stayed on screen whenever it finished after the pick.
+- Fix: `usePickCandidate` (`features/elections/api.ts`) cancels the `election` and `election_results` queries before invalidating them, so the refetch always runs after the pick.
+- Tests: new component test (the sign-in results fetch answers only after the pick; it fails without the fix), web 97; e2e "elections: … see the result bars" 10/10 with `--repeat-each 5` on both layouts (was 3/6 failing).
+
+### 2026-10-25 · Step 9: rooms ✅
+- Built on top of the uncommitted step 8 work (migration numbering continues at `0013`).
+- Migration `0013_rooms`: `rooms` (name 3–40 CHECK, topic, unique `join_key`, owner, `question_interval_seconds`, `max_members` 100, status, `is_demo`, plus `schedule_started_at` + `slot_base` so a new interval starts after the current slot), `room_members` (unique room + user), `room_questions` (unique room + slot, `correct_option` null only for opinion), `room_answers` (unique question + user, `points_awarded`), `room_reactions` (unique question + user + emoji). Cascades on user and room delete. DB types written by hand (codegen would read the Neon URL).
+- `packages/scoring/src/rooms.ts`: trivia right 3, opinion 1. `packages/shared_types/src/rooms.ts`: topics, intervals, emojis, key alphabet, `join_key_input_schema`, all request/response schemas.
+- API `modules/rooms`: pure `join_key.ts` (crypto, alphabet without 0/O/1/I/L, retry on clash), `room_slots.ts`, `question_picker.ts` (least-used first, seeded by room + slot, shuffled options), `room_reveal.ts` (split, right names, reactions); `QuestionGenerator` + `MockQuestionGenerator` (banks in `mock_questions/`: hockey 48, football 43, basketball 42, general_sports 43; validated with zod; no politics) + `LlmQuestionGenerator` (TODO, falls back to mock; env `ROOM_QUESTIONS_SOURCE=mock|llm`, default mock); repository, `RoomsService`, controller, routes: `POST /rooms`, `GET /me/rooms`, `POST /rooms/join` (10/IP/min), `GET|PATCH /rooms/:id`, `POST /rooms/:id/regenerate_key`, `POST /rooms/:id/close`, `DELETE /rooms/:id/members/:user_id`, `GET /rooms/:id/current_question|questions|leaderboard`, `POST /room_questions/:id/answers|reactions`. Members only (`403 NOT_A_MEMBER`), max 10 active owned rooms, max members, the owner can't leave. Points saved with the answer, hidden until the reveal; room points never reach the global leaderboard or `/me`.
+- Seed: demo room "Kärpät fans Oulu" (`DEMO26`, 60 s, `is_demo`) with 8 fictional members and 12 revealed questions (78 answers) in `db:seed`; `rooms:seed_demo` recreates only it. `rooms:advance_slot -- --room_id <id>` = dev/e2e fake clock (refuses in production). Scripts print no keys.
+- Web `features/rooms`: rooms list (my rooms with rank, Create, 6-box key input), `/rooms/new` (name, topic, speed → key in big letters, Copy, Share via `navigator.share` or copy link, QR code via new dependency `qrcode`), `/rooms/join/:key` (name dialog, then join), `/rooms/:id` (header with key + share, tabs Question · Scoreboard · Members; desktop: question + members in main, scoreboard in sidebar). Polling every 5 s (`refetchInterval`, paused when hidden); the countdown refetches at the reveal. `ChoiceButtons` got an optional `columns` prop.
+- Tests: scoring 76, api 460 (key generator, slot math, no repeats, scoring, reveal split, mock banks, service with a fake repository, Supertest: create/join/leave/remove, 403 private, join rate limit 429, max members, lock + already answered, reactions toggle, leaderboard, no global points), web 96, e2e rooms 4 (390 + 1440: A creates and copies the key, B joins in a second browser context, both answer, reveal via `rooms:advance_slot`, B reacts 🔥, scoreboard shows both; demo room scoreboard). Screenshots `apps/web/e2e/screenshots/{mobile,desktop}/30_room_created … 34_demo_room.png`.
+- Open: the step-7 e2e "elections: … see the result bars" was flaky (fixed in the entry above). Repeated e2e runs against one long-running dev API hit the sign-in limit (20/IP/hour, in memory). Dev DB (Neon) migrated to `0013` and has the demo room. The room name/interval edit (`PATCH`) has no UI yet. `LlmQuestionGenerator` is a stub. Texts are English (no i18n files yet, like the rest of the UI).
+
+> **Note (2026-10-24, later):** roadmap renumbered again to 0–15: 7 elections, 8 sport categories, 9 rooms, 10 AI preview + summary (finish step 5), 11 share + referral, 12 highlights editor, 13 PWA features, 14 embed, 15 reliability report.
+
+### 2026-10-24 · Step 7: elections, 4 main menus, admin role ✅
+- Docs: `product.md` (4 menus, Elections section + fairness rules), `architecture.md` (Navigation, Roles and audit, Elections with the fairness rules), `api.md` (Elections, election leaderboard, Admin), `data_model.md` (role rename, 4 election tables), roadmap in `progress.md` + `CLAUDE.md`.
+- Migration `0011_elections`: `users.role` `player` → `user` (default `user`); `elections`, `election_candidates` (bio ≤ 200 and https-only photo as CHECKs), `election_picks` (unique user + election, cascade on user delete, `points_awarded`, `scored_at`), `election_results` (one per election). The existing `audit_log` (step 5) is reused: actor, action, `target_type` = entity, `target_id`, details, created_at.
+- `packages/scoring/src/elections.ts`: `ELECTION_POINTS` 20, `score_election_pick`. `packages/shared_types/src/elections.ts`: all request/response schemas.
+- API `modules/elections`: pure `candidate_order.ts` (FNV-1a seed of `user_id:election_id` + mulberry32 Fisher–Yates; anonymous = random seed per request), `election_results.ts` (hidden: `pick_first` / `not_enough_picks` below 20 picks; shares in the user's order), `election_rules.ts` (voting close = 20:00 Helsinki on election day, poll window check, open/closed, list order, default question); repository, `ElectionsService` (list/detail/picks/results/leaderboard), `AdminElectionsService` (CRUD, candidates, publish ≥ 2 candidates, close (an early close moves `poll_closes_at` to now), result: scores every pick 20 / 0 in one transaction, repeatable), controllers, routes: `/elections…`, `/leaderboard/elections`, `/admin/elections…` (`require_role(["admin"])`). Every admin change writes `audit_log` in the same transaction.
+- Scripts: `make:admin -- --user_id <id>` (shares `set_user_role.ts` with `make:editor`), `elections:seed_demo` (recreates only the demo election + 30 demo voters, keeps other data). `db:seed` also adds the demo election: "Demo election", Oulu, 3 weeks ahead, 5 fictional candidates, 30 picks by "Demo fan 01–30".
+- Web: `useMainNav` with 4 items + icons; bottom nav (4 columns, icon + label, ≥ 44 px, now sticky) and desktop header nav; routes `/games`, `/elections`, `/elections/:id`, `/rooms` ("Coming soon"), `/leaders` (tabs Games / Elections), `/admin`; redirects `/` → `/games`, `/leaderboard` → `/leaders` (query kept). `features/elections` (list with area chips, default Oulu, Demo badge; `ElectionView` + `CandidateCard`: same card for everyone, gray share bars in the user's order, "Not a scientific poll…" on every result; first pick opens the NameDialog "Save and pick"). `features/admin` (desktop first, Admins only + `make:admin` hint; elections list, election form, candidate forms, preview with the same `ElectionView`, publish / close / result form). Shared `SegmentTabs` (moved from the leaderboard). `BackLink` takes `to` + `label`. `api_request` handles `204`.
+- Tests: scoring 26, api 333 (candidate order, results rules, time rules, demo election, services with fakes, Supertest: admin 401/403, validation, publish needs 2, picks + 409 `POLL_CLOSED`, results hidden before a pick / below 20, idempotent result scoring + leaderboard, user delete removes picks, seed), web 78, e2e 12 + 2 skipped by design (4 menus on both layouts, elections flow, admin creates + publishes, no horizontal scroll incl. elections/rooms). Screenshots `apps/web/e2e/screenshots/{mobile,desktop}/08_rooms … 13_admin_preview.png`.
+- Open: dev DB (Neon) migrated to `0011` and has the demo election; election texts are English only (like the rest of the UI, no i18n files yet); datetime fields in `/admin` use the browser's time zone; `GET /me` `total_points` excludes election points by design; the sticky bottom nav shows mid-page in full-page mobile screenshots (screenshot artefact only).
+
+> **Note (2026-10-24):** from today the roadmap is renumbered 0–13 and the product is **fans vs fans** (the AI is a guide: AI preview, AI summary, "Data says"; no AI player, no "beat the AI" bonus). Old step 7 highlights → 10, old 9 PWA features → 11, old 10 embed → 12, old 11 reliability → 13; new steps 7 polls, 8 rooms, 9 share + referral. Step numbers in the entries below use the old numbering.
+
+### 2026-10-24 · Step 5: fans vs fans, AI preview + AI summary, fact checker, traffic light, editor ✅
+- Product: the AI is a guide, not a player. Leaderboard has only real users; summary `{ you_accuracy, fans_accuracy, games_count }`. Model output is shown only as **"Data says"** (win chance + stakes); the scorer tag is **"In form"** (most goals in the team's last 5 games); the hub shows "Fans: 62% Kärpät" / "Be the first to pick".
+- Scoring (`packages/scoring`): "+5 beat the AI" and `score_ai_pick` removed; **+5 bold call** = right winner and < 30% of fans picked it (≥ 20 picks), table tests. `user_predictions.scoring_version` (now 2): the idempotent scoring job re-scores older picks once.
+- Migration `0010_fans_vs_fans`: story types `preview` / `summary` (old `what_it_means` → `summary`, `ai_pick_reasons` deleted), `stories.source` / `corrected_at` / `correction_note`, `fact_sheets.kind`, `user_predictions.scoring_version`, new `audit_log`.
+- `packages/fact_checker`: new fact types (form, head_to_head, home_away_record, player_form, table_position, win_chance, stake, winning_goal), `build_preview_fact_sheet`, `classify_claims` (verified / not_found / wrong, with fact ids; scores, %, times and dates that match nothing are always wrong; invented person names are wrong), `find_tips`, legal and personal words in `find_escalation_words`. `check_claims` (quiz) unchanged.
+- API `modules/stories`: `preview_facts.ts` (form, records, table, in-form scorer, model win chance + stakes as of puck drop), `story_prompt.ts`, `story_templates.ts`, `story_writer.ts` (LLM → check → max 2 retries; no key / provider down → template, green, "Automatic … from Liiga data"; unusable output → red), `traffic_light.ts` (green / yellow / red with stored reasons), `story_generation_service.ts`, `stories_service.ts` (published story + bullets + last meetings + correction, reports), `editor_service.ts` (queue, approve, edit + re-check → 422 `CHECK_FAILED`, reject; audit log). Routes: `GET /games/:id/stories?type=preview|summary` (+ demo), `POST /stories/:id/reports` (10/IP/hour), `GET|POST /editor/stories…` (`require_role('editor')`), `GET /games/:id/data_says` (replaces `/ai_prediction`), `GET /games/:id/crowd`. Script `make:editor -- --user_id <id>`; `stories:generate [preview|summary <game_id>]`; old `stories:approve` removed.
+- LLM: `AnthropicLlmClient` (`@anthropic-ai/sdk`, `LLM_MODEL` default `claude-opus-5-5`, low effort, server-side refusal fallback); no temperature (rejected by the API since 2026-10-21). The mock LLM was removed; tests use `ScriptedLlmClient`.
+- Job: previews for games in ±7 days (also past games, so demo replays have one), one refresh 2 h before puck drop, summaries when final; on API start, every 10 min, at a final. The quiz reads the latest `summary` sheet.
+- Web: `AiStoryCard` (AI PREVIEW / AI SUMMARY on `--color_ai_tint`, bullets, last meetings, correction note, "Coming soon", label with a "Report an error" form), `DataSaysCard`, fans chip on the hub, `FansMini`, `YouVsFans`, result banner "fans who picked the winner", bold call in points; `/editor` page (queue, text next to the fact sheet with each claim marked, approve / edit + approve / reject, "Editors only" with the user id). AI prediction sample mocks removed.
+- `config/env.ts` now reads every non-empty `.env` from the working folder upwards (nearest wins), so `apps/api/.env` no longer hides the root one.
+- Tests: fact_checker 49, scoring 23, api 288, web 69, e2e 6 + 2 skipped by design (editor approves a reported story and it shows on the After screen; no "AI pick" text anywhere). Screenshots updated.
+- Open: no `LLM_API_KEY` yet, so every real text so far is the template (green); the LLM path is tested only with the scripted client. The dev database is the Neon URL on line 12 of `.env` (it overrides the local one on line 7). Old step-5 mock-LLM drafts sit in the editor queue as yellow summaries.
 
 ### 2026-10-24 · Step 6: questions (live picks, result quiz, player vote) ✅
 - `packages/scoring/src/questions.ts` (pure): `QUESTION_POINTS` (next goal 5, period goal 3, quiz 2, vote 1, poll 0), `decide_next_goal`, `decide_period_goal`, `score_answer`. The web app's `lib/points.ts` now uses the same rules.
@@ -118,4 +165,4 @@ LATER (not on the roadmap unless asked): daily games, email OTP, languages sv/en
 - Player stats per game available?
 - Can we use real clips?
 - Sponsors, staging environment?
-- Kaleva Media SSO (OIDC) details for account linking (step 10)?
+- Kaleva Media SSO (OIDC) details for account linking (step 12)?

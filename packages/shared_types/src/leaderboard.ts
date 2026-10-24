@@ -1,32 +1,31 @@
 import { z } from "zod";
 import { api_success_schema } from "./api_response";
+import { sport_filter_schema } from "./sports";
 
-// Leaderboard (step 4): humans vs Kaleva's AI vs all fans.
+// Leaderboard: fans vs fans. Only real users are ranked (the AI is a guide, not a player).
 
 export const leaderboard_period_schema = z.enum(["week", "season"]);
 
 /**
- * GET /leaderboard?period=week|season (step 4). Accuracy = share of correct winner picks in
- * finished games of the period; null without picks (`you` also when signed out).
+ * GET /leaderboard?period=week|season&sport=all|hockey|football|basketball. Accuracy = share of
+ * correct winner (outcome) picks in finished games of the period; null without picks
+ * (`you_accuracy` also when signed out).
  */
 export const leaderboard_schema = z.object({
   period: leaderboard_period_schema,
-  accuracy: z.object({
-    you: z.number().min(0).max(1).nullable(),
-    ai: z.number().min(0).max(1).nullable(),
-    fans: z.number().min(0).max(1).nullable(),
+  sport: sport_filter_schema,
+  summary: z.object({
+    you_accuracy: z.number().min(0).max(1).nullable(),
+    fans_accuracy: z.number().min(0).max(1).nullable(),
+    /** Finished games in the period. */
+    games_count: z.number().int().min(0),
   }),
-  /** Of the last `compared_weeks` full weeks (max 5), weeks where all fans beat the AI. */
-  fans_beat_ai_weeks: z.number().int(),
-  compared_weeks: z.number().int(),
-  /** Finished games in the period with an AI pick. */
-  game_count: z.number().int(),
   prize: z.object({ title: z.string(), note: z.string() }),
   rows: z.array(
     z.object({
       rank: z.number().int().min(1),
-      /** "you" = the signed-in user; the AI is ranked like a player. */
-      kind: z.enum(["user", "ai", "you"]),
+      /** "you" = the signed-in user. */
+      kind: z.enum(["user", "you"]),
       display_name: z.string(),
       points: z.number().int(),
       /** Places gained since the last game day; only for the "you" row. */

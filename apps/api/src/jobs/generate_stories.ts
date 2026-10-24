@@ -1,25 +1,28 @@
 import type { Clock } from "../common/clock";
 import type { Logger } from "../common/logger";
-import { yield_to_requests } from "./run_model";
 import type { StoriesRepository } from "../modules/stories/stories_repository";
 import {
   STORY_LANGUAGE,
   type StoryGenerationService,
 } from "../modules/stories/story_generation_service";
+import { yield_to_requests } from "./run_model";
 
-/** Only recent games get a story automatically (not the whole season at API start). */
+/** Previews for games in the next (and, for demo replays, the last) 7 days. */
 export const STORY_WINDOW_DAYS = 7;
+/** A preview is written again once in the 2 hours before puck drop. */
+export const PREVIEW_REFRESH_HOURS = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface GenerateStoriesResult {
-  created_count: number;
+  previews: number;
+  summaries: number;
   failed_count: number;
 }
 
 /**
- * Writes the "what it means" story for every recently finished game that has none. The
- * stories wait for an editor (🟡 / 🔴); nothing is published here. One failing game is logged
- * and the others still run.
+ * Writes AI previews and AI summaries. Idempotent: a game gets a preview once (plus one refresh
+ * 2 h before puck drop) and a summary once it is final. 🟢 stories publish at once; the others
+ * wait for an editor. One failing game is logged and the others still run.
  */
 export class GenerateStoriesJob {
   constructor(
@@ -30,26 +33,37 @@ export class GenerateStoriesJob {
   ) {}
 
   async run(): Promise<GenerateStoriesResult> {
-    const since = new Date(this.clock().getTime() - STORY_WINDOW_DAYS * DAY_MS);
-    const game_ids = await this.repository.list_games_without_story(
-      since,
-      "what_it_means",
+    const now = this.clock();
+    const preview_ids = await this.repository.list_games_needing_preview(
+      now,
+      STORY_WINDOW_DAYS,
+      PREVIEW_REFRESH_HOURS,
+    );
+    const summary_ids = await this.repository.list_games_without_story(
+      new Date(now.getTime() - STORY_WINDOW_DAYS * DAY_MS),
+      "summary",
       STORY_LANGUAGE,
     );
-    let created_count = 0;
-    let failed_count = 0;
-    for (const game_id of game_ids) {
-      // Each fact sheet runs two season simulations.
+    const result = { previews: 0, summaries: 0, failed_count: 0 };
+    const jobs = [
+      ...preview_ids.map((game_id) => ({ game_id, type: "preview" as const })),
+      ...summary_ids.map((game_id) => ({ game_id, type: "summary" as const })),
+    ];
+    for (const { game_id, type } of jobs) {
+      // Each fact sheet runs season simulations: let the API answer requests in between.
       await yield_to_requests();
       try {
-        const result = await this.generation_service.generate(game_id);
-        created_count += result.status === "created" ? 1 : 0;
-        this.logger.info({ game_id, ...result }, "Story written, waiting for an editor");
+        const story =
+          type === "preview"
+            ? await this.generation_service.generate_preview(game_id)
+            : await this.generation_service.generate_summary(game_id);
+        result[type === "preview" ? "previews" : "summaries"] += 1;
+        this.logger.info({ game_id, type, ...story }, "Story written");
       } catch (error) {
-        failed_count += 1;
-        this.logger.error({ err: error, game_id }, "Story generation failed");
+        result.failed_count += 1;
+        this.logger.error({ err: error, game_id, type }, "Story generation failed");
       }
     }
-    return { created_count, failed_count };
+    return result;
   }
 }

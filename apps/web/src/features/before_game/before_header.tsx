@@ -21,6 +21,7 @@ export function BeforeHeader({ game, now }: BeforeHeaderProps) {
   return (
     <header className={styles.header}>
       <GameTopBar
+        game={game}
         status={
           <StatusPill tone="on_dark_warning" size="large">
             <span role="timer">{pill_text}</span>

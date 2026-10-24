@@ -6,15 +6,19 @@ interface AiChipProps {
   text: string;
   /** "hero": a chip on mobile, plain white text in the dark desktop hero. */
   variant?: "chip" | "hero";
+  /** "ai": the blue "Data says" chip with the robot; "fans": the gray fans chip. */
+  tone?: "ai" | "fans";
 }
 
-/** Blue chip with the robot: the AI's view in one line. */
-export function AiChip({ text, variant = "chip" }: AiChipProps) {
+/** One line of neutral info: "Data says" (blue, robot) or how the fans picked (gray). */
+export function AiChip({ text, variant = "chip", tone = "ai" }: AiChipProps) {
   return (
-    <div className={class_names(styles.chip, styles[variant])}>
-      <span className={styles.icon}>
-        <RobotIcon />
-      </span>
+    <div className={class_names(styles.chip, styles[variant], tone === "fans" && styles.fans)}>
+      {tone === "ai" && (
+        <span className={styles.icon}>
+          <RobotIcon />
+        </span>
+      )}
       <span className={styles.text}>{text}</span>
     </div>
   );

@@ -84,3 +84,76 @@ export function extract_claims(text: string, names: readonly string[]): Claim[] 
   }
   return claims.sort((first, second) => first.start - second.start);
 }
+
+/** Capitalised words that start sentences or name things that are not people. */
+const NOT_PERSON_WORDS = new Set([
+  ...WEEKDAYS,
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+  "Liiga",
+  "Kaleva",
+  "Data",
+  "The",
+  "A",
+  "An",
+  "In",
+  "On",
+  "At",
+  "After",
+  "Before",
+  "Next",
+  "Last",
+  "Their",
+  "They",
+  "This",
+  "That",
+  "Both",
+  "With",
+  "When",
+  "Then",
+  "But",
+  "And",
+  "Fans",
+  "Home",
+  "Away",
+  "Top",
+  "Since",
+  "Over",
+  "Up",
+  "It",
+  "Its",
+]);
+
+const PERSON_PATTERN = /(?<![\p{L}\p{N}])\p{Lu}[\p{Ll}'’-]+(?:\s+\p{Lu}[\p{Ll}'’-]+)+/gu;
+
+/**
+ * Person-like names ("Matti Virtanen") that no known player or team has: two or more
+ * capitalised words in a row, none of them a known name or a common capitalised word.
+ */
+export function find_unknown_person_names(
+  text: string,
+  names: readonly string[],
+  claims: readonly Claim[],
+): string[] {
+  const known_words = new Set(names.flatMap((name) => name.split(/\s+/)));
+  const found: string[] = [];
+  for (const match of text.matchAll(PERSON_PATTERN)) {
+    const span = { start: match.index, end: match.index + match[0].length };
+    const words = match[0].split(/\s+/);
+    const is_known = words.some((word) => known_words.has(word) || NOT_PERSON_WORDS.has(word));
+    if (!is_known && !overlaps(span, claims)) {
+      found.push(match[0]);
+    }
+  }
+  return found;
+}

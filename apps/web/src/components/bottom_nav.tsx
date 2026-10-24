@@ -4,7 +4,7 @@ import { shared_copy } from "./copy";
 import { useMainNav } from "./use_main_nav";
 import styles from "./bottom_nav.module.css";
 
-/** Games and Leaders at the bottom of the phone layout (the desktop header has its own nav). */
+/** Games · Elections · Rooms · Leaders at the bottom of the phone layout (desktop: header nav). */
 export function BottomNav() {
   return (
     <nav aria-label={shared_copy.nav_label} className={styles.nav}>
@@ -15,7 +15,8 @@ export function BottomNav() {
           aria-current={item.is_active ? "page" : undefined}
           className={class_names(styles.link, item.is_active && styles.active)}
         >
-          {item.label}
+          <item.icon size={22} />
+          <span>{item.label}</span>
         </Link>
       ))}
     </nav>

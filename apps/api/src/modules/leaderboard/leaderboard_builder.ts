@@ -1,34 +1,31 @@
-import type { Leaderboard, LeaderboardPeriod, LeaderboardRow } from "@voita_kone/shared_types";
-import {
-  score_ai_pick,
-  winner_team_id,
-  type GameResult,
-  type PreGamePick,
-} from "@voita_kone/scoring";
+import type {
+  Leaderboard,
+  LeaderboardPeriod,
+  LeaderboardRow,
+  SportFilter,
+} from "@voita_kone/shared_types";
+import { winner_team_id, type GameResult } from "@voita_kone/scoring";
 import { to_helsinki_date } from "../../common/helsinki_date";
-import { previous_week_mondays, week_monday, week_start } from "./leaderboard_week";
+import { week_start } from "./leaderboard_week";
 
-// The leaderboard from the season's finished games, the AI's picks and the users' scored picks.
-// Pure, so ranks, accuracy and the weekly comparison are tested without a database.
+// Fans vs fans: the leaderboard from the season's finished games and the users' scored picks
+// and answers. Pure, so ranks and accuracy are tested without a database.
 
-/** Rows shown before the AI and "you" rows are added. */
+/** Rows shown before the "you" row is added. */
 export const TOP_ROW_COUNT = 10;
-/** "Fans beat the AI in N of the last 5 weeks". */
-export const COMPARED_WEEK_COUNT = 5;
-export const AI_DISPLAY_NAME = "Kaleva AI";
 
 export interface LeaderboardGame {
   id: string;
   start_time: Date;
   result: GameResult;
-  ai_pick: PreGamePick | null;
 }
 
 export interface LeaderboardPick {
   user_id: string;
   display_name: string;
   game_id: string;
-  winner_team_id: string;
+  /** Null = a draw pick (football). */
+  winner_team_id: string | null;
   points_awarded: number;
 }
 
@@ -42,6 +39,8 @@ export interface LeaderboardAnswerPoints {
 
 export interface LeaderboardInput {
   period: LeaderboardPeriod;
+  /** Which sports the games are from (the caller filters them). */
+  sport: SportFilter;
   now: Date;
   /** Finished games of the season. */
   games: readonly LeaderboardGame[];
@@ -54,7 +53,6 @@ export interface LeaderboardInput {
 }
 
 interface Entry {
-  kind: "user" | "ai";
   id: string;
   display_name: string;
   points: number;
@@ -64,15 +62,11 @@ interface RankedEntry extends Entry {
   rank: number;
 }
 
-const AI_ENTRY_ID = "ai";
-
-/** Most points first; equal points share a rank (1, 2, 2, 4). Users before the AI on a tie. */
+/** Most points first; equal points share a rank (1, 2, 2, 4), then by name. */
 export function rank_entries(entries: readonly Entry[]): RankedEntry[] {
   const sorted = [...entries].sort(
     (first, second) =>
-      second.points - first.points ||
-      Number(first.kind === "ai") - Number(second.kind === "ai") ||
-      first.display_name.localeCompare(second.display_name, "fi"),
+      second.points - first.points || first.display_name.localeCompare(second.display_name, "fi"),
   );
   let previous: RankedEntry | undefined;
   return sorted.map((entry, index) => {
@@ -87,19 +81,18 @@ function share(correct: number, total: number): number | null {
   return total === 0 ? null : correct / total;
 }
 
-function is_right(game: LeaderboardGame, picked_team_id: string): boolean {
+/** The winner (or, in football, the draw) was right. */
+function is_right(game: LeaderboardGame, picked_team_id: string | null): boolean {
   return picked_team_id === winner_team_id(game.result);
 }
 
 function build_entries(
-  games: readonly LeaderboardGame[],
   picks: readonly LeaderboardPick[],
   answers: readonly LeaderboardAnswerPoints[],
-) {
+): Entry[] {
   const by_user = new Map<string, Entry>();
   for (const pick of [...picks, ...answers]) {
     const entry = by_user.get(pick.user_id) ?? {
-      kind: "user" as const,
       id: pick.user_id,
       display_name: pick.display_name,
       points: 0,
@@ -107,68 +100,24 @@ function build_entries(
     entry.points += pick.points_awarded;
     by_user.set(pick.user_id, entry);
   }
-  const ai_points = games.reduce(
-    (total, game) => total + (game.ai_pick ? score_ai_pick(game.ai_pick, game.result).total : 0),
-    0,
-  );
-  const ai: Entry = {
-    kind: "ai",
-    id: AI_ENTRY_ID,
-    display_name: AI_DISPLAY_NAME,
-    points: ai_points,
-  };
-  return [...by_user.values(), ai];
-}
-
-interface Accuracy {
-  ai: number | null;
-  fans: number | null;
-  you: number | null;
-  ai_game_count: number;
+  return [...by_user.values()];
 }
 
 function accuracy_of(
   games: readonly LeaderboardGame[],
   picks: readonly LeaderboardPick[],
   me_user_id: string | null,
-): Accuracy {
+): { fans: number | null; you: number | null } {
   const game_by_id = new Map(games.map((game) => [game.id, game]));
-  const ai_games = games.filter((game) => game.ai_pick !== null);
-  const ai_right = ai_games.filter((game) =>
-    game.ai_pick ? is_right(game, game.ai_pick.winner_team_id) : false,
-  ).length;
   const right = (pick: LeaderboardPick) => {
     const game = game_by_id.get(pick.game_id);
     return game ? is_right(game, pick.winner_team_id) : false;
   };
   const my_picks = picks.filter((pick) => pick.user_id === me_user_id);
   return {
-    ai: share(ai_right, ai_games.length),
     fans: share(picks.filter(right).length, picks.length),
     you: share(my_picks.filter(right).length, my_picks.length),
-    ai_game_count: ai_games.length,
   };
-}
-
-/** How many of the last full weeks (with both AI and fan picks) the fans beat the AI. */
-function compare_weeks(input: LeaderboardInput): {
-  fans_beat_ai_weeks: number;
-  compared_weeks: number;
-} {
-  let fans_beat_ai_weeks = 0;
-  let compared_weeks = 0;
-  for (const monday of previous_week_mondays(input.now, COMPARED_WEEK_COUNT)) {
-    const games = input.games.filter((game) => week_monday(game.start_time) === monday);
-    const ids = new Set(games.map((game) => game.id));
-    const picks = input.picks.filter((pick) => ids.has(pick.game_id));
-    const { ai, fans } = accuracy_of(games, picks, null);
-    if (ai === null || fans === null) {
-      continue;
-    }
-    compared_weeks += 1;
-    fans_beat_ai_weeks += fans > ai ? 1 : 0;
-  }
-  return { fans_beat_ai_weeks, compared_weeks };
 }
 
 function to_row(
@@ -176,10 +125,10 @@ function to_row(
   me_user_id: string | null,
   movement: number | null,
 ): LeaderboardRow {
-  const is_me = entry.kind === "user" && entry.id === me_user_id;
+  const is_me = entry.id === me_user_id;
   return {
     rank: entry.rank,
-    kind: is_me ? "you" : entry.kind,
+    kind: is_me ? "you" : "user",
     display_name: entry.display_name,
     points: entry.points,
     movement: is_me ? movement : null,
@@ -205,9 +154,9 @@ function movement_of(
   const earlier_ids = new Set(earlier_games.map((game) => game.id));
   const earlier_picks = picks.filter((pick) => earlier_ids.has(pick.game_id));
   const earlier_answers = answers.filter((answer) => earlier_ids.has(answer.game_id));
-  const earlier_rank = rank_entries(
-    build_entries(earlier_games, earlier_picks, earlier_answers),
-  ).find((entry) => entry.id === me_user_id)?.rank;
+  const earlier_rank = rank_entries(build_entries(earlier_picks, earlier_answers)).find(
+    (entry) => entry.id === me_user_id,
+  )?.rank;
   return earlier_rank === undefined ? null : earlier_rank - my_rank;
 }
 
@@ -218,19 +167,20 @@ export function build_leaderboard(input: LeaderboardInput): Leaderboard {
   const picks = input.picks.filter((pick) => game_ids.has(pick.game_id));
   const answers = (input.answers ?? []).filter((answer) => game_ids.has(answer.game_id));
 
-  const ranked = rank_entries(build_entries(games, picks, answers));
+  const ranked = rank_entries(build_entries(picks, answers));
   const mine = ranked.find((entry) => entry.id === input.me_user_id);
   const movement = movement_of(games, picks, answers, input.me_user_id, mine?.rank);
-  const shown = ranked.filter(
-    (entry, index) => index < TOP_ROW_COUNT || entry.kind === "ai" || entry === mine,
-  );
+  const shown = ranked.filter((entry, index) => index < TOP_ROW_COUNT || entry === mine);
   const accuracy = accuracy_of(games, picks, input.me_user_id);
 
   return {
     period: input.period,
-    accuracy: { you: accuracy.you, ai: accuracy.ai, fans: accuracy.fans },
-    ...compare_weeks(input),
-    game_count: accuracy.ai_game_count,
+    sport: input.sport,
+    summary: {
+      you_accuracy: accuracy.you,
+      fans_accuracy: accuracy.fans,
+      games_count: games.length,
+    },
     prize: input.prize,
     rows: shown.map((entry) => to_row(entry, input.me_user_id, movement)),
   };

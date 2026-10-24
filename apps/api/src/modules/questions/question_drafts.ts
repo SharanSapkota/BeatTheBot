@@ -1,5 +1,6 @@
 import {
   QUESTION_POINTS,
+  SPORTS,
   decide_next_goal,
   decide_period_goal,
   type LiveGameState,
@@ -89,7 +90,17 @@ export function player_options(
   return options;
 }
 
-/** Next goal, goal in the 3rd period and the fan poll, while the game is live. */
+/** Only the question types the sport offers (`SPORTS[sport].live_questions` / `after_questions`). */
+function of_sport(game: GameDetail, drafts: QuestionDraft[]): QuestionDraft[] {
+  const { live_questions, after_questions } = SPORTS[game.sport];
+  const offered = new Set<QuestionType>([...live_questions, ...after_questions]);
+  return drafts.filter((draft) => offered.has(draft.question_type));
+}
+
+/**
+ * While the game is live: next goal, goal in the 3rd period and the fan poll (hockey); next goal
+ * and the poll (football); the poll only (basketball).
+ */
 export function build_live_drafts(
   game: GameDetail,
   players: readonly PlayerSummary[],
@@ -146,10 +157,10 @@ export function build_live_drafts(
       locks_at: live_lock,
     });
   }
-  return drafts;
+  return of_sport(game, drafts);
 }
 
-/** The result quiz and the player vote, once the game is final. */
+/** The result quiz (hockey, football) and the player vote, once the game is final. */
 export function build_after_drafts(
   game: GameDetail,
   players: readonly PlayerSummary[],
@@ -186,7 +197,7 @@ export function build_after_drafts(
       fact_ids: [],
     });
   }
-  return drafts;
+  return of_sport(game, drafts);
 }
 
 export interface LockableQuestion {

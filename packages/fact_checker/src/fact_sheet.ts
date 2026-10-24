@@ -69,12 +69,101 @@ export interface NextGameFact {
   source: FactSource;
 }
 
-export type Fact = FinalScoreFact | GoalFact | StandingFact | SeasonOddsFact | NextGameFact;
+/** Summary: the goal that decided the game (the winner's goal that made it one more than the loser's final total). */
+export interface WinningGoalFact {
+  fact_id: string;
+  type: "winning_goal";
+  value: { player: string; team: string; game_time: string };
+  source: FactSource;
+}
+
+/** Preview: a team's last 5 finished games, oldest first ("WWLWL"). */
+export interface FormFact {
+  fact_id: string;
+  type: "form";
+  value: { team: string; results: string; wins: number; losses: number; games: number };
+  source: FactSource;
+}
+
+/** Preview: one earlier meeting of the two teams (any season). */
+export interface HeadToHeadFact {
+  fact_id: string;
+  type: "head_to_head";
+  value: {
+    home_team: string;
+    away_team: string;
+    /** Helsinki date, YYYY-MM-DD. */
+    date: string;
+    home_goals: number;
+    away_goals: number;
+    ended_in: EndedIn;
+  };
+  source: FactSource;
+}
+
+/** Preview: this season's record at home (home team) or away (away team). */
+export interface HomeAwayRecordFact {
+  fact_id: string;
+  type: "home_away_record";
+  value: { team: string; venue: "home" | "away"; wins: number; losses: number; games: number };
+  source: FactSource;
+}
+
+/** Preview: the team's top scorer in its last 5 games. */
+export interface PlayerFormFact {
+  fact_id: string;
+  type: "player_form";
+  value: { player: string; team: string; goals: number; games: number };
+  source: FactSource;
+}
+
+/** Preview: the table before the game. */
+export interface TablePositionFact {
+  fact_id: string;
+  type: "table_position";
+  value: { team: string; rank: number; points: number; games_played: number };
+  source: FactSource;
+}
+
+/** Preview: "Data says" win chance from the prediction model (overtime included). */
+export interface WinChanceFact {
+  fact_id: string;
+  type: "win_chance";
+  value: { home_team: string; away_team: string; home_win: number; away_win: number };
+  source: FactSource;
+}
+
+/** Preview: what is at stake for a team, its odds if it wins vs loses. */
+export interface StakeFact {
+  fact_id: string;
+  type: "stake";
+  value: { team: string; kind: StakeKind; if_win: number; if_loss: number };
+  source: FactSource;
+}
+
+export type Fact =
+  | FinalScoreFact
+  | GoalFact
+  | StandingFact
+  | SeasonOddsFact
+  | NextGameFact
+  | WinningGoalFact
+  | FormFact
+  | HeadToHeadFact
+  | HomeAwayRecordFact
+  | PlayerFormFact
+  | TablePositionFact
+  | WinChanceFact
+  | StakeFact;
+
+export type FactSheetKind = "preview" | "summary";
 
 export interface FactSheet {
   game_id: string;
   built_at: string;
   facts: Fact[];
+  /** Missing on old sheets: they are summaries. */
+  kind?: FactSheetKind;
 }
 
 /** A real Liiga team or player. A name that is not in the fact sheet fails the check. */

@@ -5,7 +5,8 @@ import styles from "./card.module.css";
 interface CardProps {
   /** A 4 px colored top border: AI blue or "you" orange. */
   accent?: "ai" | "you";
-  tone?: "white" | "dark" | "orange";
+  /** "ai_tint": AI-written content (light AI blue). */
+  tone?: "white" | "dark" | "orange" | "ai_tint";
   /** "list" = card with rows that have their own padding. */
   padding?: "normal" | "list" | "none";
   gap?: number;

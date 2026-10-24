@@ -1,0 +1,98 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap_cards);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.type {
+  align-self: flex-start;
+  background: var(--color_tag);
+  color: var(--color_on_dark);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+}
+
+.title {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  font-size: 15px;
+  color: var(--color_text_soft);
+}
+
+.right,
+.wrong {
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: var(--radius_control);
+}
+
+.right {
+  background: var(--color_good_tint);
+  color: var(--color_good_dark);
+}
+
+.wrong {
+  background: var(--color_bad_tint);
+  color: var(--color_bad_dark);
+}
+
+.candidates {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--color_line);
+  padding-top: 12px;
+}
+
+.results_title {
+  font-weight: 700;
+  font-size: 17px;
+}
+
+/* The label on every result: always visible, never small print only. */
+.label {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color_text);
+}
+
+.small {
+  font-size: 13px;
+  color: var(--color_label);
+}
+
+@media (min-width: 900px) {
+  .title {
+    font-size: 56px;
+  }
+
+  .candidates {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+}

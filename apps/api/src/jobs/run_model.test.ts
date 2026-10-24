@@ -58,7 +58,7 @@ class FakePredictionsRepository implements AiPredictionsRepository {
   }
 
   count_crowd_picks(): Promise<CrowdCounts> {
-    return Promise.resolve({ home_picks: 0, total_picks: 0 });
+    return Promise.resolve({ home_picks: 0, draw_picks: 0, total_picks: 0 });
   }
 
   find_latest_season_odds(): Promise<SeasonOddsRows | undefined> {

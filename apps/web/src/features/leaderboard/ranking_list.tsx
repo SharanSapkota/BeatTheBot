@@ -1,19 +1,11 @@
-import type { Leaderboard, LeaderboardRow } from "@voita_kone/shared_types";
+import type { LeaderboardPeriod, LeaderboardRow } from "@voita_kone/shared_types";
 import { Fragment } from "react";
-import { RobotIcon } from "../../components/icons/robot_icon";
 import { class_names } from "../../lib/class_names";
 import { format_number, initials_of } from "../../lib/format";
 import { leaderboard_copy } from "./copy";
 import styles from "./ranking_list.module.css";
 
 function Avatar({ row }: { row: LeaderboardRow }) {
-  if (row.kind === "ai") {
-    return (
-      <span className={class_names(styles.avatar, styles.avatar_ai)}>
-        <RobotIcon />
-      </span>
-    );
-  }
   if (row.kind === "you") {
     return (
       <span className={class_names(styles.avatar, styles.avatar_you)}>
@@ -24,9 +16,15 @@ function Avatar({ row }: { row: LeaderboardRow }) {
   return <span className={styles.avatar}>{initials_of(row.display_name)}</span>;
 }
 
-/** Top players, the Kaleva AI row (blue) and the "You" row (orange) highlighted. */
-export function RankingList({ leaderboard }: { leaderboard: Leaderboard }) {
-  const rows = [...leaderboard.rows].sort((first, second) => first.rank - second.rank);
+interface RankingListProps {
+  rows: readonly LeaderboardRow[];
+  /** For the "up N places" line; null on the election leaderboard (no movement). */
+  period: LeaderboardPeriod | null;
+}
+
+/** Top players, with the "You" row (orange) highlighted. */
+export function RankingList({ rows: unsorted_rows, period }: RankingListProps) {
+  const rows = [...unsorted_rows].sort((first, second) => first.rank - second.rank);
   return (
     <section className={styles.card} aria-label={leaderboard_copy.ranking_label}>
       <ol className={styles.list}>
@@ -41,13 +39,7 @@ export function RankingList({ leaderboard }: { leaderboard: Leaderboard }) {
                   · · ·
                 </li>
               )}
-              <li
-                className={class_names(
-                  styles.row,
-                  row.kind === "ai" && styles.row_ai,
-                  row.kind === "you" && styles.row_you,
-                )}
-              >
+              <li className={class_names(styles.row, row.kind === "you" && styles.row_you)}>
                 <span
                   className={class_names(styles.rank, row.rank === 1 && styles.rank_first)}
                   aria-label={leaderboard_copy.rank_label(row.rank)}
@@ -57,11 +49,14 @@ export function RankingList({ leaderboard }: { leaderboard: Leaderboard }) {
                 <Avatar row={row} />
                 <span className={styles.name_column}>
                   <span className={styles.name}>{row.display_name}</span>
-                  {row.kind === "you" && row.movement !== null && row.movement > 0 && (
-                    <span className={styles.movement}>
-                      {leaderboard_copy.movement(row.movement, leaderboard.period)}
-                    </span>
-                  )}
+                  {row.kind === "you" &&
+                    period !== null &&
+                    row.movement !== null &&
+                    row.movement > 0 && (
+                      <span className={styles.movement}>
+                        {leaderboard_copy.movement(row.movement, period)}
+                      </span>
+                    )}
                 </span>
                 <span
                   className={styles.points}

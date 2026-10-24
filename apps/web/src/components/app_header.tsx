@@ -12,7 +12,7 @@ interface AppHeaderProps {
   on_mobile?: "shown" | "hidden";
 }
 
-/** App name, Games / Leaders nav (desktop) and the user's points. */
+/** App name, the main nav (desktop: Games · Elections · Rooms · Leaders) and the user's points. */
 export function AppHeader({ total_points, on_mobile = "shown" }: AppHeaderProps) {
   const nav_items = useMainNav();
   return (
@@ -23,14 +23,14 @@ export function AppHeader({ total_points, on_mobile = "shown" }: AppHeaderProps)
           <span className={styles.tagline}>{shared_copy.app_tagline}</span>
         </div>
         <nav aria-label={shared_copy.nav_label} className={styles.nav}>
-          {nav_items.map((item) => (
+          {nav_items.map(({ to, label, is_active }) => (
             <Link
-              key={item.to}
-              to={item.to}
-              aria-current={item.is_active ? "page" : undefined}
-              className={class_names(styles.nav_link, item.is_active && styles.active)}
+              key={to}
+              to={to}
+              aria-current={is_active ? "page" : undefined}
+              className={class_names(styles.nav_link, is_active && styles.active)}
             >
-              {item.label}
+              {label}
             </Link>
           ))}
         </nav>

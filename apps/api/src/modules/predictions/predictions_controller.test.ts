@@ -39,6 +39,7 @@ function pick(game: TestGame, change: Partial<PredictionRequest> = {}): Predicti
     predicted_home_goals: 3,
     predicted_away_goals: 2,
     predicted_scorer_id: home_player_id,
+    predicted_margin_band: null,
     ...change,
   };
 }

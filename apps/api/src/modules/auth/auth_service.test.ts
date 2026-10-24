@@ -7,7 +7,7 @@ const NOW = new Date("2026-10-24T12:00:00.000Z");
 const USER: UserRow = {
   id: "11111111-1111-4111-8111-111111111111",
   display_name: "Mika",
-  role: "player",
+  role: "user",
 };
 
 class FakeAuthRepository implements AuthRepository {
@@ -72,7 +72,7 @@ describe("AuthService.authenticate", () => {
       user_id: USER.id,
       session_id: "session-1",
       display_name: "Mika",
-      role: "player",
+      role: "user",
     });
     now = new Date(NOW.getTime() + 10 * 60 * 1000);
     await service.authenticate(token);

@@ -4,7 +4,10 @@ export const POINTS = {
   winner: 10,
   exact_score: 25,
   scorer: 15,
-  beat_ai: 5,
+  /** Basketball: the winning margin band and the top scorer. */
+  margin_band: 15,
+  top_scorer: 15,
+  bold_call: 5,
   next_goal: 5,
   period_goal: 3,
   quiz_each: 2,

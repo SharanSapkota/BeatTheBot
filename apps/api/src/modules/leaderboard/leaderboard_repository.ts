@@ -1,25 +1,31 @@
+import type { Sport } from "@voita_kone/shared_types";
+import { sql } from "kysely";
 import type { Database } from "../../db/kysely";
 import {
   KyselyScorePredictionsRepository,
-  to_ended_in,
-  type AiPickRow,
+  SCORABLE_GAME_COLUMNS,
+  to_scorable_game,
   type GoalRow,
   type ScorableGame,
 } from "../../jobs/score_predictions_repository";
-import { sql } from "kysely";
 import type { LeaderboardAnswerPoints, LeaderboardPick } from "./leaderboard_builder";
 
 export interface SeasonGameRow extends ScorableGame {
   start_time: Date;
 }
 
+/** One sport's current season (each sport counts its own seasons, e.g. "2026-27" and "2026"). */
+export interface SportSeason {
+  sport: Sport;
+  season: string;
+}
+
 export interface LeaderboardRepository {
-  /** The season of the latest game, or undefined when there are no games. */
-  find_current_season(): Promise<string | undefined>;
-  /** Finished games of the season (demo fill-ins too: they have no AI pick). */
-  list_final_games(season: string): Promise<SeasonGameRow[]>;
+  /** The season of each sport's latest game; sports without games are left out. */
+  find_current_seasons(sports: readonly Sport[]): Promise<SportSeason[]>;
+  /** Finished games of these sports' seasons (demo fill-ins and sample games too). */
+  list_final_games(seasons: readonly SportSeason[]): Promise<SeasonGameRow[]>;
   list_goals(game_ids: readonly string[]): Promise<GoalRow[]>;
-  list_ai_picks(game_ids: readonly string[]): Promise<AiPickRow[]>;
   /** Scored picks of these games, with the user's display name. */
   list_scored_picks(game_ids: readonly string[]): Promise<LeaderboardPick[]>;
   /** Points from scored answers per user and game (live picks, quiz, vote). */
@@ -27,54 +33,54 @@ export interface LeaderboardRepository {
 }
 
 export class KyselyLeaderboardRepository implements LeaderboardRepository {
-  // Goals and AI picks are read the same way as for scoring.
+  // Goals are read the same way as for scoring.
   private readonly scoring: KyselyScorePredictionsRepository;
 
   constructor(private readonly db: Database) {
     this.scoring = new KyselyScorePredictionsRepository(db);
   }
 
-  async find_current_season(): Promise<string | undefined> {
-    const latest = await this.db
-      .selectFrom("games")
-      .select("season")
-      .orderBy("start_time", "desc")
-      .limit(1)
-      .executeTakeFirst();
-    return latest?.season;
-  }
-
-  async list_final_games(season: string): Promise<SeasonGameRow[]> {
+  async find_current_seasons(sports: readonly Sport[]): Promise<SportSeason[]> {
+    if (sports.length === 0) {
+      return [];
+    }
     const rows = await this.db
       .selectFrom("games")
-      .select([
-        "id",
-        "start_time",
-        "home_team_id",
-        "away_team_id",
-        "home_goals",
-        "away_goals",
-        "ended_in",
-      ])
-      .where("season", "=", season)
-      .where("status", "=", "final")
-      .where("home_goals", "is not", null)
-      .where("away_goals", "is not", null)
+      .distinctOn("sport")
+      .select(["sport", "season"])
+      .where("sport", "in", sports)
+      .orderBy("sport")
+      .orderBy("start_time", "desc")
       .execute();
-    return rows.map((row) => ({
-      ...row,
-      home_goals: row.home_goals ?? 0,
-      away_goals: row.away_goals ?? 0,
-      ended_in: to_ended_in(row.ended_in),
-    }));
+    return rows.flatMap((row) => {
+      const sport = sports.find((candidate) => candidate === row.sport);
+      return sport ? [{ sport, season: row.season }] : [];
+    });
+  }
+
+  async list_final_games(seasons: readonly SportSeason[]): Promise<SeasonGameRow[]> {
+    if (seasons.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .selectFrom("games")
+      .select([...SCORABLE_GAME_COLUMNS, "games.start_time"])
+      .where((eb) =>
+        eb.or(
+          seasons.map(({ sport, season }) =>
+            eb.and([eb("games.sport", "=", sport), eb("games.season", "=", season)]),
+          ),
+        ),
+      )
+      .where("games.status", "=", "final")
+      .where("games.home_goals", "is not", null)
+      .where("games.away_goals", "is not", null)
+      .execute();
+    return rows.map((row) => ({ ...to_scorable_game(row), start_time: row.start_time }));
   }
 
   list_goals(game_ids: readonly string[]): Promise<GoalRow[]> {
     return this.scoring.list_goals(game_ids);
-  }
-
-  list_ai_picks(game_ids: readonly string[]): Promise<AiPickRow[]> {
-    return this.scoring.list_ai_picks(game_ids);
   }
 
   async list_scored_picks(game_ids: readonly string[]): Promise<LeaderboardPick[]> {

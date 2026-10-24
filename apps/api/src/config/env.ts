@@ -5,26 +5,27 @@ import { parse_env, type Env } from "./env_schema";
 
 export type { Env };
 
-// pnpm runs scripts inside apps/api, but .env lives in the repo root, so search upwards.
-function find_env_file(start_directory: string): string | undefined {
+// pnpm runs scripts inside apps/api, but the shared .env lives in the repo root. Every non-empty
+// .env from here upwards is read; a nearer file wins (e.g. apps/api/.env with a local key).
+function find_env_files(start_directory: string): string[] {
+  const files: string[] = [];
   let directory = start_directory;
   while (true) {
     const candidate = path.join(directory, ".env");
-    // An empty .env (e.g. apps/api/.env) would hide the real one in the repo root.
     if (existsSync(candidate) && statSync(candidate).size > 0) {
-      return candidate;
+      files.push(candidate);
     }
     const parent_directory = path.dirname(directory);
     if (parent_directory === directory) {
-      return undefined;
+      return files;
     }
     directory = parent_directory;
   }
 }
 
 function load_env(): Env {
-  const env_file = find_env_file(process.cwd());
-  if (env_file) {
+  // dotenv never overrides a variable that is already set, so the nearest file is read first.
+  for (const env_file of find_env_files(process.cwd())) {
     load_dotenv({ path: env_file, quiet: true });
   }
 

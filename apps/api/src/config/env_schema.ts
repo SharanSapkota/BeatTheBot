@@ -38,6 +38,8 @@ export const env_schema = z.object({
   // Not needed until a later step, so an empty string is allowed for now.
   LLM_API_KEY: z.string().default(""),
   LLM_MODEL: z.string().default(""),
+  // Where room questions come from. "llm" is not built yet and falls back to the mock bank.
+  ROOM_QUESTIONS_SOURCE: z.enum(["mock", "llm"]).default("mock"),
 });
 // VITE_* variables in .env belong to the web app and are not read here.
 

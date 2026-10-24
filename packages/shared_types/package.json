@@ -11,6 +11,7 @@
     "test:quiet": "vitest run --reporter=dot --silent=passed-only"
   },
   "dependencies": {
+    "@voita_kone/scoring": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

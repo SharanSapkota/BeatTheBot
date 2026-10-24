@@ -1,0 +1,40 @@
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  font-size: 14px;
+  color: var(--color_label);
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+}
+
+.status,
+.demo {
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 8px;
+  border-radius: var(--radius_pill);
+}
+
+.status {
+  background: var(--color_track);
+  color: var(--color_text);
+}
+
+.status_open {
+  background: var(--color_good_tint);
+  color: var(--color_good_dark);
+}
+
+/* Same gray tag as the category tags. */
+.demo {
+  background: var(--color_tag);
+  color: var(--color_on_dark);
+}

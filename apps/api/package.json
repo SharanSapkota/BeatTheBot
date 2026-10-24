@@ -20,9 +20,15 @@
     "backtest": "tsx src/jobs/scripts/backtest.ts",
     "model:run": "tsx src/jobs/scripts/run_model.ts",
     "stories:generate": "tsx src/jobs/scripts/generate_stories.ts",
-    "stories:approve": "tsx src/jobs/scripts/approve_story.ts"
+    "make:editor": "tsx src/jobs/scripts/make_editor.ts",
+    "make:admin": "tsx src/jobs/scripts/make_admin.ts",
+    "elections:seed_demo": "tsx src/db/scripts/seed_demo_election.ts",
+    "sports:seed_demo": "tsx src/db/scripts/seed_demo_sports.ts",
+    "rooms:seed_demo": "tsx src/db/scripts/seed_demo_room.ts",
+    "rooms:advance_slot": "tsx src/db/scripts/advance_room_slot.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "catalog:",
     "@voita_kone/fact_checker": "workspace:*",
     "@voita_kone/prediction_model": "workspace:*",
     "@voita_kone/scoring": "workspace:*",

@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import styles from "./page_grid.module.css";
 
 interface PageGridProps {
-  /** Content: AI pick, stakes, live chart, events, story, highlight, ranking. */
+  /** Content: AI preview, data says, live chart, events, AI summary, highlight, ranking. */
   main: ReactNode;
   /** The user's actions and results: picks, live picks, points, quiz, rank. */
   sidebar: ReactNode;

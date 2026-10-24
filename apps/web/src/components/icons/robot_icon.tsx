@@ -1,6 +1,6 @@
 import type { IconProps } from "./icon_props";
 
-/** The Kaleva AI. */
+/** AI content (preview, summary) and the "Data says" numbers. */
 export function RobotIcon({ size = 18 }: IconProps) {
   return (
     <svg

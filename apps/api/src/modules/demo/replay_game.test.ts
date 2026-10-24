@@ -61,11 +61,13 @@ describe("replay_game", () => {
     expect(live).toMatchObject({
       state: "live",
       period: 2,
-      game_clock_seconds: LIVE_TARGET_SECONDS,
+      game_clock_seconds: LIVE_TARGET_SECONDS.hockey,
       ended_in: null,
       demo_replay: true,
     });
-    expect(live.events.every((event) => event.game_time_seconds <= LIVE_TARGET_SECONDS)).toBe(true);
+    expect(
+      live.events.every((event) => event.game_time_seconds <= LIVE_TARGET_SECONDS.hockey),
+    ).toBe(true);
     expect(live.home_goals).toBe(shown_goals(live, "home"));
     expect(live.away_goals).toBe(shown_goals(live, "away"));
     expect([live.home_goals, live.away_goals]).toEqual([2, 1]);
@@ -95,7 +97,7 @@ describe("replay_game", () => {
 
 describe("choose_live_cut", () => {
   it("uses 2nd period 12:41 when both teams have scored by then", () => {
-    expect(choose_live_cut(FINAL)).toBe(LIVE_TARGET_SECONDS);
+    expect(choose_live_cut(FINAL)).toBe(LIVE_TARGET_SECONDS.hockey);
   });
 
   it("moves later until both teams have a goal", () => {
@@ -113,7 +115,7 @@ describe("choose_live_cut", () => {
   it("stays at 2nd period 12:41 when one team never scores", () => {
     const shutout = build_final([{ team: "home", period: 1, time: 412 }]);
 
-    expect(choose_live_cut(shutout)).toBe(LIVE_TARGET_SECONDS);
+    expect(choose_live_cut(shutout)).toBe(LIVE_TARGET_SECONDS.hockey);
   });
 });
 

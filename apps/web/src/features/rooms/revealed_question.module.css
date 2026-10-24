@@ -1,0 +1,144 @@
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color_line);
+}
+
+.question:last-child {
+  border-bottom: none;
+}
+
+.prompt {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  --bar_color: var(--color_fans_track);
+}
+
+.option.mine {
+  --bar_color: var(--color_brand);
+}
+
+.option.correct {
+  --bar_color: var(--color_good);
+}
+
+.option_row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.option_label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.correct .option_label {
+  font-weight: 700;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color_text_soft);
+  background: var(--color_surface_gray);
+  border-radius: var(--radius_pill);
+  padding: 1px 6px;
+}
+
+.correct .tag:first-of-type {
+  background: var(--color_good_tint);
+  color: var(--color_good_dark);
+}
+
+.share {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  height: 8px;
+  border-radius: var(--radius_pill);
+  background: var(--color_track);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--bar_color);
+}
+
+.result {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.good {
+  color: var(--color_good_dark);
+}
+
+.bad {
+  color: var(--color_bad_dark);
+}
+
+.plain {
+  color: var(--color_text_soft);
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--color_label);
+}
+
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reaction {
+  min-width: var(--touch_min);
+  min-height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--color_line);
+  border-radius: var(--radius_pill);
+  background: var(--color_card);
+  font-size: 16px;
+}
+
+.reaction_mine {
+  border-color: var(--color_brand);
+  background: var(--color_brand_tint);
+}
+
+.reaction_count {
+  font-size: 13px;
+  font-weight: 700;
+}

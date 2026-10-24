@@ -8,9 +8,10 @@ import { Skeleton } from "../../components/skeleton";
 import { useDemoMode } from "../../lib/demo_mode";
 import { useGamePicks } from "../../lib/picks";
 import { live_points } from "../../lib/points";
+import { config_of } from "../../lib/sports";
 import { account_copy } from "../account/copy";
 import { NameDialog } from "../account/name_dialog";
-import { useAiPrediction } from "../game/api";
+import { useDataSays } from "../game/api";
 import { find_question, useAnswerQuestion, useQuestions } from "../game/questions_api";
 import { useGamePoints } from "../game/use_game_points";
 import { useWinChance } from "./api";
@@ -23,14 +24,16 @@ import { PERIOD_GOAL_PERIOD, PeriodGoalPick } from "./period_goal_pick";
 import { WinChanceChart } from "./win_chance_chart";
 
 /**
- * Screen 3: live picks, live AI win chance and game events (refreshes every 15 s).
+ * Screen 3: live picks, the "Data says" live win chance (hockey) and game events (refreshes
+ * every 15 s). The live picks are the sport's (`SPORTS[sport].live_questions`).
  * Desktop: chart and events in the main column, live picks and the fan poll in the sidebar.
  */
 export function DuringGameScreen({ game }: { game: GameDetail }) {
-  const [picks, update] = useGamePicks(game.id);
+  const [picks, update] = useGamePicks(game);
   const points = useGamePoints(game);
-  const prediction = useAiPrediction(game);
-  const win_chance = useWinChance(game, prediction.data);
+  const config = config_of(game.sport);
+  const data_says = useDataSays(config.has_model ? game : undefined);
+  const win_chance = useWinChance(game, data_says.data);
   const { is_demo } = useDemoMode();
   const questions = useQuestions(game, "live");
   const answering = useAnswerQuestion(game);
@@ -53,11 +56,12 @@ export function DuringGameScreen({ game }: { game: GameDetail }) {
         <PageGrid
           main={
             <GridItem mobile_order={2}>
-              {win_chance.data ? (
-                <WinChanceChart game={game} win_chance={win_chance.data} />
-              ) : (
-                <Skeleton card_heights={[200]} />
-              )}
+              {config.has_model &&
+                (win_chance.data ? (
+                  <WinChanceChart game={game} win_chance={win_chance.data} />
+                ) : (
+                  <Skeleton card_heights={[200]} />
+                ))}
               <EventList game={game} picks={picks} />
             </GridItem>
           }
@@ -68,22 +72,26 @@ export function DuringGameScreen({ game }: { game: GameDetail }) {
                 <div className="desktop_only">
                   <KalevaSectionTitle title={during_copy.live_picks} />
                 </div>
-                <NextGoalPick
-                  game={game}
-                  goal_count={goal_count}
-                  picks={picks}
-                  update={update}
-                  question={next_goal}
-                  is_saved={!is_demo}
-                  on_answer={(choice) => answer(next_goal, choice)}
-                />
-                <PeriodGoalPick
-                  current_period={game.period}
-                  picks={picks}
-                  question={period_goal}
-                  is_saved={!is_demo}
-                  on_answer={(value) => answer(period_goal, value)}
-                />
+                {config.live_questions.includes("next_goal") && (
+                  <NextGoalPick
+                    game={game}
+                    goal_count={goal_count}
+                    picks={picks}
+                    update={update}
+                    question={next_goal}
+                    is_saved={!is_demo}
+                    on_answer={(choice) => answer(next_goal, choice)}
+                  />
+                )}
+                {config.live_questions.includes("period_goal") && (
+                  <PeriodGoalPick
+                    current_period={game.period}
+                    picks={picks}
+                    question={period_goal}
+                    is_saved={!is_demo}
+                    on_answer={(value) => answer(period_goal, value)}
+                  />
+                )}
                 {answering.error_text && <InlineError text={answering.error_text} />}
               </GridItem>
               {fan_poll && (

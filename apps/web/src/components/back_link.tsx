@@ -4,14 +4,27 @@ import { shared_copy } from "./copy";
 import { ChevronLeftIcon } from "./icons/chevron_left_icon";
 import styles from "./back_link.module.css";
 
-/** Back to the hub on the game screens: "‹ Game day" (mobile), "‹ Today's games" (desktop). */
-export function BackLink() {
+interface BackLinkProps {
+  /** Defaults to the games hub. */
+  to?: string;
+  /** One label for both layouts; without it "‹ Game day" (mobile) / "‹ Today's games" (desktop). */
+  label?: string;
+}
+
+/** Back link: to the hub on the game screens, or to a list (e.g. "‹ Elections"). */
+export function BackLink({ to = "/games", label }: BackLinkProps) {
   const { link_to } = useDemoMode();
   return (
-    <Link to={link_to("/")} className={styles.link}>
+    <Link to={link_to(to)} className={styles.link}>
       <ChevronLeftIcon />
-      <span className="mobile_only">{shared_copy.back_to_game_day}</span>
-      <span className="desktop_only">{shared_copy.back_to_today}</span>
+      {label === undefined ? (
+        <>
+          <span className="mobile_only">{shared_copy.back_to_game_day}</span>
+          <span className="desktop_only">{shared_copy.back_to_today}</span>
+        </>
+      ) : (
+        <span>{label}</span>
+      )}
     </Link>
   );
 }

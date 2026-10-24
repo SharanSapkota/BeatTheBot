@@ -16,9 +16,7 @@ describe("build_demo_users", () => {
     const users = build_demo_users("Editor@Kaleva.FI");
 
     expect(users[0]).toMatchObject({ role: "editor", email: "editor@kaleva.fi" });
-    expect(users.slice(1).every((user) => user.role === "player" && user.email === null)).toBe(
-      true,
-    );
+    expect(users.slice(1).every((user) => user.role === "user" && user.email === null)).toBe(true);
     expect(new Set(users.map((user) => user.device_id)).size).toBe(users.length);
   });
 });
@@ -52,7 +50,7 @@ describe("build_demo_predictions", () => {
 
   it("gives one pick per demo player", () => {
     const player_ids = build_demo_users("e@x.fi")
-      .filter((user) => user.role === "player")
+      .filter((user) => user.role === "user")
       .map((user) => user.device_id);
 
     expect(build_demo_predictions(AWAY_WIN).map((prediction) => prediction.device_id)).toEqual(

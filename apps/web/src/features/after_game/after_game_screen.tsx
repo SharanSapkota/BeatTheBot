@@ -1,4 +1,4 @@
-import type { GameDetail, PlayerSummary } from "@voita_kone/shared_types";
+import type { Crowd, GameDetail, PlayerSummary } from "@voita_kone/shared_types";
 import { GameTopBar } from "../../components/game_top_bar";
 import { FooterNote } from "../../components/footer_note";
 import { GridItem, PageGrid } from "../../components/page_grid";
@@ -7,14 +7,18 @@ import { ScoreHeader } from "../../components/score_header";
 import { Skeleton } from "../../components/skeleton";
 import { StatusPill } from "../../components/status_pill";
 import { useGamePicks } from "../../lib/picks";
-import { useTeamPlayers } from "../game/api";
+import { AiStoryCard } from "../../components/ai_story_card";
+import { useCrowd, useTeamPlayers } from "../game/api";
+import { report_story, useStory } from "../game/stories_api";
+import { winner_team_id } from "../../lib/points";
+import { config_of } from "../../lib/sports";
 import { useGamePoints } from "../game/use_game_points";
 import { find_question, useAnswerQuestion, useQuestions } from "../game/questions_api";
 import { account_copy } from "../account/copy";
 import { NameDialog } from "../account/name_dialog";
 import { InlineError } from "../../components/inline_error";
 import { useDemoMode } from "../../lib/demo_mode";
-import { useHighlight, useWhatItMeans } from "./api";
+import { useHighlight } from "./api";
 import { after_copy } from "./copy";
 import { GoalTimeline } from "./goal_timeline";
 import { HighlightCard } from "./highlight_card";
@@ -22,18 +26,48 @@ import { PlayerVote } from "./player_vote";
 import { PointsBreakdown, build_breakdown_lines } from "./points_breakdown";
 import { ResultBanner } from "./result_banner";
 import { ResultQuiz } from "./result_quiz";
-import { WhatItMeansCard, WhatItMeansPendingCard } from "./what_it_means_card";
+import { TopScorerCard } from "./top_scorer_card";
+
+/** The winner (or a draw) and the share of fans who picked it (for the result banner). */
+function fans_on_winner(game: GameDetail, crowd: Crowd | null) {
+  const winner_id = winner_team_id(game);
+  if (winner_id === null && game.home_goals !== null) {
+    return {
+      fans_label: after_copy.fans_picked_draw,
+      fans_right_share: crowd ? crowd.draw_picks / crowd.total_picks : null,
+    };
+  }
+  const winner =
+    winner_id === game.home_team.id
+      ? game.home_team
+      : winner_id === game.away_team.id
+        ? game.away_team
+        : null;
+  if (!winner || !crowd) {
+    return {
+      fans_label: winner ? after_copy.fans_picked(winner.name) : null,
+      fans_right_share: null,
+    };
+  }
+  const picks = winner.id === game.home_team.id ? crowd.home_picks : crowd.away_picks;
+  return {
+    fans_label: after_copy.fans_picked(winner.name),
+    fans_right_share: picks / crowd.total_picks,
+  };
+}
 
 /**
  * Screen 4: result, highlight, points, "what it means", quiz and vote.
  * Desktop: highlight, story and timeline in the main column; result, points, quiz, vote in the sidebar.
  */
 export function AfterGameScreen({ game }: { game: GameDetail }) {
-  const [picks] = useGamePicks(game.id);
+  const [picks] = useGamePicks(game);
   const { is_demo } = useDemoMode();
   const points = useGamePoints(game);
   const highlight = useHighlight(game);
-  const story = useWhatItMeans(game);
+  const has_model = config_of(game.sport).has_model;
+  const story = useStory(game, "summary", has_model);
+  const crowd = useCrowd(game.id);
   const questions = useQuestions(game, "after");
   const answering = useAnswerQuestion(game);
   const quiz = (questions.data ?? []).filter(
@@ -55,6 +89,7 @@ export function AfterGameScreen({ game }: { game: GameDetail }) {
         game={game}
         top_bar={
           <GameTopBar
+            game={game}
             status={
               <StatusPill tone="on_dark" size="large">
                 {after_copy.final}
@@ -75,9 +110,14 @@ export function AfterGameScreen({ game }: { game: GameDetail }) {
                 )}
               </GridItem>
               <GridItem mobile_order={3}>
-                {story.data && <WhatItMeansCard story={story.data} />}
-                {story.data === null && <WhatItMeansPendingCard />}
-                <GoalTimeline game={game} />
+                {has_model && (
+                  <AiStoryCard story_type="summary" story={story.data} on_report={report_story} />
+                )}
+                {game.sport === "basketball" ? (
+                  <TopScorerCard game={game} />
+                ) : (
+                  <GoalTimeline game={game} />
+                )}
               </GridItem>
             </>
           }
@@ -85,7 +125,10 @@ export function AfterGameScreen({ game }: { game: GameDetail }) {
           sidebar={
             <>
               <GridItem mobile_order={2}>
-                <ResultBanner your_points={points.total} ai_points={points.ai_total} />
+                <ResultBanner
+                  your_points={points.total}
+                  {...fans_on_winner(game, crowd.data ?? null)}
+                />
                 <PointsBreakdown
                   lines={build_breakdown_lines(game, picks, points, player_name)}
                   total={points.total}

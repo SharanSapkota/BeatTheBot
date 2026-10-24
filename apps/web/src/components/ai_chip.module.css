@@ -7,6 +7,14 @@
   padding: 8px 10px;
 }
 
+.fans {
+  background: var(--color_surface_gray);
+}
+
+.fans .text {
+  color: var(--color_text);
+}
+
 .icon {
   display: flex;
   color: var(--color_ai);

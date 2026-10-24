@@ -56,7 +56,7 @@ interface WinChanceChartProps {
   win_chance: WinChance;
 }
 
-/** The AI's live home-win chance, updated after each goal (inline SVG). */
+/** "Data says": the live home-win chance, updated after each goal (inline SVG). */
 export function WinChanceChart({ game, win_chance }: WinChanceChartProps) {
   const shares = win_chance.points.map((point) => point.home_win_probability);
   const current = shares.at(-1) ?? 0.5;

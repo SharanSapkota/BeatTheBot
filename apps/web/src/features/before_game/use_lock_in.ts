@@ -6,7 +6,12 @@ import { useDemoMode } from "../../lib/demo_mode";
 import type { GamePicks } from "../../lib/picks";
 import { read_session_token } from "../../lib/session";
 import { sign_in_device } from "../account/api";
-import { save_prediction, to_prediction_request, useMyPrediction } from "./api";
+import {
+  from_saved_prediction,
+  save_prediction,
+  to_prediction_request,
+  useMyPrediction,
+} from "./api";
 import { before_copy } from "./copy";
 
 interface LockInOptions {
@@ -54,16 +59,7 @@ export function useLockIn({ game, picks, update }: LockInOptions): LockIn {
     }
     has_loaded_saved.current = true;
     update((current) =>
-      current.locked_at !== null
-        ? current
-        : {
-            ...current,
-            winner_team_id: prediction.predicted_winner_team_id,
-            home_goals: prediction.predicted_home_goals,
-            away_goals: prediction.predicted_away_goals,
-            scorer_id: prediction.predicted_scorer_id,
-            locked_at: prediction.updated_at,
-          },
+      current.locked_at !== null ? current : from_saved_prediction(current, prediction),
     );
   }, [saved.data, update]);
 
@@ -76,7 +72,7 @@ export function useLockIn({ game, picks, update }: LockInOptions): LockIn {
     try {
       await save_prediction(
         game.id,
-        to_prediction_request(picks, picks.winner_team_id),
+        to_prediction_request(picks, picks.winner_team_id, game),
         saved.data !== undefined && saved.data !== null,
       );
       update((current) => ({ ...current, locked_at: new Date().toISOString() }));

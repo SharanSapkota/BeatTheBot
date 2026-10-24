@@ -63,28 +63,6 @@
   font-size: 15px;
 }
 
-.row_ai {
-  padding: 12px 8px;
-  margin: 0 -8px;
-  border-radius: 10px;
-  border-bottom: none;
-  background: var(--color_ai_tint);
-}
-
-.row_ai .rank {
-  color: var(--color_ai);
-}
-
-.row_ai .name {
-  font-weight: 700;
-  color: var(--color_ai_dark);
-}
-
-.avatar_ai {
-  background: var(--color_ai);
-  color: var(--color_on_dark);
-}
-
 .row_you {
   padding: 12px 8px;
   margin: 0 -8px 8px;
@@ -153,7 +131,6 @@
     font-size: 26px;
   }
 
-  .row_ai,
   .row_you {
     padding: 16px 12px;
     margin-left: 0;

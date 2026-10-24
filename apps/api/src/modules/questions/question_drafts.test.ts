@@ -20,6 +20,7 @@ function team(id: string, name: string) {
     short_name: name,
     city: null,
     logo_url: null,
+    sport: "hockey" as const,
     data_source: "liiga_api" as const,
   };
 }
@@ -46,6 +47,8 @@ function goal(id: string, team_id: string, period: number, player_id: string): G
 function game(change: Partial<GameDetail>): GameDetail {
   return {
     id: "00000000-0000-4000-8000-0000000000aa",
+    sport: "hockey",
+    league: { id: "00000000-0000-4000-8000-000000000001", name: "Liiga" },
     season: "2026-27",
     start_time: "2026-10-24T16:30:00.000Z",
     state: "live",
@@ -60,6 +63,7 @@ function game(change: Partial<GameDetail>): GameDetail {
     data_source: "liiga_api",
     events: [goal("e1", HOME, 1, "00000000-0000-4000-8000-00000000000a")],
     demo_replay: false,
+    top_scorer: null,
     ...change,
   };
 }
@@ -102,6 +106,27 @@ describe("build_live_drafts", () => {
   it("has no live questions before or after the game", () => {
     expect(build_live_drafts(game({ state: "upcoming" }), PLAYERS, NOW)).toEqual([]);
     expect(build_live_drafts(game({ state: "final" }), PLAYERS, NOW)).toEqual([]);
+  });
+});
+
+describe("questions per sport", () => {
+  it("offers next goal and the poll in football, only the poll in basketball", () => {
+    const types = (sport: "football" | "basketball") =>
+      build_live_drafts(game({ sport }), PLAYERS, NOW).map((draft) => draft.question_type);
+
+    expect(types("football")).toEqual(["next_goal", "poll"]);
+    expect(types("basketball")).toEqual(["poll"]);
+  });
+
+  it("has no result quiz after a basketball game, only the player vote", () => {
+    const drafts = build_after_drafts(
+      game({ sport: "basketball", state: "final" }),
+      PLAYERS,
+      [],
+      NOW,
+    );
+
+    expect(drafts.map((draft) => draft.question_type)).toEqual(["player_vote"]);
   });
 });
 

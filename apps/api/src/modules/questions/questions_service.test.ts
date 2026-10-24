@@ -24,6 +24,7 @@ function team(id: string, name: string) {
     short_name: name,
     city: null,
     logo_url: null,
+    sport: "hockey" as const,
     data_source: "liiga_api" as const,
   };
 }
@@ -31,6 +32,8 @@ function team(id: string, name: string) {
 function game(change: Partial<GameDetail> = {}): GameDetail {
   return {
     id: GAME_ID,
+    sport: "hockey",
+    league: { id: "00000000-0000-4000-8000-000000000001", name: "Liiga" },
     season: "2026-27",
     start_time: "2026-10-24T16:30:00.000Z",
     state: "final",
@@ -57,6 +60,7 @@ function game(change: Partial<GameDetail> = {}): GameDetail {
       },
     ],
     demo_replay: false,
+    top_scorer: null,
     ...change,
   };
 }

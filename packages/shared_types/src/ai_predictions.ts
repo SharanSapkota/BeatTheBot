@@ -2,30 +2,10 @@ import { z } from "zod";
 import { api_success_schema } from "./api_response";
 import { game_state_schema, team_summary_schema } from "./games";
 
-// AI prediction API (roadmap step 3). Every number comes from packages/prediction_model;
-// reasons are facts with a template sentence, never free LLM text.
+// "Data says" API: neutral numbers from packages/prediction_model (win chance, what is at
+// stake), the fans' crowd split, the live win chance and the season odds. Never an AI pick.
 
 export const stake_kind_schema = z.enum(["relegation", "top_4", "playoffs"]);
-
-/** One fact behind the AI's pick, e.g. "Kärpät won 4 of their last 5 home games." */
-export const ai_reason_schema = z.object({
-  fact_id: z.string(),
-  type: z.string(),
-  values: z.record(z.string(), z.union([z.number(), z.string()])),
-  text_en: z.string(),
-});
-
-export const predicted_scorer_schema = z.object({
-  id: z.uuid(),
-  team_id: z.uuid(),
-  first_name: z.string(),
-  last_name: z.string(),
-  jersey_number: z.number().int().nullable(),
-  /** Goals in the team's last `recent_games` games. */
-  recent_goals: z.number().int().min(0),
-  recent_games: z.number().int().min(0),
-  season_goals: z.number().int().min(0),
-});
 
 /** The team's playoff / top-4 / relegation probability if it wins vs loses this game. */
 export const stake_schema = z.object({
@@ -35,27 +15,29 @@ export const stake_schema = z.object({
   if_loss: z.number().min(0).max(1),
 });
 
-/** How the fans have picked (user predictions). Null until someone has picked. */
+/**
+ * How the fans have picked the outcome (before-game picks). Null until someone has picked.
+ * `draw_picks` is 0 outside football; `home_pick_share` = home picks / all picks.
+ */
 export const crowd_schema = z.object({
-  home_pick_share: z.number().min(0).max(1),
   total_picks: z.number().int().min(1),
+  home_picks: z.number().int().min(0),
+  away_picks: z.number().int().min(0),
+  draw_picks: z.number().int().min(0),
+  home_pick_share: z.number().min(0).max(1),
 });
 
-/** GET /games/:game_id/ai_prediction (and the demo replay version). */
-export const ai_prediction_schema = z.object({
+/**
+ * GET /games/:game_id/data_says (and the demo replay version): neutral info from the
+ * prediction model, never a pick. The win chance and what is at stake for both teams.
+ */
+export const data_says_schema = z.object({
   game_id: z.uuid(),
-  predicted_winner_team_id: z.uuid(),
   /** Win probabilities including overtime and shootout; they add up to 1. */
   home_win_probability: z.number().min(0).max(1),
   away_win_probability: z.number().min(0).max(1),
   /** Chance the game is tied after 60 minutes. */
   overtime_probability: z.number().min(0).max(1),
-  /** The most likely 60-minute score in which the predicted winner wins. */
-  predicted_home_goals: z.number().int().min(0),
-  predicted_away_goals: z.number().int().min(0),
-  predicted_scorer: predicted_scorer_schema.nullable(),
-  /** Up to 3, most relevant first. */
-  reasons: z.array(ai_reason_schema).max(3),
   /** The most interesting stake per team, biggest change first. */
   stakes: z.array(stake_schema),
   crowd: crowd_schema.nullable(),
@@ -99,16 +81,15 @@ export const season_odds_schema = z.object({
   rows: z.array(season_odds_row_schema),
 });
 
-export const ai_prediction_response_schema = api_success_schema(ai_prediction_schema);
+export const data_says_response_schema = api_success_schema(data_says_schema);
+export const crowd_response_schema = api_success_schema(crowd_schema.nullable());
 export const win_chance_response_schema = api_success_schema(win_chance_schema);
 export const season_odds_response_schema = api_success_schema(season_odds_schema);
 
 export type StakeKind = z.infer<typeof stake_kind_schema>;
-export type AiReason = z.infer<typeof ai_reason_schema>;
-export type PredictedScorer = z.infer<typeof predicted_scorer_schema>;
 export type Stake = z.infer<typeof stake_schema>;
 export type Crowd = z.infer<typeof crowd_schema>;
-export type AiPrediction = z.infer<typeof ai_prediction_schema>;
+export type DataSays = z.infer<typeof data_says_schema>;
 export type WinChancePoint = z.infer<typeof win_chance_point_schema>;
 export type WinChance = z.infer<typeof win_chance_schema>;
 export type SeasonOddsRow = z.infer<typeof season_odds_row_schema>;

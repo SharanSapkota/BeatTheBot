@@ -37,7 +37,7 @@ describe("POST /api/v1/auth/device", () => {
 
     expect(response.status).toBe(201);
     const { data } = auth_result_response_schema.parse(response.body);
-    expect(data.user).toMatchObject({ display_name: "Mika", role: "player" });
+    expect(data.user).toMatchObject({ display_name: "Mika", role: "user" });
     const identity = await db
       .selectFrom("auth_identities")
       .select(["provider"])
@@ -74,7 +74,7 @@ describe("/api/v1/me", () => {
     expect(response.headers["cache-control"]).toBe("no-store");
     expect(user_summary_response_schema.parse(response.body).data).toMatchObject({
       display_name: "Sanna",
-      role: "player",
+      role: "user",
       total_points: 0,
     });
   });

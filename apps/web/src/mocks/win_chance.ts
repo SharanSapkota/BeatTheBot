@@ -1,14 +1,16 @@
-import type { AiPrediction, GameDetail, WinChance, WinChancePoint } from "@voita_kone/shared_types";
-import { SAMPLE_MODEL_VERSION } from "./ai_prediction";
+import type { DataSays, GameDetail, WinChance, WinChancePoint } from "@voita_kone/shared_types";
 import { goals_of, round_to } from "./sample_utils";
 
 // A home goal moves the home win chance a quarter of the way to 100%, an away goal a quarter
 // of the way to 0%. From the design's 62%: 1-0 -> 71%, 1-1 -> 54%.
 const GOAL_SHIFT = 0.25;
 
+/** model_version of sample data; the chart says "sample data" when it sees it. */
+export const SAMPLE_MODEL_VERSION = "sample";
+
 // Only used when GET /games/:game_id/win_chance fails (see get_or_sample).
-export function build_sample_win_chance(game: GameDetail, prediction: AiPrediction): WinChance {
-  let home_win_probability = prediction.home_win_probability;
+export function build_sample_win_chance(game: GameDetail, data_says: DataSays): WinChance {
+  let home_win_probability = data_says.home_win_probability;
   const score = { home_goals: 0, away_goals: 0 };
   const points: WinChancePoint[] = [
     { kind: "start", game_time_seconds: 0, ...score, home_win_probability },

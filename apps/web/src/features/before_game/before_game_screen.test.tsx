@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { save_session_token } from "../../lib/session";
 import {
@@ -10,7 +10,7 @@ import {
   build_game,
   build_player,
 } from "../../test_helpers/game_fixture";
-import type { AiPrediction, UserPrediction } from "@voita_kone/shared_types";
+import type { DataSays, Story, UserPrediction } from "@voita_kone/shared_types";
 import { mock_api } from "../../test_helpers/mock_api";
 import { render_at } from "../../test_helpers/render_app";
 import { BeforeGameScreen } from "./before_game_screen";
@@ -30,7 +30,7 @@ function mock_rosters_and(routes: Record<string, unknown>) {
   return mock_api({ ...ROSTERS, ...routes });
 }
 
-const USER = { id: "11111111-1111-4111-8111-111111111111", display_name: "Mika", role: "player" };
+const USER = { id: "11111111-1111-4111-8111-111111111111", display_name: "Mika", role: "user" };
 
 function saved_prediction(winner_team_id: string): UserPrediction {
   return {
@@ -39,6 +39,7 @@ function saved_prediction(winner_team_id: string): UserPrediction {
     predicted_home_goals: 3,
     predicted_away_goals: 2,
     predicted_scorer_id: null,
+    predicted_margin_band: null,
     points_awarded: null,
     created_at: "2026-10-24T10:00:00.000Z",
     updated_at: "2026-10-24T10:00:00.000Z",
@@ -60,40 +61,43 @@ const OTHER_SCORER = {
   jersey_number: 8,
 };
 
-/** What GET /games/:id/ai_prediction returns once the model has run. */
-const REAL_PREDICTION: AiPrediction = {
+/** What GET /games/:id/data_says returns once the model has run: numbers, never a pick. */
+const DATA_SAYS: DataSays = {
   game_id: GAME.id,
-  predicted_winner_team_id: KARPAT.id,
-  home_win_probability: 0.669,
-  away_win_probability: 0.331,
-  overtime_probability: 0.164,
-  predicted_home_goals: 4,
-  predicted_away_goals: 1,
-  predicted_scorer: {
-    ...OTHER_SCORER,
-    team_id: KARPAT.id,
-    recent_goals: 1,
-    recent_games: 5,
-    season_goals: 1,
-  },
-  reasons: [
-    {
-      fact_id: "venue_record:home:k",
-      type: "venue_record",
-      values: { team: "Kärpät", wins: 5, games: 5 },
-      text_en: "Kärpät won 5 of their last 5 home games.",
-    },
-  ],
-  stakes: [{ team_id: ILVES.id, kind: "playoffs", if_win: 0.473, if_loss: 0.374 }],
+  home_win_probability: 0.67,
+  away_win_probability: 0.33,
+  overtime_probability: 0.2,
+  stakes: [{ team_id: ILVES.id, kind: "playoffs", if_win: 0.55, if_loss: 0.41 }],
   crowd: null,
-  label_text: "AI's pick, calculated from game statistics",
+  label_text: "Data says · calculated from Liiga data",
   model_version: "poisson_mc_v1",
   calculated_at: "2026-10-24T12:49:49.007Z",
 };
 
+const PREVIEW: Story = {
+  id: "33333333-3333-4333-8333-333333333333",
+  story_type: "preview",
+  headline: "Kärpät vs Ilves",
+  body: "- Kärpät won 4 of their last 5 games.\n- They last met on 1 Feb.\n- Data says Kärpät 67%.",
+  bullets: [
+    "Kärpät won 4 of their last 5 games.",
+    "They last met on 1 Feb.",
+    "Data says Kärpät 67%.",
+  ],
+  label_text: "Written with AI from Liiga data · checked by Kaleva",
+  source: "llm",
+  last_meetings: [
+    { date: "2026-02-01", home_team: "Ilves", away_team: "Kärpät", home_goals: 2, away_goals: 4 },
+  ],
+  correction: null,
+  published_at: "2026-10-24T10:00:00.000Z",
+};
+
 function mock_real_prediction() {
   return mock_api({
-    [`/games/${GAME.id}/ai_prediction`]: REAL_PREDICTION,
+    [`/games/${GAME.id}/data_says`]: DATA_SAYS,
+    [`/games/${GAME.id}/stories?type=preview`]: PREVIEW,
+    [`POST /stories/${PREVIEW.id}/reports`]: { received: true },
     [`/teams/${KARPAT.id}/players`]: [
       build_player(LAINE, 5, 9),
       build_player(NIEMI, 2, 9),
@@ -108,12 +112,12 @@ function render_screen() {
 }
 
 describe("BeforeGameScreen", () => {
-  it("shows the AI's pick from sample data while the endpoint is missing", async () => {
-    mock_rosters();
+  it("says the preview is coming soon when none is published (no sample text)", async () => {
+    mock_rosters_and({ [`/games/${GAME.id}/stories?type=preview`]: null });
     render_screen();
 
-    expect(await screen.findByRole("heading", { name: "Kärpät win · 62%" })).toBeInTheDocument();
-    expect(screen.getByText("Kärpät won 4 of their last 5 home games.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Preview coming soon" })).toBeInTheDocument();
+    expect(screen.queryByText(/AI pick/)).not.toBeInTheDocument();
   });
 
   it("toggles the winner pick", () => {
@@ -132,14 +136,14 @@ describe("BeforeGameScreen", () => {
     expect(ilves).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("picks one scorer from both rosters and marks the AI's pick", async () => {
+  it("picks one scorer from both rosters and tags the player in form", async () => {
     mock_rosters();
     render_screen();
     const group = screen.getByRole("group", { name: "Pick a goal scorer" });
     const laine = await within(group).findByRole("button", { name: /Eetu Laine #19/ });
     const makela = within(group).getByRole("button", { name: /Aleksi Mäkelä #11/ });
 
-    expect(await within(laine).findByText("AI pick")).toBeInTheDocument();
+    expect(await within(laine).findByText("In form")).toBeInTheDocument();
     expect(within(laine).getByText("Kärpät · 5 goals in last 5 games")).toBeInTheDocument();
     fireEvent.click(makela);
     expect(makela).toHaveAttribute("aria-pressed", "true");
@@ -247,47 +251,57 @@ describe("BeforeGameScreen", () => {
     expect(api.requests.every((request) => request.method === "GET")).toBe(true);
   });
 
-  it("shows the model's pick, reasons, stakes and calculation time", async () => {
+  it("shows the AI preview with its label, last meetings and a report button", async () => {
     mock_real_prediction();
     render_screen();
 
-    expect(await screen.findByRole("heading", { name: "Kärpät win · 67%" })).toBeInTheDocument();
-    expect(screen.getByText("Kärpät won 5 of their last 5 home games.")).toBeInTheDocument();
-    expect(screen.getByText("Ilves playoff chance")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Kärpät vs Ilves" })).toBeInTheDocument();
+    expect(screen.getByText("AI PREVIEW")).toBeInTheDocument();
+    expect(screen.getByText("Kärpät won 4 of their last 5 games.")).toBeInTheDocument();
+    expect(screen.getByText("Last meetings")).toBeInTheDocument();
     expect(
-      screen.getByText(/AI's pick, calculated from game statistics · Calculated \d\d:\d\d/),
+      screen.getByText("Written with AI from Liiga data · checked by Kaleva"),
+    ).toBeInTheDocument();
+  });
+
+  it("sends an error report with the reader's reason", async () => {
+    const api = mock_real_prediction();
+    render_screen();
+    await screen.findByRole("heading", { name: "Kärpät vs Ilves" });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Report an error" })[0] as HTMLElement);
+    fireEvent.change(screen.getByLabelText("What is wrong?"), { target: { value: "Wrong date" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send report" }));
+
+    expect(await screen.findByText("Thanks. The sports desk will check it.")).toBeInTheDocument();
+    expect(api.requests.find((request) => request.method === "POST")).toMatchObject({
+      path: `/stories/${PREVIEW.id}/reports`,
+      body: { reason: "Wrong date" },
+    });
+  });
+
+  it("shows what the data says: win chance and stakes, never a pick", async () => {
+    mock_real_prediction();
+    render_screen();
+
+    expect(await screen.findByText("Ilves playoff chance")).toBeInTheDocument();
+    expect(screen.getByText("Kärpät 67%")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Data says · calculated from Liiga data · \d\d:\d\d/),
     ).toBeInTheDocument();
     expect(screen.getByText("No fan picks yet. Be the first to pick!")).toBeInTheDocument();
+    expect(screen.queryByText(/AI pick|AI's pick/)).not.toBeInTheDocument();
   });
 
-  it("starts the exact score at the AI's predicted score", async () => {
-    mock_real_prediction();
-    render_screen();
-
-    await waitFor(() => {
-      expect(screen.getByLabelText("Kärpät goals")).toHaveTextContent("4");
-    });
-    expect(screen.getByLabelText("Ilves goals")).toHaveTextContent("1");
-  });
-
-  it("always lists the AI's scorer, even outside the top 2", async () => {
-    mock_real_prediction();
-    render_screen();
-    const group = screen.getByRole("group", { name: "Pick a goal scorer" });
-
-    const koskinen = await within(group).findByRole("button", { name: /Ville Koskinen #8/ });
-    expect(await within(koskinen).findByText("AI pick")).toBeInTheDocument();
-  });
-
-  it("says the pick is not ready instead of showing numbers", async () => {
+  it("says the data is not ready instead of showing numbers", async () => {
     mock_api(
       {},
-      { [`/games/${GAME.id}/ai_prediction`]: { status: 404, code: "PREDICTION_NOT_READY" } },
+      { [`/games/${GAME.id}/data_says`]: { status: 404, code: "PREDICTION_NOT_READY" } },
     );
     render_screen();
 
     expect(
-      await screen.findByRole("heading", { name: "Kaleva AI's pick is not ready yet" }),
+      await screen.findByText(/calculated from Liiga statistics during the week before puck drop/),
     ).toBeInTheDocument();
     expect(screen.queryByText("What's at stake")).not.toBeInTheDocument();
   });

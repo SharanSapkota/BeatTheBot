@@ -9,11 +9,11 @@ interface ProgressSplitBarProps {
   height: number;
   left_label?: string;
   right_label?: string;
-  /** Labels in 600 weight (AI pick) or 400 (fans). */
+  /** Labels in 600 weight (win chance) or 400 (fans). */
   bold_labels?: boolean;
 }
 
-/** Two-part bar (AI pick, fans' split) with optional labels below. */
+/** Two-part bar (win chance, fans' split) with optional labels below. */
 export function ProgressSplitBar({
   left_share,
   left_color,

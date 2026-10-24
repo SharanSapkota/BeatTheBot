@@ -1,0 +1,19 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius_pill);
+  background: var(--color_tag);
+  color: var(--color_on_dark);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.on_dark {
+  background: transparent;
+  border: 1px solid var(--color_dark_line);
+  color: var(--color_on_dark_softer);
+}

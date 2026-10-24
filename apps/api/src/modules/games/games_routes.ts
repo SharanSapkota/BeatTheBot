@@ -13,3 +13,9 @@ export function create_games_routes(games_controller: GamesController): Router {
   router.get("/:game_id", games_controller.get_game);
   return router;
 }
+
+export function create_sports_routes(games_controller: GamesController): Router {
+  const router = Router();
+  router.get("/", games_controller.get_sports);
+  return router;
+}

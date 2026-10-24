@@ -43,6 +43,8 @@ pnpm format                             # prettier (Markdown is excluded)
 pnpm build
 pnpm --filter api sync:liiga            # pull Liiga data (add -- --fixtures to use saved responses)
 pnpm --filter api db:reset              # dev only: drop all tables, migrate, seed
+pnpm --filter api rooms:seed_demo       # recreate only the demo room "Kärpät fans Oulu" (key DEMO26)
+pnpm --filter api rooms:advance_slot -- --room_id <id>   # dev/e2e: reveal a room's question now
 pnpm --filter api reliability:golden    # reliability test 1
 pnpm --filter api reliability:planted   # reliability test 2
 pnpm --filter prediction_model backtest

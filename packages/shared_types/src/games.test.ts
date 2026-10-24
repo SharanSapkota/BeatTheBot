@@ -8,11 +8,14 @@ const team = {
   short_name: "KÄR",
   city: "Oulu",
   logo_url: null,
+  sport: "hockey",
   data_source: "liiga_api",
 } as const;
 
 const game: GameSummary = {
   id: "0b6f6f3e-6a5e-4f43-9b3e-7f2d5c1a9e10",
+  sport: "hockey",
+  league: { id: "00000000-0000-4000-8000-000000000001", name: "Liiga" },
   season: "2026-27",
   start_time: "2026-10-24T14:00:00.000Z",
   state: "live",
@@ -46,6 +49,7 @@ describe("game_detail_schema", () => {
     const detail = {
       ...game,
       demo_replay: false,
+      top_scorer: null,
       events: [
         {
           id: "period_end_1",
@@ -68,6 +72,32 @@ describe("game_detail_schema", () => {
     expect(
       game_detail_schema.safeParse({ ...game, state: "paused", events: [], demo_replay: false })
         .success,
+    ).toBe(false);
+  });
+});
+
+describe("sport fields", () => {
+  it("accepts a football game with a draw and admin-entered data", () => {
+    const football = {
+      ...game,
+      sport: "football",
+      data_source: "admin",
+      home_goals: 2,
+      away_goals: 2,
+    };
+    expect(
+      game_day_schema.parse({ date: "2026-10-24", games: [football], demo_replay: false }).games[0]
+        ?.sport,
+    ).toBe("football");
+  });
+
+  it("rejects an unknown sport", () => {
+    expect(
+      game_day_schema.safeParse({
+        date: "2026-10-24",
+        games: [{ ...game, sport: "curling" }],
+        demo_replay: false,
+      }).success,
     ).toBe(false);
   });
 });

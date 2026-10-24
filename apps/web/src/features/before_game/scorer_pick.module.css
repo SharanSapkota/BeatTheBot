@@ -51,10 +51,10 @@
   color: var(--color_label);
 }
 
-.ai_tag {
+.form_tag {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color_ai);
+  color: var(--color_brand_text);
   white-space: nowrap;
 }
 
@@ -85,7 +85,7 @@
   }
 
   .meta,
-  .ai_tag {
+  .form_tag {
     font-size: 15px;
   }
 

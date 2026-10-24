@@ -63,7 +63,7 @@ export interface QuestionsRepository {
     answer: string,
     points_awarded: number | null,
   ): Promise<boolean>;
-  /** The facts of the game's latest fact sheet (saved with the "what it means" story). */
+  /** The facts of the game's latest summary fact sheet (saved with the AI summary). */
   find_latest_facts(game_id: string): Promise<Fact[] | undefined>;
 }
 
@@ -237,6 +237,7 @@ export class KyselyQuestionsRepository implements QuestionsRepository {
       .selectFrom("fact_sheets")
       .select("facts")
       .where("game_id", "=", game_id)
+      .where("kind", "=", "summary")
       .orderBy("built_at", "desc")
       .limit(1)
       .executeTakeFirst();

@@ -7,6 +7,7 @@ export const account_copy = {
   name_hint: "1–30 characters",
   submit: "Save and lock in",
   submit_answer: "Save and answer",
+  submit_pick: "Save and pick",
   submitting: "Saving…",
   cancel: "Cancel",
   name_required: "Write a name of 1–30 characters.",

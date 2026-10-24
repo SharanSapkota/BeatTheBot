@@ -33,6 +33,8 @@ export interface StoredPredictionRow {
 
 export interface CrowdCounts {
   home_picks: number;
+  /** Football: picks with no winner (a draw). */
+  draw_picks: number;
   total_picks: number;
 }
 
@@ -152,10 +154,18 @@ export class KyselyAiPredictionsRepository implements AiPredictionsRepository {
           .count<string>("user_predictions.id")
           .filterWhere("user_predictions.predicted_winner_team_id", "=", home_team_id)
           .as("home_picks"),
+        eb.fn
+          .count<string>("user_predictions.id")
+          .filterWhere("user_predictions.predicted_winner_team_id", "is", null)
+          .as("draw_picks"),
       ])
       .where("user_predictions.game_id", "=", game_id)
       .executeTakeFirstOrThrow();
-    return { home_picks: Number(row.home_picks), total_picks: Number(row.total_picks) };
+    return {
+      home_picks: Number(row.home_picks),
+      draw_picks: Number(row.draw_picks),
+      total_picks: Number(row.total_picks),
+    };
   }
 
   async find_latest_season_odds(): Promise<SeasonOddsRows | undefined> {
@@ -190,6 +200,7 @@ export class KyselyAiPredictionsRepository implements AiPredictionsRepository {
         "teams.short_name",
         "teams.city",
         "teams.logo_url",
+        "teams.sport",
         "teams.data_source",
       ])
       .where("team_season_odds.model_run_id", "=", run.id)
@@ -211,6 +222,7 @@ export class KyselyAiPredictionsRepository implements AiPredictionsRepository {
           short_name: row.short_name,
           city: row.city,
           logo_url: row.logo_url,
+          sport: row.sport,
           data_source: row.data_source,
         },
       })),

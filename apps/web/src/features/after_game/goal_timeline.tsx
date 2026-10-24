@@ -1,7 +1,8 @@
 import type { GameDetail } from "@voita_kone/shared_types";
+import { SPORTS } from "@voita_kone/scoring";
 import { Card } from "../../components/card";
 import { KalevaSectionTitle } from "../../components/kaleva_section_title";
-import { format_compact_score, format_game_time } from "../../lib/format";
+import { format_compact_score, format_game_time, format_period } from "../../lib/format";
 import { team_mark } from "../../lib/team_colors";
 import { after_copy } from "./copy";
 import styles from "./goal_timeline.module.css";
@@ -10,8 +11,7 @@ import styles from "./goal_timeline.module.css";
 const LEFT_X = 10;
 const RIGHT_X = 330;
 const LINE_Y = 48;
-const REGULATION_SECONDS = 3600;
-const OVERTIME_END_SECONDS = 3900;
+const OVERTIME_SECONDS = 5 * 60;
 
 export function time_to_x(game_time_seconds: number, game_length_seconds: number): number {
   return (
@@ -38,11 +38,17 @@ export function score_label_rows(goal_xs: readonly number[]): number[] {
 
 /** Goals on a line through the game, each with the score after it (animated in order). */
 export function GoalTimeline({ game }: { game: GameDetail }) {
+  const { regulation_periods, period_seconds } = SPORTS[game.sport];
+  const regulation_seconds = regulation_periods * period_seconds;
   const goals = game.events.filter((event) => event.event_type === "goal" && event.period < 5);
-  const length = goals.some((goal) => goal.game_time_seconds > REGULATION_SECONDS)
-    ? OVERTIME_END_SECONDS
-    : REGULATION_SECONDS;
-  const period_ticks = [1200, 2400].map((seconds) => time_to_x(seconds, length));
+  const length = goals.some((goal) => goal.game_time_seconds > regulation_seconds)
+    ? regulation_seconds + OVERTIME_SECONDS
+    : regulation_seconds;
+  // A tick between periods (hockey 20:00 and 40:00, football half time).
+  const period_ticks = Array.from(
+    { length: regulation_periods - 1 },
+    (_, index) => (index + 1) * period_seconds,
+  ).map((seconds) => time_to_x(seconds, length));
   const label_rows = score_label_rows(
     goals.map((goal) => time_to_x(goal.game_time_seconds, length)),
   );
@@ -113,15 +119,17 @@ export function GoalTimeline({ game }: { game: GameDetail }) {
             </g>
           );
         })}
-        <text x="10" y="86" fontSize="11" className={styles.axis_label}>
-          1st
-        </text>
-        <text x="160" y="86" fontSize="11" className={styles.axis_label}>
-          2nd
-        </text>
-        <text x="300" y="86" fontSize="11" className={styles.axis_label}>
-          3rd
-        </text>
+        {Array.from({ length: regulation_periods }, (_, index) => (
+          <text
+            key={index}
+            x={10 + (index * 290) / Math.max(1, regulation_periods - 1)}
+            y="86"
+            fontSize="11"
+            className={styles.axis_label}
+          >
+            {format_period(index + 1, game.sport)}
+          </text>
+        ))}
       </svg>
       <p className={styles.caption}>{after_copy.timeline_caption}</p>
     </Card>

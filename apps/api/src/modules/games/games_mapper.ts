@@ -6,14 +6,13 @@ import {
   type GameSummary,
   type PlayerRef,
 } from "@voita_kone/shared_types";
-import { to_data_source, to_team_summary } from "../teams/teams_mapper";
+import { sport_config } from "@voita_kone/scoring";
+import { to_data_source, to_sport, to_team_summary } from "../teams/teams_mapper";
 import type { EventRow, GameRow, PlayerRefRow } from "./games_repository";
 
-const SECONDS_PER_PERIOD = 20 * 60;
-const REGULATION_END_SECONDS = 3 * SECONDS_PER_PERIOD;
-// Liiga regular-season overtime is 5 minutes (3600-3900); the shootout is logged at 3900.
-const OVERTIME_END_SECONDS = REGULATION_END_SECONDS + 5 * 60;
-const OVERTIME_PERIOD = 4;
+// Liiga regular-season overtime is 5 minutes (3600-3900; the shootout is logged at 3900), and so
+// is basketball overtime. Football league games have no extra time.
+const OVERTIME_SECONDS = 5 * 60;
 const STATE_BY_STATUS: Record<string, GameState> = {
   scheduled: "upcoming",
   live: "live",
@@ -41,6 +40,8 @@ export function is_featured(game: GameRow, featured_team_external_id: string): b
 export function to_game_summary(game: GameRow, featured_team_external_id: string): GameSummary {
   return {
     id: game.id,
+    sport: to_sport(game.sport),
+    league: game.league,
     season: game.season,
     start_time: game.start_time.toISOString(),
     state: to_game_state(game.status),
@@ -81,9 +82,11 @@ function to_player_ref(player: PlayerRefRow): PlayerRef {
 
 /** How many periods have ended: all played periods when final, those before the current one when live. */
 function count_ended_periods(game: GameSummary): number {
+  const { regulation_periods } = sport_config(game.sport);
   if (game.state === "final") {
-    // An overtime game ends on the winning goal, so the overtime period has no "end".
-    return game.ended_in === "shootout" ? OVERTIME_PERIOD : 3;
+    // An overtime game ends on the winning goal (or buzzer), so overtime has no separate "end";
+    // a hockey shootout follows a full overtime.
+    return game.ended_in === "shootout" ? regulation_periods + 1 : regulation_periods;
   }
   if (game.state === "live" && game.period) {
     return game.period - 1;
@@ -91,8 +94,11 @@ function count_ended_periods(game: GameSummary): number {
   return 0;
 }
 
-function period_end_time(period: number): number {
-  return period < OVERTIME_PERIOD ? period * SECONDS_PER_PERIOD : OVERTIME_END_SECONDS;
+function period_end_time(game: GameSummary, period: number): number {
+  const { regulation_periods, period_seconds } = sport_config(game.sport);
+  return period <= regulation_periods
+    ? period * period_seconds
+    : regulation_periods * period_seconds + OVERTIME_SECONDS;
 }
 
 function period_end_events(game: GameSummary): GameEvent[] {
@@ -102,7 +108,7 @@ function period_end_events(game: GameSummary): GameEvent[] {
       id: `period_end_${String(period)}`,
       event_type: "period_end",
       period,
-      game_time_seconds: period_end_time(period),
+      game_time_seconds: period_end_time(game, period),
       team_id: null,
       player: null,
       assists: [],
@@ -161,6 +167,15 @@ export function build_game_events(game: GameSummary, rows: readonly EventRow[]):
   return with_running_score(game, events);
 }
 
-export function to_game_detail(game: GameSummary, rows: readonly EventRow[]): GameDetail {
-  return { ...game, events: build_game_events(game, rows), demo_replay: false };
+export function to_game_detail(
+  game: GameSummary,
+  rows: readonly EventRow[],
+  top_scorer: PlayerRefRow | null = null,
+): GameDetail {
+  return {
+    ...game,
+    events: build_game_events(game, rows),
+    top_scorer: top_scorer && game.state === "final" ? to_player_ref(top_scorer) : null,
+    demo_replay: false,
+  };
 }

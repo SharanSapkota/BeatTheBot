@@ -4,7 +4,7 @@ export interface DemoUser {
   /** provider_subject of the user's 'device' identity. */
   device_id: string;
   display_name: string;
-  role: "player" | "editor";
+  role: "user" | "editor";
   email: string | null;
   preferred_language: "fi" | "sv" | "en";
   is_subscriber: boolean;
@@ -34,11 +34,11 @@ export interface DemoPrediction {
 export function build_demo_users(editor_email: string): DemoUser[] {
   return [
     { device_id: "demo_device_editor", display_name: "Kaleva urheilutoimitus", role: "editor", email: editor_email.toLowerCase(), preferred_language: "fi", is_subscriber: true },
-    { device_id: "demo_device_mika", display_name: "MikaK_Oulu", role: "player", email: null, preferred_language: "fi", is_subscriber: true },
-    { device_id: "demo_device_sanna", display_name: "sanna.l", role: "player", email: null, preferred_language: "fi", is_subscriber: false },
-    { device_id: "demo_device_jani", display_name: "TappaJani", role: "player", email: null, preferred_language: "fi", is_subscriber: true },
-    { device_id: "demo_device_erik", display_name: "Erik_Vaasa", role: "player", email: null, preferred_language: "sv", is_subscriber: false },
-    { device_id: "demo_device_hannah", display_name: "HockeyHannah", role: "player", email: null, preferred_language: "en", is_subscriber: false },
+    { device_id: "demo_device_mika", display_name: "MikaK_Oulu", role: "user", email: null, preferred_language: "fi", is_subscriber: true },
+    { device_id: "demo_device_sanna", display_name: "sanna.l", role: "user", email: null, preferred_language: "fi", is_subscriber: false },
+    { device_id: "demo_device_jani", display_name: "TappaJani", role: "user", email: null, preferred_language: "fi", is_subscriber: true },
+    { device_id: "demo_device_erik", display_name: "Erik_Vaasa", role: "user", email: null, preferred_language: "sv", is_subscriber: false },
+    { device_id: "demo_device_hannah", display_name: "HockeyHannah", role: "user", email: null, preferred_language: "en", is_subscriber: false },
   ];
 }
 

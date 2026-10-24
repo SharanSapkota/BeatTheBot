@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { AiPickRow, GoalRow } from "../../jobs/score_predictions_repository";
+import type { GoalRow } from "../../jobs/score_predictions_repository";
 import type { LeaderboardAnswerPoints, LeaderboardPick } from "./leaderboard_builder";
-import type { LeaderboardRepository, SeasonGameRow } from "./leaderboard_repository";
+import type { LeaderboardRepository, SeasonGameRow, SportSeason } from "./leaderboard_repository";
 import { LeaderboardService, PRIZE } from "./leaderboard_service";
 
 const NOW = new Date("2026-10-24T12:00:00.000Z");
 const GAME: SeasonGameRow = {
   id: "game",
+  sport: "hockey",
+  top_scorer_id: null,
   start_time: new Date("2026-10-23T16:30:00.000Z"),
   home_team_id: "home",
   away_team_id: "away",
@@ -16,16 +18,22 @@ const GAME: SeasonGameRow = {
 };
 
 class FakeLeaderboardRepository implements LeaderboardRepository {
-  season_asked: string | undefined;
+  sports_asked: readonly string[] = [];
+  seasons_asked: readonly SportSeason[] = [];
   answer_points: LeaderboardAnswerPoints[] = [];
 
-  find_current_season(): Promise<string | undefined> {
-    return Promise.resolve("2026-27");
+  find_current_seasons(sports: readonly SportSeason["sport"][]): Promise<SportSeason[]> {
+    this.sports_asked = sports;
+    const seasons: SportSeason[] = [
+      { sport: "hockey", season: "2026-27" },
+      { sport: "football", season: "2026" },
+    ];
+    return Promise.resolve(seasons.filter((season) => sports.includes(season.sport)));
   }
 
-  list_final_games(season: string): Promise<SeasonGameRow[]> {
-    this.season_asked = season;
-    return Promise.resolve([GAME]);
+  list_final_games(seasons: readonly SportSeason[]): Promise<SeasonGameRow[]> {
+    this.seasons_asked = seasons;
+    return Promise.resolve(seasons.some((season) => season.sport === "hockey") ? [GAME] : []);
   }
 
   list_goals(): Promise<GoalRow[]> {
@@ -40,18 +48,6 @@ class FakeLeaderboardRepository implements LeaderboardRepository {
       goal("away", "makela", 2),
       goal("home", "niemi", 2),
       goal("home", "laine", 3),
-    ]);
-  }
-
-  list_ai_picks(): Promise<AiPickRow[]> {
-    return Promise.resolve([
-      {
-        game_id: GAME.id,
-        winner_team_id: "home",
-        home_goals: 3,
-        away_goals: 1,
-        scorer_id: "laine",
-      },
     ]);
   }
 
@@ -73,18 +69,23 @@ class FakeLeaderboardRepository implements LeaderboardRepository {
 }
 
 describe("LeaderboardService", () => {
-  it("builds the current season's leaderboard with the AI's points from its own pick", async () => {
+  it("builds the current season's leaderboard from the fans' points only", async () => {
     const repository = new FakeLeaderboardRepository();
 
-    const board = await new LeaderboardService(repository, () => NOW).get_leaderboard("week", "u1");
+    const board = await new LeaderboardService(repository, () => NOW).get_leaderboard(
+      "week",
+      "all",
+      "u1",
+    );
 
-    expect(repository.season_asked).toBe("2026-27");
-    expect(board.prize).toEqual(PRIZE);
-    // The AI got winner + exact score + scorer right: 50 points.
-    expect(board.rows.map((row) => [row.kind, row.points])).toEqual([
-      ["ai", 50],
-      ["you", 10],
+    expect(repository.seasons_asked).toEqual([
+      { sport: "hockey", season: "2026-27" },
+      { sport: "football", season: "2026" },
     ]);
+    expect(board.sport).toBe("all");
+    expect(board.prize).toEqual(PRIZE);
+    expect(board.rows.map((row) => [row.kind, row.points])).toEqual([["you", 10]]);
+    expect(board.summary).toEqual({ you_accuracy: 1, fans_accuracy: 1, games_count: 1 });
   });
 
   it("adds live pick, quiz and vote points, also for fans without a winner pick", async () => {
@@ -94,14 +95,32 @@ describe("LeaderboardService", () => {
       { user_id: "u2", display_name: "Sanna", game_id: GAME.id, points_awarded: 5 },
     ];
 
-    const board = await new LeaderboardService(repository, () => NOW).get_leaderboard("week", "u1");
+    const board = await new LeaderboardService(repository, () => NOW).get_leaderboard(
+      "week",
+      "all",
+      "u1",
+    );
 
     expect(board.rows.map((row) => [row.kind, row.display_name, row.points])).toEqual([
-      ["ai", "Kaleva AI", 50],
       ["you", "Mika", 18],
       ["user", "Sanna", 5],
     ]);
     // Answers don't change winner accuracy: only Mika picked a winner.
-    expect(board.accuracy.fans).toBe(1);
+    expect(board.summary.fans_accuracy).toBe(1);
+  });
+
+  it("filters one sport: its own current season only", async () => {
+    const repository = new FakeLeaderboardRepository();
+
+    const board = await new LeaderboardService(repository, () => NOW).get_leaderboard(
+      "season",
+      "football",
+      null,
+    );
+
+    expect(repository.sports_asked).toEqual(["football"]);
+    expect(repository.seasons_asked).toEqual([{ sport: "football", season: "2026" }]);
+    expect(board.sport).toBe("football");
+    expect(board.rows).toEqual([]);
   });
 });

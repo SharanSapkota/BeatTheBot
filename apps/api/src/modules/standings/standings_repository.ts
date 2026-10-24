@@ -67,6 +67,7 @@ export class KyselyStandingsRepository implements StandingsRepository {
               "teams.short_name",
               "teams.city",
               "teams.logo_url",
+              "teams.sport",
               "teams.data_source",
             ])
             .whereRef("teams.id", "=", "standings_snapshots.team_id"),

@@ -26,14 +26,14 @@ describe("KyselyTeamsRepository (test database)", () => {
   });
 
   it("lists all 17 teams", async () => {
-    const teams = await repository.list_teams();
+    const teams = await repository.list_teams("hockey");
 
     expect(teams).toHaveLength(17);
     expect(new Set(teams.map((team) => team.external_id)).size).toBe(17);
   });
 
   it("finds the current season from the latest game", async () => {
-    await expect(repository.find_current_season()).resolves.toBe("2026-27");
+    await expect(repository.find_current_season("hockey")).resolves.toBe("2026-27");
   });
 
   it("counts season goals and goals in the last 5 finished games from real games only", async () => {

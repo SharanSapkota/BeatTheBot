@@ -1,8 +1,8 @@
-import { ai_prediction_schema, win_chance_schema } from "@voita_kone/shared_types";
+import { data_says_schema, win_chance_schema } from "@voita_kone/shared_types";
 import { describe, expect, it } from "vitest";
 import { to_game_summary } from "../games/games_mapper";
 import { AWAY_TEAM, HOME_TEAM, build_game_row } from "../../test_helpers/game_rows";
-import { AI_PICK_LABEL, to_ai_prediction, to_crowd, to_win_chance } from "./ai_predictions_mapper";
+import { DATA_SAYS_LABEL, to_crowd, to_data_says, to_win_chance } from "./ai_predictions_mapper";
 import type { StoredPredictionRow } from "./ai_predictions_repository";
 
 const GAME_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -48,30 +48,43 @@ const STORED: StoredPredictionRow = {
 
 describe("to_crowd", () => {
   it("is null without picks and a share with picks", () => {
-    expect(to_crowd({ home_picks: 0, total_picks: 0 })).toBeNull();
-    expect(to_crowd({ home_picks: 3, total_picks: 4 })).toEqual({
-      home_pick_share: 0.75,
+    expect(to_crowd({ home_picks: 0, draw_picks: 0, total_picks: 0 })).toBeNull();
+    expect(to_crowd({ home_picks: 3, draw_picks: 0, total_picks: 4 })).toEqual({
       total_picks: 4,
+      home_picks: 3,
+      away_picks: 1,
+      draw_picks: 0,
+      home_pick_share: 0.75,
+    });
+  });
+
+  it("counts draws apart from home and away picks", () => {
+    expect(to_crowd({ home_picks: 2, draw_picks: 1, total_picks: 4 })).toMatchObject({
+      home_picks: 2,
+      away_picks: 1,
+      draw_picks: 1,
     });
   });
 });
 
-describe("to_ai_prediction", () => {
-  it("returns the API shape with only the public reason fields", () => {
-    const prediction = ai_prediction_schema.parse(to_ai_prediction(STORED, null));
+describe("to_data_says", () => {
+  it("returns only neutral numbers: no pick, no score, no scorer, no reasons", () => {
+    const data = data_says_schema.parse(to_data_says(STORED, null));
 
-    expect(prediction.reasons).toEqual([
-      {
-        fact_id: "venue_record:home:x",
-        type: "venue_record",
-        values: { team: "Kärpät", wins: 4, games: 5 },
-        text_en: "Kärpät won 4 of their last 5 home games.",
-      },
+    expect(Object.keys(data).sort()).toEqual([
+      "away_win_probability",
+      "calculated_at",
+      "crowd",
+      "game_id",
+      "home_win_probability",
+      "label_text",
+      "model_version",
+      "overtime_probability",
+      "stakes",
     ]);
-    expect(prediction.predicted_scorer).toMatchObject({ id: SCORER_ID, recent_goals: 4 });
-    expect(prediction.stakes).toHaveLength(1);
-    expect(prediction.label_text).toBe(AI_PICK_LABEL);
-    expect(prediction.calculated_at).toBe("2026-10-24T13:05:00.000Z");
+    expect(data.stakes).toHaveLength(1);
+    expect(data.label_text).toBe(DATA_SAYS_LABEL);
+    expect(data.calculated_at).toBe("2026-10-24T13:05:00.000Z");
   });
 });
 
@@ -96,7 +109,12 @@ describe("to_win_chance", () => {
     );
     const chance = win_chance_schema.parse(
       to_win_chance(
-        { ...summary, events: [goal("e1", HOME_TEAM.id, 600)], demo_replay: false },
+        {
+          ...summary,
+          events: [goal("e1", HOME_TEAM.id, 600)],
+          top_scorer: null,
+          demo_replay: false,
+        },
         live_model,
         "v1",
         new Date("2026-10-24T16:00:00Z"),
@@ -121,6 +139,7 @@ describe("to_win_chance", () => {
           goal("e3", AWAY_TEAM.id, 3900, 5),
         ],
         demo_replay: false,
+        top_scorer: null,
       },
       live_model,
       "v1",

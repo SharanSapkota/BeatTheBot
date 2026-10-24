@@ -1,4 +1,12 @@
-import type { GameDay, GameDetail, GameState, GameSummary } from "@voita_kone/shared_types";
+import type {
+  GameDay,
+  GameDetail,
+  GameState,
+  GameSummary,
+  Sport,
+  SportsDay,
+} from "@voita_kone/shared_types";
+import { SPORT_IDS } from "@voita_kone/scoring";
 import { AppError } from "../../common/app_error";
 import {
   add_local_days,
@@ -24,6 +32,21 @@ export interface GameListQuery {
   to?: string;
   team_id?: string;
   state?: GameState;
+  sport: Sport;
+}
+
+/** Games and live games per sport, every sport listed (0 when it has none). */
+export function count_by_sport(
+  games: readonly Pick<GameRow, "sport" | "status">[],
+): SportsDay["sports"] {
+  return SPORT_IDS.map((sport) => {
+    const mine = games.filter((game) => game.sport === sport);
+    return {
+      sport,
+      game_count: mine.length,
+      live_count: mine.filter((game) => game.status === "live").length,
+    };
+  });
 }
 
 export function game_not_found(game_id: string): AppError {
@@ -52,14 +75,22 @@ export class GamesService {
     return value;
   }
 
-  async get_game_day(date_value: string): Promise<GameDay> {
+  /** The hub: one sport's games of a Helsinki day. */
+  async get_game_day(date_value: string, sport: Sport): Promise<GameDay> {
     const date = this.resolve_date(date_value);
-    const games = await this.games_repository.list_games(helsinki_day_range(date));
+    const games = await this.games_repository.list_games({ ...helsinki_day_range(date), sport });
     return {
       date,
       games: order_game_day(games.map((game) => this.to_summary(game))),
       demo_replay: false,
     };
+  }
+
+  /** The sport tabs: every sport (config order) with its game count for the day. */
+  async get_sports_day(date_value: string): Promise<SportsDay> {
+    const date = this.resolve_date(date_value);
+    const games = await this.games_repository.list_games(helsinki_day_range(date));
+    return { date, sports: count_by_sport(games) };
   }
 
   /** Games from `from` to `to` (Helsinki days, inclusive), at most 31 days apart. */
@@ -83,6 +114,7 @@ export class GamesService {
       end: helsinki_day_range(to).end,
       team_id: query.team_id,
       statuses: query.state ? [STATUS_BY_STATE[query.state]] : undefined,
+      sport: query.sport,
     });
     return games.map((game) => this.to_summary(game));
   }
@@ -93,7 +125,7 @@ export class GamesService {
       throw game_not_found(game_id);
     }
     const events = await this.games_repository.list_events(game_id);
-    return to_game_detail(this.to_summary(game), events);
+    return to_game_detail(this.to_summary(game), events, game.top_scorer);
   }
 
   private to_summary(game: GameRow): GameSummary {

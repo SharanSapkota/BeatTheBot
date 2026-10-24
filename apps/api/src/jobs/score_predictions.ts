@@ -1,8 +1,15 @@
-import { score_pre_game, type GameResult, type PreGamePick } from "@voita_kone/scoring";
+import {
+  outcome_key,
+  score_pre_game,
+  type CrowdSplit,
+  type GameResult,
+  type PreGamePick,
+  type SportId,
+} from "@voita_kone/scoring";
 import type { Clock } from "../common/clock";
 import type { Logger } from "../common/logger";
 import type {
-  AiPickRow,
+  CrowdRow,
   GoalRow,
   ScorableGame,
   ScorePredictionsRepository,
@@ -23,35 +30,47 @@ export function to_game_result(game: ScorableGame, goals: readonly GoalRow[]): G
     away_goals: game.away_goals,
     ended_in: game.ended_in,
     goals: goals.filter((goal) => goal.game_id === game.id),
+    top_scorer_id: game.top_scorer_id,
   };
 }
 
-function to_pick(row: AiPickRow | UnscoredPrediction): PreGamePick {
+export function to_crowd_split(game_id: string, rows: readonly CrowdRow[]): CrowdSplit {
+  const mine = rows.filter((row) => row.game_id === game_id);
+  return {
+    total_picks: mine.reduce((total, row) => total + row.pick_count, 0),
+    picks_by_team: Object.fromEntries(
+      mine.map((row) => [outcome_key(row.winner_team_id), row.pick_count]),
+    ),
+  };
+}
+
+function to_pick(row: UnscoredPrediction): PreGamePick {
   return {
     winner_team_id: row.winner_team_id,
     home_goals: row.home_goals,
     away_goals: row.away_goals,
     scorer_id: row.scorer_id,
+    margin_band: row.margin_band,
   };
 }
 
-/** Points for every unscored pick of one finished game (rules in @voita_kone/scoring). */
+/** Points for every pick to score in one finished game (rules in @voita_kone/scoring). */
 export function score_game(
+  sport: SportId,
   result: GameResult,
-  ai_pick: AiPickRow | undefined,
+  crowd: CrowdSplit,
   predictions: readonly UnscoredPrediction[],
 ): ScoreUpdate[] {
-  const ai = ai_pick ? to_pick(ai_pick) : null;
   return predictions.map((prediction) => ({
     prediction_id: prediction.id,
-    points_awarded: score_pre_game(to_pick(prediction), result, ai).total,
+    points_awarded: score_pre_game(sport, to_pick(prediction), result, crowd).total,
   }));
 }
 
 /**
  * Fills `points_awarded` for before-game picks of finished games. Idempotent: only picks
- * without `scored_at` are scored. Runs when live sync sees a final, after the Liiga sync
- * and after seeding.
+ * without `scored_at`, or scored with older rules (`scoring_version`), are scored. Runs on API
+ * start, when live sync sees a final, after the Liiga sync and after seeding.
  */
 export class ScorePredictionsJob {
   constructor(
@@ -66,16 +85,17 @@ export class ScorePredictionsJob {
       return { scored_game_count: 0, scored_prediction_count: 0 };
     }
     const game_ids = games.map((game) => game.id);
-    const [goals, ai_picks, predictions] = await Promise.all([
+    const [goals, crowd, predictions] = await Promise.all([
       this.repository.list_goals(game_ids),
-      this.repository.list_ai_picks(game_ids),
+      this.repository.list_crowd(game_ids),
       this.repository.list_unscored_predictions(game_ids),
     ]);
 
     const updates = games.flatMap((game) =>
       score_game(
+        game.sport,
         to_game_result(game, goals),
-        ai_picks.find((pick) => pick.game_id === game.id),
+        to_crowd_split(game.id, crowd),
         predictions.filter((prediction) => prediction.game_id === game.id),
       ),
     );

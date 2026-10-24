@@ -1,5 +1,5 @@
-import type { Leaderboard, LeaderboardPeriod } from "@voita_kone/shared_types";
-import { season_config } from "@voita_kone/prediction_model";
+import type { Leaderboard, LeaderboardPeriod, SportFilter } from "@voita_kone/shared_types";
+import { SPORT_IDS } from "@voita_kone/scoring";
 import type { Clock } from "../../common/clock";
 import { to_game_result } from "../../jobs/score_predictions";
 import { build_leaderboard, type LeaderboardGame } from "./leaderboard_builder";
@@ -17,37 +17,29 @@ export class LeaderboardService {
     private readonly clock: Clock,
   ) {}
 
+  /** Fans only, from the current season of every sport (`all`) or of one sport. */
   async get_leaderboard(
     period: LeaderboardPeriod,
+    sport: SportFilter,
     me_user_id: string | null,
   ): Promise<Leaderboard> {
-    const season = (await this.repository.find_current_season()) ?? season_config.season;
-    const rows = await this.repository.list_final_games(season);
+    const sports = sport === "all" ? SPORT_IDS : [sport];
+    const seasons = await this.repository.find_current_seasons(sports);
+    const rows = await this.repository.list_final_games(seasons);
     const game_ids = rows.map((row) => row.id);
-    const [goals, ai_picks, picks, answers] = await Promise.all([
+    const [goals, picks, answers] = await Promise.all([
       this.repository.list_goals(game_ids),
-      this.repository.list_ai_picks(game_ids),
       this.repository.list_scored_picks(game_ids),
       this.repository.list_answer_points(game_ids),
     ]);
-    const games: LeaderboardGame[] = rows.map((row) => {
-      const ai_pick = ai_picks.find((pick) => pick.game_id === row.id);
-      return {
-        id: row.id,
-        start_time: row.start_time,
-        result: to_game_result(row, goals),
-        ai_pick: ai_pick
-          ? {
-              winner_team_id: ai_pick.winner_team_id,
-              home_goals: ai_pick.home_goals,
-              away_goals: ai_pick.away_goals,
-              scorer_id: ai_pick.scorer_id,
-            }
-          : null,
-      };
-    });
+    const games: LeaderboardGame[] = rows.map((row) => ({
+      id: row.id,
+      start_time: row.start_time,
+      result: to_game_result(row, goals),
+    }));
     return build_leaderboard({
       period,
+      sport,
       now: this.clock(),
       games,
       picks,

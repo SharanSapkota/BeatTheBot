@@ -1,7 +1,9 @@
+import { SPORTS } from "@voita_kone/scoring";
+import type { Sport } from "@voita_kone/shared_types";
+
 // Display formats from the design. Times are shown in Europe/Helsinki; the API sends UTC.
 
 const HELSINKI = "Europe/Helsinki";
-const SECONDS_PER_PERIOD = 20 * 60;
 /** No-break space as the Finnish thousands separator ("1 240"); the font subsets lack U+202F. */
 const NO_BREAK_SPACE = "\u00A0";
 const EN_DASH = "\u2013";
@@ -63,30 +65,76 @@ export function format_optional_percent(share: number | null): string {
   return share === null ? "–" : format_percent(share);
 }
 
-/** 2 -> "2nd"; overtime and shootout get their own names. */
-export function format_period(period: number): string {
-  if (period === 4) {
-    return "OT";
+const ORDINALS = ["1st", "2nd", "3rd", "4th"];
+
+/** Short period: 2 -> "2nd" (hockey, football halves), "Q3" (basketball); "OT", "SO". */
+export function format_period(period: number, sport: Sport = "hockey"): string {
+  const { regulation_periods } = SPORTS[sport];
+  if (period > regulation_periods) {
+    return sport === "hockey" && period === 5 ? "SO" : "OT";
   }
-  if (period === 5) {
-    return "SO";
+  if (sport === "basketball") {
+    return `Q${String(period)}`;
   }
-  return ["1st", "2nd", "3rd"][period - 1] ?? `${String(period)}th`;
+  return ORDINALS[period - 1] ?? `${String(period)}th`;
 }
 
 function two_digits(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-/** Clock inside the period: game second 1961 in the 2nd period -> "12:41". */
-export function format_period_clock(game_time_seconds: number, period: number): string {
-  const in_period = Math.max(0, game_time_seconds - (Math.min(period, 4) - 1) * SECONDS_PER_PERIOD);
+const PERIOD_WORD: Record<Sport, string> = {
+  hockey: "period",
+  football: "half",
+  basketball: "quarter",
+};
+
+/**
+ * The period's name: "2nd period", "overtime", "shootout" (hockey); "1st half" (football);
+ * "3rd quarter", "overtime" (basketball).
+ */
+export function format_period_name(period: number, sport: Sport = "hockey"): string {
+  const { regulation_periods } = SPORTS[sport];
+  if (period > regulation_periods) {
+    return sport === "hockey" && period === 5 ? "shootout" : "overtime";
+  }
+  return `${ORDINALS[period - 1] ?? `${String(period)}th`} ${PERIOD_WORD[sport]}`;
+}
+
+/** Football shows the game minute, as on TV: game second 3720 -> "63'". */
+function football_minute(game_time_seconds: number): string {
+  return `${String(Math.floor(game_time_seconds / 60) + 1)}'`;
+}
+
+/**
+ * Clock inside the period: game second 1961 in the 2nd period -> "12:41" (hockey); quarters
+ * of 10 minutes in basketball; the game minute in football ("63'").
+ */
+export function format_period_clock(
+  game_time_seconds: number,
+  period: number,
+  sport: Sport = "hockey",
+): string {
+  if (sport === "football") {
+    return football_minute(game_time_seconds);
+  }
+  const { regulation_periods, period_seconds } = SPORTS[sport];
+  const period_start = (Math.min(period, regulation_periods + 1) - 1) * period_seconds;
+  const in_period = Math.max(0, game_time_seconds - period_start);
   return `${two_digits(Math.floor(in_period / 60))}:${two_digits(in_period % 60)}`;
 }
 
-/** Event time as in the design: "2. 05:12" */
-export function format_event_time(period: number, game_time_seconds: number): string {
-  return `${String(Math.min(period, 4))}. ${format_period_clock(game_time_seconds, period)}`;
+/** Event time as in the design: "2. 05:12"; football: the minute ("63'"). */
+export function format_event_time(
+  period: number,
+  game_time_seconds: number,
+  sport: Sport = "hockey",
+): string {
+  if (sport === "football") {
+    return football_minute(game_time_seconds);
+  }
+  const shown_period = Math.min(period, SPORTS[sport].regulation_periods + 1);
+  return `${String(shown_period)}. ${format_period_clock(game_time_seconds, period, sport)}`;
 }
 
 /** Game minute and second from the start: 3063 -> "51:03" */

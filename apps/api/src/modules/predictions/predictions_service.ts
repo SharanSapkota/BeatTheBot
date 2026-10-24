@@ -1,7 +1,13 @@
-import type { PredictionRequest, UserPrediction } from "@voita_kone/shared_types";
+import {
+  margin_band_schema,
+  type PredictionRequest,
+  type UserPrediction,
+} from "@voita_kone/shared_types";
 import { AppError } from "../../common/app_error";
 import type { Clock } from "../../common/clock";
 import { game_not_found } from "../games/games_service";
+import { to_sport } from "../teams/teams_mapper";
+import { pick_rule_error } from "./pick_rules";
 import type {
   PickableGameRow,
   PredictionRow,
@@ -16,6 +22,7 @@ export function to_user_prediction(row: PredictionRow): UserPrediction {
     predicted_home_goals: row.predicted_home_goals,
     predicted_away_goals: row.predicted_away_goals,
     predicted_scorer_id: row.predicted_scorer_id,
+    predicted_margin_band: margin_band_schema.nullable().parse(row.predicted_margin_band),
     points_awarded: row.points_awarded,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
@@ -60,7 +67,10 @@ export class PredictionsService {
     return rows.map(to_user_prediction);
   }
 
-  /** The game must exist and not have started; the winner and scorer must belong to it. */
+  /**
+   * The game must exist and not have started; the pick must fit the sport (pick_rules.ts); the
+   * winner and scorer must belong to the game.
+   */
   private async validated_values(
     game_id: string,
     pick: PredictionRequest,
@@ -72,7 +82,14 @@ export class PredictionsService {
     if (this.clock() >= game.start_time) {
       throw new AppError("PREDICTION_LOCKED", 409, `Picks for game ${game_id} locked at puck drop`);
     }
-    if (!is_team_of(game, pick.predicted_winner_team_id)) {
+    const rule_error = pick_rule_error(to_sport(game.sport), pick);
+    if (rule_error !== null) {
+      throw invalid_pick(rule_error);
+    }
+    if (
+      pick.predicted_winner_team_id !== null &&
+      !is_team_of(game, pick.predicted_winner_team_id)
+    ) {
       throw invalid_pick("The winner must be one of the two teams");
     }
     if (pick.predicted_scorer_id !== null) {

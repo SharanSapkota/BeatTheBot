@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import type { AiPrediction, ApiSuccess, SeasonOdds, WinChance } from "@voita_kone/shared_types";
+import type { ApiSuccess, Crowd, DataSays, SeasonOdds, WinChance } from "@voita_kone/shared_types";
 import { z } from "zod";
 import { set_cache_control } from "../../common/cache_control";
 import { game_not_found } from "../games/games_service";
@@ -22,12 +22,19 @@ export class AiPredictionsController {
     private readonly demo_service: DemoAiService | undefined,
   ) {}
 
-  get_prediction: RequestHandler = async (req, res) => {
-    const response: ApiSuccess<AiPrediction> = {
-      data: await this.service.get_prediction(parse_game_id(req.params)),
+  get_data_says: RequestHandler = async (req, res) => {
+    const response: ApiSuccess<DataSays> = {
+      data: await this.service.get_data_says(parse_game_id(req.params)),
     };
     set_cache_control(res, false);
     res.json(response);
+  };
+
+  get_crowd: RequestHandler = async (req, res) => {
+    const response: ApiSuccess<Crowd | null> = {
+      data: await this.service.get_crowd(parse_game_id(req.params)),
+    };
+    res.set("Cache-Control", "no-store").json(response);
   };
 
   get_win_chance: RequestHandler = async (req, res) => {
@@ -46,10 +53,10 @@ export class AiPredictionsController {
 
   // Replays are placed relative to "now", so they are never cached.
 
-  get_demo_prediction: RequestHandler = async (req, res) => {
+  get_demo_data_says: RequestHandler = async (req, res) => {
     const { moment } = demo_query_schema.parse(req.query);
-    const response: ApiSuccess<AiPrediction> = {
-      data: await this.require_demo().get_prediction(parse_game_id(req.params), moment),
+    const response: ApiSuccess<DataSays> = {
+      data: await this.require_demo().get_data_says(parse_game_id(req.params), moment),
     };
     set_cache_control(res, true);
     res.json(response);

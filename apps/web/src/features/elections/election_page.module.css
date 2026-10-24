@@ -1,0 +1,15 @@
+/* Dark band with the back link (white text), like the game screens. */
+.top {
+  background: var(--color_dark);
+  padding: 4px 12px;
+}
+
+@media (min-width: 900px) {
+  .top {
+    padding: 8px
+      max(
+        var(--desktop_gutter),
+        calc((100% - var(--content_max_width)) / 2 + var(--desktop_gutter))
+      );
+  }
+}

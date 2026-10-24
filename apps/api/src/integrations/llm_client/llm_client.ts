@@ -4,8 +4,6 @@
 export interface LlmRequest {
   system: string;
   prompt: string;
-  /** Low (≈0.2) for repeatable output. */
-  temperature: number;
   max_tokens: number;
 }
 
@@ -16,7 +14,16 @@ export interface LlmResponse {
 }
 
 export interface LlmClient {
+  /** Throws `LlmUnavailableError` when the provider can't be reached (then a template is used). */
   complete(request: LlmRequest): Promise<LlmResponse>;
+}
+
+/** The provider is down, rate limited, refused or unreachable: write the template instead. */
+export class LlmUnavailableError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "LlmUnavailableError";
+  }
 }
 
 /** How prompts embed a fact sheet (JSON between these markers). */

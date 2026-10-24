@@ -26,7 +26,7 @@ function goal_count(game: GameDetail): number {
 export function useQuestions(game: GameDetail, phase: QuestionPhase, enabled = true) {
   const { is_demo, moment } = useDemoMode();
   const token = useSessionToken();
-  const [, update] = useGamePicks(game.id);
+  const [, update] = useGamePicks(game);
   const query = useQuery({
     queryKey: [
       "questions",
@@ -107,7 +107,7 @@ interface PendingAnswer {
  */
 export function useAnswerQuestion(game: GameDetail): AnswerQuestion {
   const { is_demo } = useDemoMode();
-  const [, update] = useGamePicks(game.id);
+  const [, update] = useGamePicks(game);
   const query_client = useQueryClient();
   const [pending, set_pending] = useState<PendingAnswer | null>(null);
   const [error_text, set_error_text] = useState<string | null>(null);

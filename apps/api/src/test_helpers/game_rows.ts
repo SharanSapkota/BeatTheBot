@@ -1,5 +1,6 @@
 import type { EventRow, GameRow, PlayerRefRow } from "../modules/games/games_repository";
 import type { TeamRow } from "../modules/teams/teams_mapper";
+import { LIIGA_LEAGUE_ID } from "../db/leagues";
 
 // Builders for unit tests with fake repositories. Ids are valid v4 uuids.
 
@@ -10,6 +11,7 @@ export const HOME_TEAM: TeamRow = {
   short_name: "KÄR",
   city: "Oulu",
   logo_url: null,
+  sport: "hockey",
   data_source: "liiga_api",
 };
 
@@ -20,6 +22,7 @@ export const AWAY_TEAM: TeamRow = {
   short_name: "KAL",
   city: "Kuopio",
   logo_url: null,
+  sport: "hockey",
   data_source: "liiga_api",
 };
 
@@ -32,6 +35,7 @@ export function build_team_row(index: number, name: string): TeamRow {
     short_name: name.slice(0, 3).toUpperCase(),
     city: null,
     logo_url: null,
+    sport: "hockey",
     data_source: "liiga_api",
   };
 }
@@ -40,6 +44,8 @@ export function build_game_row(overrides: Partial<GameRow> = {}): GameRow {
   return {
     id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     external_id: "2701405",
+    sport: "hockey",
+    league: { id: LIIGA_LEAGUE_ID, name: "Liiga" },
     season: "2026-27",
     start_time: new Date("2026-10-23T15:30:00Z"),
     status: "final",
@@ -51,6 +57,7 @@ export function build_game_row(overrides: Partial<GameRow> = {}): GameRow {
     data_source: "liiga_api",
     home_team: HOME_TEAM,
     away_team: AWAY_TEAM,
+    top_scorer: null,
     ...overrides,
   };
 }

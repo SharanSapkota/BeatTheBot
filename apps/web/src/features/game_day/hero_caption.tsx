@@ -1,9 +1,11 @@
 import type { GameSummary } from "@voita_kone/shared_types";
 import { CategoryTag } from "../../components/category_tag";
 import { format_clock_time, format_percent } from "../../lib/format";
-import { useAiPrediction } from "../game/api";
+import { useDataSays } from "../game/api";
 import { center_text } from "./game_status";
 import { game_day_copy } from "./copy";
+import { category_of } from "./game_row";
+import { config_of } from "../../lib/sports";
 import styles from "./hero_caption.module.css";
 
 interface CaptionText {
@@ -19,7 +21,9 @@ function caption_text(game: GameSummary, stake_line: CaptionText | null): Captio
   if (game.state === "live") {
     return {
       headline: game_day_copy.live_headline(home, away, center_text(game)),
-      text: game_day_copy.live_text,
+      text: config_of(game.sport).has_model
+        ? game_day_copy.live_text
+        : game_day_copy.live_text_no_data,
     };
   }
   if (game.state === "final") {
@@ -36,9 +40,10 @@ function caption_text(game: GameSummary, stake_line: CaptionText | null): Captio
   );
 }
 
+/** Hockey only: the model's stakes ("Data says"). */
 function useStakeLine(game: GameSummary): CaptionText | null {
-  const prediction = useAiPrediction(game).data;
-  const stake = prediction?.stakes[0];
+  const has_model = config_of(game.sport).has_model;
+  const stake = useDataSays(has_model ? game : undefined).data?.stakes[0];
   if (!stake) {
     return null;
   }
@@ -63,7 +68,7 @@ export function HeroCaption({ game }: { game: GameSummary }) {
   const caption = caption_text(game, useStakeLine(game));
   return (
     <div className={styles.caption}>
-      <CategoryTag text={game_day_copy.category_tag} />
+      <CategoryTag text={category_of(game)} />
       <h2 className={styles.headline}>{caption.headline}</h2>
       <p className={styles.text}>{caption.text}</p>
     </div>

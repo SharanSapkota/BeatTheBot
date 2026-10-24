@@ -1,89 +1,78 @@
-import type { AiPrediction, GameDetail, GameSummary } from "@voita_kone/shared_types";
+import type { GameDetail, GameSummary } from "@voita_kone/shared_types";
+import { max_pick_points } from "@voita_kone/scoring";
 import { Link } from "react-router";
 import { AiChip } from "../../components/ai_chip";
+import { SampleBadge } from "../../components/sample_badge";
 import { StatusPill } from "../../components/status_pill";
 import { TeamBadge } from "../../components/team_badge";
 import { useDemoMode } from "../../lib/demo_mode";
 import { format_percent } from "../../lib/format";
 import { useGamePicks } from "../../lib/picks";
-import { POINTS, possible_points, winner_team_id } from "../../lib/points";
+import { possible_points, winner_team_id } from "../../lib/points";
+import { config_of } from "../../lib/sports";
 import { useWinChance } from "../during_game/api";
-import { to_ai_pick, useAiPrediction, useGameDetail } from "../game/api";
+import { useCrowd, useDataSays, useGameDetail } from "../game/api";
 import { useGamePoints } from "../game/use_game_points";
 import { center_text, game_status } from "./game_status";
 import { game_day_copy } from "./copy";
+import { crowd_line } from "./game_row";
 import { HeroCaption } from "./hero_caption";
 import styles from "./featured_game_card.module.css";
 
-const MAX_PREMATCH_POINTS = POINTS.winner + POINTS.exact_score + POINTS.scorer + POINTS.beat_ai;
-
-function ai_pick_text(game: GameSummary, prediction: AiPrediction | null | undefined): string {
-  if (prediction === undefined) {
-    return "…";
-  }
-  if (prediction === null) {
-    return game_day_copy.ai_pick_pending;
-  }
-  const home_is_pick = prediction.predicted_winner_team_id === game.home_team.id;
-  const winner = home_is_pick ? game.home_team : game.away_team;
-  const share = home_is_pick ? prediction.home_win_probability : prediction.away_win_probability;
-  return game_day_copy.ai_pick(winner.name, format_percent(share));
-}
-
 function UpcomingLines({ game }: { game: GameSummary }) {
-  const prediction = useAiPrediction(game).data;
-  const [picks] = useGamePicks(game.id);
+  const crowd = useCrowd(game.id).data;
+  const [picks] = useGamePicks(game);
   return (
     <>
-      <AiChip text={ai_pick_text(game, prediction)} variant="hero" />
+      <AiChip text={crowd_line(game, crowd)} variant="hero" tone="fans" />
       <span className={styles.your_line}>
         {picks.locked_at
-          ? game_day_copy.picks_saved(possible_points(picks, to_ai_pick(prediction)))
-          : game_day_copy.picks_not_made(MAX_PREMATCH_POINTS)}
+          ? game_day_copy.picks_saved(possible_points(picks, game, crowd ?? null))
+          : game_day_copy.picks_not_made(max_pick_points(game.sport))}
       </span>
     </>
   );
 }
 
-function LiveAiChip({ game }: { game: GameDetail }) {
-  const prediction = useAiPrediction(game).data;
-  const win_chance = useWinChance(game, prediction).data;
+function LiveDataChip({ game }: { game: GameDetail }) {
+  const data_says = useDataSays(game).data;
+  const win_chance = useWinChance(game, data_says).data;
   const home_share = win_chance?.points.at(-1)?.home_win_probability;
   let text = "…";
-  if (prediction === null) {
-    text = game_day_copy.ai_no_pick;
+  if (data_says === null) {
+    text = game_day_copy.data_not_ready;
   } else if (home_share !== undefined) {
-    text = game_day_copy.ai_now(game.home_team.name, format_percent(home_share));
+    text = game_day_copy.data_now(game.home_team.name, format_percent(home_share));
   }
   return <AiChip text={text} variant="hero" />;
 }
 
 function FinalLines({ game }: { game: GameDetail }) {
-  const prediction = useAiPrediction(game).data;
+  const crowd = useCrowd(game.id).data;
   const points = useGamePoints(game);
-  const picked_team =
-    prediction?.predicted_winner_team_id === game.away_team.id ? game.away_team : game.home_team;
-  const ai_right = picked_team.id === winner_team_id(game);
-  let ai_line: string = prediction === null ? game_day_copy.ai_no_pick : "…";
-  if (prediction) {
-    ai_line = ai_right
-      ? game_day_copy.ai_was_right(picked_team.name)
-      : game_day_copy.ai_was_wrong(picked_team.name);
+  const winner_id = winner_team_id(game);
+  let crowd_text = "…";
+  if (crowd === null) {
+    crowd_text = game_day_copy.fans_no_picks;
+  } else if (crowd && winner_id === null) {
+    crowd_text = game_day_copy.fans_picked_draw(
+      format_percent(crowd.draw_picks / crowd.total_picks),
+    );
+  } else if (crowd) {
+    const winner = winner_id === game.away_team.id ? game.away_team : game.home_team;
+    const picks = winner.id === game.home_team.id ? crowd.home_picks : crowd.away_picks;
+    crowd_text = game_day_copy.fans_picked_winner(
+      format_percent(picks / crowd.total_picks),
+      winner.name,
+    );
   }
-  let your_line: string = game_day_copy.no_picks_made;
-  if (points.total > 0 || points.winner !== null) {
-    if (points.total > points.ai_total) {
-      your_line = game_day_copy.you_beat_ai(points.total);
-    } else if (points.total < points.ai_total) {
-      your_line = game_day_copy.ai_beat_you(points.total);
-    } else {
-      your_line = game_day_copy.tied_with_ai(points.total);
-    }
-  }
+  const made_picks = points.total > 0 || points.winner !== null;
   return (
     <>
-      <AiChip text={ai_line} variant="hero" />
-      <span className={styles.your_line}>{your_line}</span>
+      <AiChip text={crowd_text} variant="hero" tone="fans" />
+      <span className={styles.your_line}>
+        {made_picks ? game_day_copy.your_points(points.total) : game_day_copy.no_picks_made}
+      </span>
     </>
   );
 }
@@ -102,10 +91,19 @@ function DetailLines({ game }: { game: GameSummary }) {
   if (detail.state === "final") {
     return <FinalLines game={detail} />;
   }
+  const config = config_of(detail.sport);
   return (
     <>
-      <LiveAiChip game={detail} />
-      <span className={styles.your_line}>{game_day_copy.live_pick_open}</span>
+      {config.has_model ? (
+        <LiveDataChip game={detail} />
+      ) : (
+        <AiChip text={game_day_copy.row_live} variant="hero" tone="fans" />
+      )}
+      <span className={styles.your_line}>
+        {config.live_questions.includes("next_goal")
+          ? game_day_copy.live_pick_open
+          : game_day_copy.live_poll_open}
+      </span>
     </>
   );
 }
@@ -126,14 +124,17 @@ function button_text(game: GameSummary, has_saved_picks: boolean): string {
  */
 export function FeaturedGameCard({ game }: { game: GameSummary }) {
   const { link_to } = useDemoMode();
-  const [picks] = useGamePicks(game.id);
+  const [picks] = useGamePicks(game);
   const status = game_status(game, true);
 
   return (
     <div className={styles.featured}>
       <Link to={link_to(`/games/${game.id}`)} className={styles.card}>
         <div className={styles.top}>
-          <span className={styles.kicker}>{game_day_copy.your_team}</span>
+          <span className={styles.kicker}>
+            {game.featured ? game_day_copy.your_team : game_day_copy.top_game}
+            {game.data_source === "demo" && <SampleBadge />}
+          </span>
           <StatusPill tone={status.tone} dark_on_desktop>
             {status.label}
           </StatusPill>

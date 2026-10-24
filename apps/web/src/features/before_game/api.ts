@@ -2,11 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   user_prediction_response_schema,
   user_predictions_response_schema,
+  type GameSummary,
   type PredictionRequest,
   type UserPrediction,
 } from "@voita_kone/shared_types";
+import { has_pick } from "@voita_kone/scoring";
 import { ApiError, api_get, api_request } from "../../lib/api_client";
-import type { GamePicks } from "../../lib/picks";
+import { DRAW_PICK, type GamePicks } from "../../lib/picks";
 import { useSessionToken } from "../../lib/session";
 
 export function my_prediction_key(game_id: string, token: string | null) {
@@ -29,12 +31,32 @@ export function useMyPrediction(game_id: string, enabled: boolean) {
   });
 }
 
-export function to_prediction_request(picks: GamePicks, winner_team_id: string): PredictionRequest {
+/** The device's picks in the shape the API takes for the game's sport (a draw = no winner). */
+export function to_prediction_request(
+  picks: GamePicks,
+  winner_team_id: string,
+  game: Pick<GameSummary, "sport">,
+): PredictionRequest {
+  const has_score = has_pick(game.sport, "exact_score");
   return {
-    predicted_winner_team_id: winner_team_id,
-    predicted_home_goals: picks.home_goals,
-    predicted_away_goals: picks.away_goals,
+    predicted_winner_team_id: winner_team_id === DRAW_PICK ? null : winner_team_id,
+    predicted_home_goals: has_score ? picks.home_goals : null,
+    predicted_away_goals: has_score ? picks.away_goals : null,
     predicted_scorer_id: picks.scorer_id,
+    predicted_margin_band: has_pick(game.sport, "margin_band") ? picks.margin_band : null,
+  };
+}
+
+/** A pick saved on the server, back in the device's shape. */
+export function from_saved_prediction(current: GamePicks, prediction: UserPrediction): GamePicks {
+  return {
+    ...current,
+    winner_team_id: prediction.predicted_winner_team_id ?? DRAW_PICK,
+    home_goals: prediction.predicted_home_goals ?? current.home_goals,
+    away_goals: prediction.predicted_away_goals ?? current.away_goals,
+    scorer_id: prediction.predicted_scorer_id,
+    margin_band: prediction.predicted_margin_band,
+    locked_at: prediction.updated_at,
   };
 }
 

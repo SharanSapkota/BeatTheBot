@@ -1,10 +1,13 @@
+import type { Env } from "../../config/env";
+import { AnthropicLlmClient, DEFAULT_LLM_MODEL } from "./anthropic_llm_client";
 import type { LlmClient } from "./llm_client";
-import { MockLlmClient } from "./mock_llm_client";
 
-/**
- * The LLM for story writing. Mocked for now (decided 2026-10-24); a real provider is added
- * here later, configured from LLM_API_KEY and LLM_MODEL in config/env.ts.
- */
-export function create_llm_client(): LlmClient {
-  return new MockLlmClient();
+/** Claude when LLM_API_KEY is set; otherwise none, and stories use the template text. */
+export function create_llm_client(
+  env: Pick<Env, "LLM_API_KEY" | "LLM_MODEL">,
+): LlmClient | undefined {
+  if (env.LLM_API_KEY === "") {
+    return undefined;
+  }
+  return new AnthropicLlmClient(env.LLM_API_KEY, env.LLM_MODEL || DEFAULT_LLM_MODEL);
 }

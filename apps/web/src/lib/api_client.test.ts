@@ -1,5 +1,5 @@
 import {
-  ai_prediction_response_schema,
+  data_says_response_schema,
   game_detail_response_schema,
   health_response_schema,
 } from "@voita_kone/shared_types";
@@ -18,16 +18,17 @@ function stub_fetch(status: number, body: unknown) {
 const SAMPLE = {
   data: {
     game_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    predicted_winner_team_id: "11111111-1111-4111-8111-111111111111",
     home_win_probability: 0.62,
     away_win_probability: 0.38,
     overtime_probability: 0.17,
-    predicted_home_goals: 2,
-    predicted_away_goals: 1,
-    predicted_scorer: null,
-    reasons: [],
     stakes: [],
-    crowd: { home_pick_share: 0.71, total_picks: 3812 },
+    crowd: {
+      total_picks: 100,
+      home_picks: 71,
+      away_picks: 29,
+      draw_picks: 0,
+      home_pick_share: 0.71,
+    },
     label_text: "sample",
     model_version: "sample",
     calculated_at: "2026-10-24T13:05:00.000Z",
@@ -44,14 +45,14 @@ describe("get_or_sample", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     const first = await get_or_sample(
-      "/games/g1/ai_prediction",
-      ai_prediction_response_schema,
+      "/games/g1/data_says",
+      data_says_response_schema,
       "test_label",
       () => SAMPLE,
     );
     const second = await get_or_sample(
-      "/games/g1/ai_prediction",
-      ai_prediction_response_schema,
+      "/games/g1/data_says",
+      data_says_response_schema,
       "test_label",
       () => SAMPLE,
     );
@@ -63,11 +64,11 @@ describe("get_or_sample", () => {
 
   it("uses the real endpoint as soon as it exists", async () => {
     const real = { ...SAMPLE.data, home_win_probability: 0.55 };
-    mock_api({ "/games/g1/ai_prediction": real });
+    mock_api({ "/games/g1/data_says": real });
 
     const response = await get_or_sample(
-      "/games/g1/ai_prediction",
-      ai_prediction_response_schema,
+      "/games/g1/data_says",
+      data_says_response_schema,
       "real_label",
       () => SAMPLE,
     );
@@ -80,8 +81,8 @@ describe("get_or_sample", () => {
     stub_fetch(500, { error: { code: "INTERNAL_ERROR", message: "boom" } });
 
     const response = await get_or_sample(
-      "/games/g1/ai_prediction",
-      ai_prediction_response_schema,
+      "/games/g1/data_says",
+      data_says_response_schema,
       "failing_label",
       () => SAMPLE,
     );
@@ -95,8 +96,8 @@ describe("get_or_sample", () => {
 
     await expect(
       get_or_sample(
-        "/games/g1/ai_prediction",
-        ai_prediction_response_schema,
+        "/games/g1/data_says",
+        data_says_response_schema,
         "not_ready_label",
         () => SAMPLE,
       ),
@@ -107,12 +108,7 @@ describe("get_or_sample", () => {
     stub_fetch(404, { error: { code: "GAME_NOT_FOUND", message: "Game g1 not found" } });
 
     await expect(
-      get_or_sample(
-        "/games/g1/ai_prediction",
-        ai_prediction_response_schema,
-        "error_label",
-        () => SAMPLE,
-      ),
+      get_or_sample("/games/g1/data_says", data_says_response_schema, "error_label", () => SAMPLE),
     ).rejects.toMatchObject({ code: "GAME_NOT_FOUND", http_status: 404 });
   });
 });

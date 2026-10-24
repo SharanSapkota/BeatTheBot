@@ -15,6 +15,7 @@ export const KARPAT: TeamSummary = {
   short_name: "KÄRPÄT",
   city: "Oulu",
   logo_url: null,
+  sport: "hockey",
   data_source: "liiga_api",
 };
 
@@ -25,6 +26,7 @@ export const ILVES: TeamSummary = {
   short_name: "ILVES",
   city: "Tampere",
   logo_url: null,
+  sport: "hockey",
   data_source: "liiga_api",
 };
 
@@ -83,6 +85,8 @@ export function build_game(state: GameState, overrides: Partial<GameDetail> = {}
   const events = is_final ? DESIGN_GOALS : is_live ? DESIGN_GOALS.slice(0, 2) : [];
   return {
     id: "99999999-9999-4999-8999-999999999999",
+    sport: "hockey",
+    league: { id: "00000000-0000-4000-8000-000000000001", name: "Liiga" },
     season: "2026-27",
     start_time: is_final || is_live ? "2026-10-24T15:30:00.000Z" : "2099-10-24T15:30:00.000Z",
     state,
@@ -96,6 +100,7 @@ export function build_game(state: GameState, overrides: Partial<GameDetail> = {}
     featured: true,
     data_source: "liiga_api",
     events,
+    top_scorer: null,
     demo_replay: false,
     ...overrides,
   };

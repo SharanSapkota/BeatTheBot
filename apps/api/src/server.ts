@@ -30,6 +30,13 @@ const server = app.listen(env.API_PORT, (error) => {
   stories_scheduler.request_run("api start");
 });
 
+// Previews appear when a game enters the 7-day window and are refreshed 2 h before puck drop.
+const STORIES_INTERVAL_MS = 10 * 60 * 1000;
+const stories_timer = setInterval(() => {
+  stories_scheduler.request_run("timer");
+}, STORIES_INTERVAL_MS);
+stories_timer.unref();
+
 function shut_down(signal: NodeJS.Signals): void {
   logger.info(`${signal} received, shutting down`);
 
@@ -38,6 +45,7 @@ function shut_down(signal: NodeJS.Signals): void {
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS).unref();
 
+  clearInterval(stories_timer);
   server.close((server_error) => {
     if (server_error) {
       logger.error({ err: server_error }, "Error while closing the server");

@@ -15,6 +15,8 @@ interface ChoiceButtonsProps {
   /** "large" = 56 px team buttons; "medium" = 52 px live-pick buttons. */
   size?: "large" | "medium";
   disabled?: boolean;
+  /** Buttons per row; all in one row by default. */
+  columns?: number;
 }
 
 /** A row of mutually exclusive choices: selected = orange, others white. */
@@ -25,9 +27,10 @@ export function ChoiceButtons({
   on_select,
   size = "large",
   disabled = false,
+  columns = choices.length,
 }: ChoiceButtonsProps) {
   const style: CSSProperties = {
-    gridTemplateColumns: `repeat(${String(choices.length)}, minmax(0, 1fr))`,
+    gridTemplateColumns: `repeat(${String(columns)}, minmax(0, 1fr))`,
   };
   return (
     <div role="group" aria-label={label} className={styles.group} style={style}>

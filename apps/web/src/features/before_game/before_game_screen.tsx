@@ -1,41 +1,88 @@
 import type { GameDetail } from "@voita_kone/shared_types";
-import { useEffect } from "react";
+import type { PickKind } from "@voita_kone/scoring";
+import type { ReactNode } from "react";
 import { FooterNote } from "../../components/footer_note";
 import { KalevaSectionTitle } from "../../components/kaleva_section_title";
 import { GridItem, PageGrid } from "../../components/page_grid";
 import { PageMain } from "../../components/page_main";
+import { AiStoryCard } from "../../components/ai_story_card";
 import { Skeleton } from "../../components/skeleton";
-import { prefill_score, useGamePicks } from "../../lib/picks";
+import { useGamePicks } from "../../lib/picks";
 import { possible_points } from "../../lib/points";
+import { config_of } from "../../lib/sports";
 import { useNow } from "../../lib/use_now";
 import { NameDialog } from "../account/name_dialog";
-import { to_ai_pick, useAiPrediction } from "../game/api";
-import { AiPickCard, AiPickPendingCard } from "./ai_pick_card";
+import { useCrowd, useDataSays } from "../game/api";
+import { report_story, useStory } from "../game/stories_api";
 import { BeforeHeader } from "./before_header";
 import { before_copy } from "./copy";
 import { ExactScorePick } from "./exact_score_pick";
+import { FansSoFarCard } from "./fans_so_far_card";
+import { MarginBandPick } from "./margin_band_pick";
 import { PossiblePointsFooter } from "./possible_points_footer";
 import { ScorerPick } from "./scorer_pick";
-import { StakesCard } from "./stakes_card";
+import { DataSaysCard } from "./data_says_card";
 import { useLockIn } from "./use_lock_in";
-import { WinnerPick } from "./winner_pick";
+import { WinnerPick, type PickProps } from "./winner_pick";
 
-/** Screen 2: the AI's pick and the user's picks, locked at puck drop. Desktop: picks in the sidebar. */
+/** One card per pick of the sport (`SPORTS[sport].picks`), in that order. */
+function pick_card(kind: PickKind, props: PickProps): ReactNode {
+  switch (kind) {
+    case "winner":
+      return <WinnerPick key={kind} {...props} />;
+    case "outcome_1x2":
+      return <WinnerPick key={kind} {...props} with_draw />;
+    case "exact_score":
+      return <ExactScorePick key={kind} {...props} />;
+    case "scorer":
+      return <ScorerPick key={kind} {...props} />;
+    case "margin_band":
+      return <MarginBandPick key={kind} {...props} />;
+    case "top_scorer":
+      return <ScorerPick key={kind} {...props} kind="top_scorer" />;
+  }
+}
+
+/** Hockey: the AI preview and "Data says". Other sports: how the fans have picked so far. */
+function GuideCards({ game }: { game: GameDetail }) {
+  const has_model = config_of(game.sport).has_model;
+  const data_says = useDataSays(has_model ? game : undefined);
+  const preview = useStory(game, "preview", has_model);
+  if (!has_model) {
+    return <FansSoFarCard game={game} />;
+  }
+  return (
+    <>
+      <AiStoryCard story_type="preview" story={preview.data} on_report={report_story} />
+      {data_says.isPending ? (
+        <Skeleton card_heights={[240]} />
+      ) : (
+        <DataSaysCard game={game} data_says={data_says.data ?? null} />
+      )}
+    </>
+  );
+}
+
+/**
+ * Screen 2: the guide (AI preview and "Data says" for hockey) and the user's picks for the
+ * game's sport, locked at puck drop / kick-off. Desktop: picks in the sidebar.
+ */
 export function BeforeGameScreen({ game }: { game: GameDetail }) {
   const now = useNow();
-  const prediction = useAiPrediction(game);
-  const [picks, update] = useGamePicks(game.id);
+  const crowd = useCrowd(game.id);
+  const [picks, update] = useGamePicks(game);
   const is_past_start = now.getTime() >= new Date(game.start_time).getTime();
-  const pick_props = { game, picks, update, disabled: is_past_start };
-  const predicted = prediction.data;
   const lock = useLockIn({ game, picks, update });
-
-  // The exact-score stepper starts at the AI's predicted score.
-  useEffect(() => {
-    if (predicted && !is_past_start) {
-      prefill_score(game.id, predicted.predicted_home_goals, predicted.predicted_away_goals);
-    }
-  }, [game.id, predicted, is_past_start]);
+  const cards = config_of(game.sport).picks.map((pick, index) =>
+    pick_card(pick.kind, {
+      game,
+      picks,
+      update,
+      disabled: is_past_start,
+      number: index + 1,
+      points: pick.points,
+    }),
+  );
 
   return (
     <>
@@ -44,14 +91,7 @@ export function BeforeGameScreen({ game }: { game: GameDetail }) {
         <PageGrid
           main={
             <GridItem mobile_order={1}>
-              {predicted && (
-                <>
-                  <AiPickCard game={game} prediction={predicted} />
-                  <StakesCard game={game} prediction={predicted} />
-                </>
-              )}
-              {predicted === null && <AiPickPendingCard />}
-              {predicted === undefined && <Skeleton card_heights={[360, 200]} />}
+              <GuideCards game={game} />
             </GridItem>
           }
           sidebar_label={before_copy.your_picks}
@@ -60,11 +100,9 @@ export function BeforeGameScreen({ game }: { game: GameDetail }) {
               <div className="desktop_only">
                 <KalevaSectionTitle title={before_copy.your_picks} />
               </div>
-              <WinnerPick {...pick_props} />
-              <ExactScorePick {...pick_props} />
-              <ScorerPick {...pick_props} ai_scorer_id={predicted?.predicted_scorer?.id ?? null} />
+              {cards}
               <PossiblePointsFooter
-                possible_points={possible_points(picks, to_ai_pick(predicted))}
+                possible_points={possible_points(picks, game, crowd.data ?? null)}
                 start_time={game.start_time}
                 has_winner={picks.winner_team_id !== null}
                 is_saved={picks.locked_at !== null}

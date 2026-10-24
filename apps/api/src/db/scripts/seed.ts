@@ -17,7 +17,11 @@ import { seed_demo_data, type SeedSummary } from "../seed/seed_demo_data";
 function print_seed_summary(summary: SeedSummary): void {
   console.log(
     `Demo fill-ins: ${String(summary.demo_game_count)} games, ${String(summary.demo_event_count)} events, ` +
-      `${String(summary.user_count)} users, ${String(summary.prediction_count)} picks.`,
+      `${String(summary.user_count)} users, ${String(summary.prediction_count)} picks, ` +
+      `demo election with ${String(summary.election_pick_count)} picks, ` +
+      `demo room with ${String(summary.room_answer_count)} answers, ` +
+      `${String(summary.sample_game_count)} sample football/basketball games ` +
+      `(${String(summary.sample_pick_count)} picks).`,
   );
   if (summary.unfilled_states.length > 0) {
     console.warn(
@@ -57,7 +61,7 @@ export async function run_seed(source: LiigaSource): Promise<void> {
   try {
     await sync_liiga(db, source);
     print_seed_summary(await seed_demo_data(db, { now: new Date(), editor_email }));
-    // The demo users' picks are on a finished game, so they get their points now.
+    // The demo users' picks are on finished games, so they get their points now.
     const scoring = await new ScorePredictionsJob(
       new KyselyScorePredictionsRepository(db),
       create_logger({ level: "warn", pretty: false }),

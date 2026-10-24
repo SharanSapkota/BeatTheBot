@@ -1,5 +1,5 @@
-import type { GameDay } from "@voita_kone/shared_types";
-import type { ReactNode } from "react";
+import type { GameDay, Sport } from "@voita_kone/shared_types";
+import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { AppHeader } from "../../components/app_header";
 import { BottomNav } from "../../components/bottom_nav";
@@ -15,23 +15,25 @@ import { PrimaryButton } from "../../components/primary_button";
 import { Skeleton } from "../../components/skeleton";
 import { useDemoMode } from "../../lib/demo_mode";
 import { format_day_label } from "../../lib/format";
+import { remember_sport } from "../../lib/sports";
 import { useUserSummary } from "../account/api";
 import { useGameDay } from "./api";
 import { game_day_copy } from "./copy";
 import { FeaturedGameCard } from "./featured_game_card";
 import { GameRow } from "./game_row";
-import { HumansVsAiMini } from "./humans_vs_ai_mini";
+import { FansMini } from "./fans_mini";
+import { SportTabs } from "./sport_tabs";
 import { TimeJumpBar } from "./time_jump_bar";
 import styles from "./game_day_page.module.css";
 
-function NoGames() {
+function NoGames({ sport }: { sport: Sport }) {
   const navigate = useNavigate();
   return (
     <EmptyState
-      title={game_day_copy.empty_title}
+      title={game_day_copy.empty_title(shared_copy.sport_names[sport])}
       text={game_day_copy.empty_text}
       action={
-        <PrimaryButton on_click={() => void navigate("/?demo=1&moment=before")}>
+        <PrimaryButton on_click={() => void navigate(`/games/${sport}?demo=1&moment=before`)}>
           {game_day_copy.show_demo}
         </PrimaryButton>
       }
@@ -39,13 +41,14 @@ function NoGames() {
   );
 }
 
-function TodaysGamesTitle({ game_day }: { game_day: GameDay }) {
+function TodaysGamesTitle({ game_day, sport }: { game_day: GameDay; sport: Sport }) {
   // The day is a Helsinki calendar date; noon UTC keeps it on the same day when formatted.
   const day_label = format_day_label(`${game_day.date}T12:00:00Z`);
+  const league = game_day.games[0]?.league.name ?? shared_copy.sport_names[sport];
   return (
     <KalevaSectionTitle
       title={game_day_copy.title}
-      meta={`${day_label} · ${game_day_copy.game_count(game_day.games.length)}`}
+      meta={`${day_label} · ${game_day_copy.game_count(game_day.games.length, league)}`}
       meta_mobile_only
     />
   );
@@ -55,12 +58,20 @@ function TodaysGamesTitle({ game_day }: { game_day: GameDay }) {
  * Mobile: TODAY'S GAMES, the featured card, the other games, this week.
  * Desktop: the featured hero in the main column; the games list and this week in the sidebar.
  */
-function HubGrid({ game_day, main_state }: { game_day?: GameDay; main_state: ReactNode }) {
+function HubGrid({
+  game_day,
+  sport,
+  main_state,
+}: {
+  game_day?: GameDay;
+  sport: Sport;
+  main_state: ReactNode;
+}) {
   const featured = game_day?.games.find((game) => game.featured) ?? game_day?.games[0];
   const others = game_day?.games.filter((game) => game !== featured) ?? [];
   let main = main_state;
   if (game_day) {
-    main = featured ? <FeaturedGameCard game={featured} /> : <NoGames />;
+    main = featured ? <FeaturedGameCard game={featured} /> : <NoGames sport={sport} />;
   }
 
   return (
@@ -70,7 +81,7 @@ function HubGrid({ game_day, main_state }: { game_day?: GameDay; main_state: Rea
         <>
           {game_day && (
             <GridItem mobile_order={1}>
-              <TodaysGamesTitle game_day={game_day} />
+              <TodaysGamesTitle game_day={game_day} sport={sport} />
             </GridItem>
           )}
           {others.length > 0 && (
@@ -83,7 +94,7 @@ function HubGrid({ game_day, main_state }: { game_day?: GameDay; main_state: Rea
             </GridItem>
           )}
           <GridItem mobile_order={4}>
-            <HumansVsAiMini />
+            <FansMini />
           </GridItem>
         </>
       }
@@ -91,11 +102,15 @@ function HubGrid({ game_day, main_state }: { game_day?: GameDay; main_state: Rea
   );
 }
 
-/** Screen 1: today's games. Tapping a game opens Before, During or After by its state. */
-export function GameDayPage() {
+/**
+ * Screen 1: today's games of one sport (/games/:sport, tabs Hockey · Football · Basketball).
+ * Tapping a game opens Before, During or After by its state.
+ */
+export function GameDayPage({ sport }: { sport: Sport }) {
   const { is_demo } = useDemoMode();
-  const game_day = useGameDay();
+  const game_day = useGameDay(sport);
   const user = useUserSummary();
+  useEffect(() => remember_sport(sport), [sport]);
 
   return (
     <>
@@ -107,9 +122,11 @@ export function GameDayPage() {
         </div>
         {is_demo && <TimeJumpBar />}
       </div>
+      <SportTabs selected={sport} />
       <PageMain>
         <HubGrid
           game_day={game_day.data}
+          sport={sport}
           main_state={
             <>
               {game_day.isPending && <Skeleton card_heights={[56, 330, 300]} />}

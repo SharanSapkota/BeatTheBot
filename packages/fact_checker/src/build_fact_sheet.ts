@@ -104,7 +104,8 @@ export function build_fact_sheet(input: FactSheetInput): FactSheet {
   });
 
   const score = { home: 0, away: 0 };
-  for (const goal of input.goals.filter((candidate) => candidate.period < SHOOTOUT_PERIOD)) {
+  const real_goals = input.goals.filter((candidate) => candidate.period < SHOOTOUT_PERIOD);
+  for (const goal of real_goals) {
     if (goal.team === input.home_team) {
       score.home += 1;
     } else {
@@ -124,6 +125,20 @@ export function build_fact_sheet(input: FactSheetInput): FactSheet {
         score_after: { ...score },
       },
       source: "liiga_api",
+    });
+  }
+
+  const winning_goal = find_winning_goal(input, real_goals);
+  if (winning_goal?.player) {
+    facts.push({
+      fact_id: next_id(),
+      type: "winning_goal",
+      value: {
+        player: winning_goal.player,
+        team: winning_goal.team,
+        game_time: format_game_time(winning_goal.game_time_seconds),
+      },
+      source: "derived",
     });
   }
 
@@ -150,5 +165,22 @@ export function build_fact_sheet(input: FactSheetInput): FactSheet {
     });
   }
 
-  return { game_id: input.game_id, built_at: input.built_at, facts };
+  return { game_id: input.game_id, built_at: input.built_at, facts, kind: "summary" };
+}
+
+/**
+ * The goal that decided the game: the winner's goal that took it one past the loser's final
+ * total. None after a shootout (the shootout decided it) or without goal events.
+ */
+export function find_winning_goal(
+  input: Pick<FactSheetInput, "home_team" | "home_goals" | "away_goals" | "ended_in">,
+  real_goals: readonly FactSheetGoal[],
+): FactSheetGoal | undefined {
+  if (input.ended_in === "shootout" || input.home_goals === input.away_goals) {
+    return undefined;
+  }
+  const home_won = input.home_goals > input.away_goals;
+  const loser_total = home_won ? input.away_goals : input.home_goals;
+  const winner_goals = real_goals.filter((goal) => (goal.team === input.home_team) === home_won);
+  return winner_goals[loser_total];
 }

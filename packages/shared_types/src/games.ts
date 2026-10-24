@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { api_success_schema } from "./api_response";
+import { sport_schema } from "./sports";
 
 // Games API (roadmap step 2). Times are ISO 8601 UTC; "days" are Europe/Helsinki days.
 
-export const data_source_schema = z.enum(["liiga_api", "demo"]);
+/** liiga_api = real Liiga sync; admin = a real match entered in /admin; demo = sample data. */
+export const data_source_schema = z.enum(["liiga_api", "admin", "demo"]);
 export const game_state_schema = z.enum(["upcoming", "live", "final"]);
 export const ended_in_schema = z.enum(["regulation", "overtime", "shootout"]);
 export const position_schema = z.enum(["goalie", "defense", "forward"]);
@@ -18,15 +20,23 @@ export const team_summary_schema = z.object({
   short_name: z.string(),
   city: z.string().nullable(),
   logo_url: z.string().nullable(),
+  sport: sport_schema,
   data_source: data_source_schema,
 });
 
+export const game_league_schema = z.object({ id: z.uuid(), name: z.string() });
+
 export const game_summary_schema = z.object({
   id: z.uuid(),
+  sport: sport_schema,
+  league: game_league_schema,
   season: z.string(),
   start_time: z.iso.datetime(),
   state: game_state_schema,
-  /** 1-3 regulation, 4 overtime, 5 shootout. Null before the game. */
+  /**
+   * Null before the game. Hockey: 1-3 regulation, 4 overtime, 5 shootout. Football: 1-2 halves.
+   * Basketball: 1-4 quarters, 5 overtime.
+   */
   period: z.number().int().min(1).max(5).nullable(),
   /** Seconds since the start of the game, only while live. */
   game_clock_seconds: z.number().int().min(0).nullable(),
@@ -69,6 +79,8 @@ export const game_event_schema = z.object({
 
 export const game_detail_schema = game_summary_schema.extend({
   events: z.array(game_event_schema),
+  /** Basketball: the player with the most points, once final (entered by an admin). */
+  top_scorer: player_ref_schema.nullable(),
   /** True when the game is a demo replay of a real finished game. */
   demo_replay: z.boolean(),
 });
@@ -118,6 +130,7 @@ export const game_day_response_schema = api_success_schema(game_day_schema);
 export const standings_response_schema = api_success_schema(standings_schema);
 
 export type DataSource = z.infer<typeof data_source_schema>;
+export type GameLeague = z.infer<typeof game_league_schema>;
 export type GameState = z.infer<typeof game_state_schema>;
 export type EndedInValue = z.infer<typeof ended_in_schema>;
 export type PlayerPosition = z.infer<typeof position_schema>;

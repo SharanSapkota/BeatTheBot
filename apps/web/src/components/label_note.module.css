@@ -37,6 +37,52 @@
   align-self: flex-start;
 }
 
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.form_label {
+  font-weight: 600;
+  color: var(--color_text);
+}
+
+.reason {
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--color_line);
+  border-radius: 6px;
+  background: var(--color_card);
+  color: var(--color_text);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.send {
+  min-height: var(--touch_min);
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius_pill);
+  background: var(--color_dark);
+  color: var(--color_on_dark);
+  font-weight: 600;
+}
+
+.send:disabled {
+  opacity: 0.5;
+}
+
+.failed {
+  color: var(--color_brand_text);
+  font-weight: 600;
+}
+
 .thanks {
   color: var(--color_good);
   font-weight: 600;

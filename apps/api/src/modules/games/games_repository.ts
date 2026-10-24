@@ -1,3 +1,4 @@
+import type { Sport } from "@voita_kone/shared_types";
 import { sql, type ExpressionBuilder } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import type { DB } from "../../db/database_types";
@@ -7,6 +8,8 @@ import type { TeamRow } from "../teams/teams_mapper";
 export interface GameRow {
   id: string;
   external_id: string;
+  sport: string;
+  league: { id: string; name: string };
   season: string;
   start_time: Date;
   status: string;
@@ -18,6 +21,8 @@ export interface GameRow {
   data_source: string;
   home_team: TeamRow;
   away_team: TeamRow;
+  /** Basketball: the player with the most points (entered with the result). */
+  top_scorer: PlayerRefRow | null;
 }
 
 export interface PlayerRefRow {
@@ -45,6 +50,8 @@ export interface GameFilter {
   end: Date;
   team_id?: string;
   statuses?: readonly string[];
+  /** One sport only; every sport when left out. */
+  sport?: Sport;
 }
 
 export interface GamesRepository {
@@ -58,8 +65,8 @@ export interface GamesRepository {
     team_external_id: string,
     data_source: "liiga_api" | "demo",
   ): Promise<GameRow | undefined>;
-  /** The latest finished demo game, if any. */
-  find_latest_demo_final(): Promise<GameRow | undefined>;
+  /** The latest finished demo game of the sport, if any. */
+  find_latest_demo_final(sport: Sport): Promise<GameRow | undefined>;
 }
 
 const TEAM_COLUMNS = [
@@ -69,6 +76,7 @@ const TEAM_COLUMNS = [
   "teams.short_name",
   "teams.city",
   "teams.logo_url",
+  "teams.sport",
   "teams.data_source",
 ] as const;
 
@@ -93,6 +101,9 @@ export class KyselyGamesRepository implements GamesRepository {
     }
     if (filter.statuses && filter.statuses.length > 0) {
       query = query.where("games.status", "in", filter.statuses);
+    }
+    if (filter.sport) {
+      query = query.where("games.sport", "=", filter.sport);
     }
     return query.orderBy("games.start_time").orderBy("games.id").execute();
   }
@@ -162,32 +173,51 @@ export class KyselyGamesRepository implements GamesRepository {
       .executeTakeFirst();
   }
 
-  find_latest_demo_final(): Promise<GameRow | undefined> {
+  find_latest_demo_final(sport: Sport): Promise<GameRow | undefined> {
     return this.select_games()
       .where("games.status", "=", "final")
       .where("games.data_source", "=", "demo")
+      .where("games.sport", "=", sport)
       .orderBy("games.start_time", "desc")
       .limit(1)
       .executeTakeFirst();
   }
 
   private select_games() {
-    return this.db
-      .selectFrom("games")
-      .select((eb) => [
-        "games.id",
-        "games.external_id",
-        "games.season",
-        "games.start_time",
-        "games.status",
-        "games.period",
-        "games.game_clock_seconds",
-        "games.home_goals",
-        "games.away_goals",
-        "games.ended_in",
-        "games.data_source",
-        team_object(eb, "home_team_id").as("home_team"),
-        team_object(eb, "away_team_id").as("away_team"),
-      ]);
+    return this.db.selectFrom("games").select((eb) => [
+      "games.id",
+      "games.external_id",
+      "games.sport",
+      jsonObjectFrom(
+        eb
+          .selectFrom("leagues")
+          .select(["leagues.id", "leagues.name"])
+          .whereRef("leagues.id", "=", "games.league_id"),
+      )
+        .$notNull()
+        .as("league"),
+      "games.season",
+      "games.start_time",
+      "games.status",
+      "games.period",
+      "games.game_clock_seconds",
+      "games.home_goals",
+      "games.away_goals",
+      "games.ended_in",
+      "games.data_source",
+      team_object(eb, "home_team_id").as("home_team"),
+      team_object(eb, "away_team_id").as("away_team"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("players as top_scorer")
+          .select([
+            "top_scorer.id",
+            "top_scorer.first_name",
+            "top_scorer.last_name",
+            "top_scorer.jersey_number",
+          ])
+          .whereRef("top_scorer.id", "=", "games.top_scorer_player_id"),
+      ).as("top_scorer"),
+    ]);
   }
 }

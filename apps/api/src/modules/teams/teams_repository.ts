@@ -1,4 +1,6 @@
-import { sql } from "kysely";
+import type { Sport } from "@voita_kone/shared_types";
+import { sql, type ExpressionBuilder } from "kysely";
+import type { DB } from "../../db/database_types";
 import type { Database } from "../../db/kysely";
 import type { TeamRow } from "./teams_mapper";
 
@@ -14,12 +16,20 @@ export interface PlayerRow {
 }
 
 export interface TeamsRepository {
-  list_teams(): Promise<TeamRow[]>;
+  list_teams(sport: Sport): Promise<TeamRow[]>;
   find_team(team_id: string): Promise<TeamRow | undefined>;
-  /** The season of the latest game, or undefined when there are no games. */
-  find_current_season(): Promise<string | undefined>;
-  /** Players of a team with goals from real (Liiga) games only. */
+  /** The season of the sport's latest game, or undefined when it has no games. */
+  find_current_season(sport: Sport): Promise<string | undefined>;
+  /**
+   * Players of a team with goals from counted games: hockey counts real Liiga games only (not
+   * the demo fill-ins); other sports count every game (admin-entered and sample data).
+   */
   list_players(team_id: string, season: string): Promise<PlayerRow[]>;
+}
+
+/** Games whose goals count for player stats (see `list_players`). */
+function is_counted_game(eb: ExpressionBuilder<DB, "games">) {
+  return eb.or([eb("games.data_source", "=", "liiga_api"), eb("games.sport", "<>", "hockey")]);
 }
 
 const TEAM_COLUMNS = [
@@ -29,6 +39,7 @@ const TEAM_COLUMNS = [
   "short_name",
   "city",
   "logo_url",
+  "sport",
   "data_source",
 ] as const;
 const LAST_GAME_COUNT = 5;
@@ -36,8 +47,13 @@ const LAST_GAME_COUNT = 5;
 export class KyselyTeamsRepository implements TeamsRepository {
   constructor(private readonly db: Database) {}
 
-  list_teams(): Promise<TeamRow[]> {
-    return this.db.selectFrom("teams").select(TEAM_COLUMNS).orderBy("name").execute();
+  list_teams(sport: Sport): Promise<TeamRow[]> {
+    return this.db
+      .selectFrom("teams")
+      .select(TEAM_COLUMNS)
+      .where("sport", "=", sport)
+      .orderBy("name")
+      .execute();
   }
 
   find_team(team_id: string): Promise<TeamRow | undefined> {
@@ -48,10 +64,11 @@ export class KyselyTeamsRepository implements TeamsRepository {
       .executeTakeFirst();
   }
 
-  async find_current_season(): Promise<string | undefined> {
+  async find_current_season(sport: Sport): Promise<string | undefined> {
     const latest = await this.db
       .selectFrom("games")
       .select("season")
+      .where("sport", "=", sport)
       .orderBy("start_time", "desc")
       .limit(1)
       .executeTakeFirst();
@@ -63,7 +80,7 @@ export class KyselyTeamsRepository implements TeamsRepository {
       .selectFrom("games")
       .select("id")
       .where("status", "=", "final")
-      .where("data_source", "=", "liiga_api")
+      .where(is_counted_game)
       .where((eb) => eb.or([eb("home_team_id", "=", team_id), eb("away_team_id", "=", team_id)]))
       .orderBy("start_time", "desc")
       .limit(LAST_GAME_COUNT);
@@ -83,7 +100,7 @@ export class KyselyTeamsRepository implements TeamsRepository {
           .select(sql<number>`count(*)::int`.as("count"))
           .whereRef("game_events.player_id", "=", "players.id")
           .where("game_events.event_type", "=", "goal")
-          .where("game_events.data_source", "=", "liiga_api")
+          .where(is_counted_game)
           .where("games.season", "=", season)
           .as("season_goals"),
         eb

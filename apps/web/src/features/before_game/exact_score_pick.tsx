@@ -3,18 +3,17 @@ import { PointsBadge } from "../../components/points_badge";
 import { ScoreStepper } from "../../components/score_stepper";
 import { SectionTitle } from "../../components/section_title";
 import { with_prematch_change } from "../../lib/picks";
-import { POINTS } from "../../lib/points";
 import { before_copy } from "./copy";
 import type { PickProps } from "./winner_pick";
 import styles from "./exact_score_pick.module.css";
 
-export function ExactScorePick({ game, picks, update, disabled }: PickProps) {
+export function ExactScorePick({ game, picks, update, disabled, number, points }: PickProps) {
   return (
     <Card>
       <SectionTitle
-        title={before_copy.score_title}
+        title={before_copy.numbered(number, before_copy.pick_titles.exact_score)}
         size={16}
-        right={<PointsBadge text={`+${String(POINTS.exact_score)}`} />}
+        right={<PointsBadge text={`+${String(points)}`} />}
       />
       <div className={styles.row}>
         <ScoreStepper
@@ -37,7 +36,7 @@ export function ExactScorePick({ game, picks, update, disabled }: PickProps) {
           }
         />
       </div>
-      <p className={styles.note}>{before_copy.score_note}</p>
+      <p className={styles.note}>{before_copy.score_note[game.sport]}</p>
     </Card>
   );
 }

@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  ai_prediction_response_schema,
+  crowd_response_schema,
+  data_says_response_schema,
   game_detail_response_schema,
   players_response_schema,
-  type AiPrediction,
+  type Crowd,
+  type DataSays,
   type GameSummary,
   type PlayerSummary,
 } from "@voita_kone/shared_types";
-import { ApiError, api_get, get_or_sample } from "../../lib/api_client";
+import { ApiError, api_get } from "../../lib/api_client";
 import { useDemoMode } from "../../lib/demo_mode";
-import type { AiPick } from "../../lib/points";
-import { build_sample_ai_prediction } from "../../mocks/ai_prediction";
 
 const LIVE_REFETCH_MS = 15_000;
 
@@ -26,36 +26,30 @@ export function useGameDetail(game_id: string) {
   });
 }
 
-/** True for the API's "the model has not predicted this game yet" answer. */
+/** True for the API's "the model has not calculated this game yet" answer. */
 export function is_prediction_not_ready(error: unknown): boolean {
   return error instanceof ApiError && error.code === "PREDICTION_NOT_READY";
 }
 
 /**
- * The AI's pre-game pick from the prediction model; null while it is not calculated yet.
- * In demo mode: the real pre-game pick of the replayed game. Sample data only if the
- * endpoint fails.
+ * "Data says": the model's win chance and what is at stake (neutral info, never a pick), with
+ * the fans' crowd split. Null while it is not calculated yet. In demo mode: the replayed game's
+ * numbers from before puck drop.
  */
-export function useAiPrediction(game: GameSummary | undefined) {
+export function useDataSays(game: GameSummary | undefined) {
   const { is_demo, moment } = useDemoMode();
   return useQuery({
-    queryKey: ["ai_prediction", game?.id, is_demo],
+    queryKey: ["data_says", game?.id, is_demo],
     enabled: game !== undefined,
-    queryFn: async (): Promise<AiPrediction | null> => {
+    queryFn: async (): Promise<DataSays | null> => {
       if (!game) {
         throw new Error("game is required");
       }
       const path = is_demo
-        ? `/demo/games/${game.id}/ai_prediction?moment=${moment}`
-        : `/games/${game.id}/ai_prediction`;
+        ? `/demo/games/${game.id}/data_says?moment=${moment}`
+        : `/games/${game.id}/data_says`;
       try {
-        const response = await get_or_sample(
-          path,
-          ai_prediction_response_schema,
-          "GET /games/:game_id/ai_prediction",
-          async () => ({ data: await build_sample_ai_prediction(game) }),
-        );
-        return response.data;
+        return (await api_get(path, data_says_response_schema)).data;
       } catch (error) {
         if (is_prediction_not_ready(error)) {
           return null;
@@ -63,8 +57,18 @@ export function useAiPrediction(game: GameSummary | undefined) {
         throw error;
       }
     },
-    // The pick changes only when the model runs again (after games end).
+    // The numbers change only when the model runs again (after games end).
     staleTime: 5 * 60_000,
+  });
+}
+
+/** How the fans picked the winner ("Fans: 62% Kärpät"); null before the first pick. */
+export function useCrowd(game_id: string) {
+  return useQuery({
+    queryKey: ["crowd", game_id],
+    queryFn: async (): Promise<Crowd | null> =>
+      (await api_get(`/games/${game_id}/crowd`, crowd_response_schema)).data,
+    staleTime: 60_000,
   });
 }
 
@@ -76,16 +80,4 @@ export function useTeamPlayers(team_id: string | undefined) {
       (await api_get(`/teams/${team_id ?? ""}/players`, players_response_schema)).data,
     staleTime: 5 * 60_000,
   });
-}
-
-export function to_ai_pick(prediction: AiPrediction | null | undefined): AiPick | null {
-  if (!prediction) {
-    return null;
-  }
-  return {
-    winner_team_id: prediction.predicted_winner_team_id,
-    home_goals: prediction.predicted_home_goals,
-    away_goals: prediction.predicted_away_goals,
-    scorer_id: prediction.predicted_scorer?.id ?? null,
-  };
 }
