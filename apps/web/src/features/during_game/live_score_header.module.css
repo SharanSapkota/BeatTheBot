@@ -1,0 +1,38 @@
+.points {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color_dark_2);
+  border-radius: var(--radius_control);
+  padding: 10px 12px;
+}
+
+.label {
+  font-size: 13px;
+  color: var(--color_on_dark_softer);
+}
+
+.value {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--color_brand);
+}
+
+@media (min-width: 900px) {
+  .points {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    border-radius: var(--radius_desktop);
+    padding: 12px 18px;
+  }
+
+  .label {
+    font-size: 18px;
+  }
+
+  .value {
+    font-size: 30px;
+  }
+}

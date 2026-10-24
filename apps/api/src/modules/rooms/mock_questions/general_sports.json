@@ -1,0 +1,260 @@
+[
+  {
+    "type": "trivia",
+    "prompt": "Which city hosted the 1952 Summer Olympics?",
+    "options": ["Stockholm", "Helsinki", "Oslo", "London"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What was Paavo Nurmi's famous nickname?",
+    "options": ["The Flying Finn", "The Iceman", "The Finnish Flash", "The Rocket"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many Olympic gold medals did Paavo Nurmi win?",
+    "options": ["5", "7", "9", "11"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which year did Kimi Räikkönen win the Formula 1 world title?",
+    "options": ["2003", "2005", "2007", "2009"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many Formula 1 world titles did Mika Häkkinen win?",
+    "options": ["1", "2", "3", "4"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many rings are in the Olympic symbol?",
+    "options": ["4", "5", "6", "7"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is a marathon?",
+    "options": ["40.000 km", "42.195 km", "43.500 km", "45.000 km"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which sport is often called Finland's national sport?",
+    "options": ["Pesäpallo", "Floorball", "Ice hockey", "Cross-country skiing"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Pesäpallo is a Finnish version of which sport?",
+    "options": ["Cricket", "Baseball", "Golf", "Rugby"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many Grand Slam tennis tournaments are there each year?",
+    "options": ["3", "4", "5", "6"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which Grand Slam tournament is played on clay?",
+    "options": ["Wimbledon", "US Open", "French Open", "Australian Open"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "On which surface is Wimbledon played?",
+    "options": ["Clay", "Grass", "Hard court", "Carpet"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is Usain Bolt's 100 m world record time?",
+    "options": ["9.48 s", "9.58 s", "9.69 s", "9.79 s"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many holes are in a standard round of golf?",
+    "options": ["9", "12", "18", "24"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which throwing event are Finnish athletes traditionally famous for?",
+    "options": ["Javelin", "Shot put", "Hammer", "Discus"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city hosted the 2024 Summer Olympics?",
+    "options": ["Tokyo", "Paris", "Los Angeles", "Rome"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Where are the 2028 Summer Olympics held?",
+    "options": ["Brisbane", "Los Angeles", "Madrid", "Istanbul"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country hosted the 2026 Winter Olympics?",
+    "options": ["Italy", "France", "Switzerland", "Norway"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many Olympic gold medals did ski jumper Matti Nykänen win?",
+    "options": ["2", "3", "4", "5"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Iivo Niskanen is an Olympic champion in which sport?",
+    "options": ["Biathlon", "Cross-country skiing", "Ski jumping", "Speed skating"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Kalle Rovanperä became the youngest world champion in which sport in 2022?",
+    "options": ["Formula 1", "Rally (WRC)", "MotoGP", "Motocross"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "For which Formula 1 team did Valtteri Bottas drive from 2017 to 2021?",
+    "options": ["Williams", "Ferrari", "Mercedes", "Red Bull"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the highest score with three darts?",
+    "options": ["150", "180", "200", "240"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is floorball called in Finnish?",
+    "options": ["Salibandy", "Jääpallo", "Pesäpallo", "Sulkapallo"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is a perfect game score in ten-pin bowling?",
+    "options": ["200", "250", "300", "360"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many players does a volleyball team have on the court?",
+    "options": ["5", "6", "7", "9"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many players does a handball team have on the court, goalkeeper included?",
+    "options": ["6", "7", "8", "11"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What colour is the Tour de France leader's jersey?",
+    "options": ["Green", "Yellow", "Pink", "White"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "At which two Olympics did Lasse Virén win both the 5,000 m and 10,000 m?",
+    "options": ["1968 and 1972", "1972 and 1976", "1976 and 1980", "1980 and 1984"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country hosted the 2018 Winter Olympics?",
+    "options": ["Japan", "China", "South Korea", "Russia"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many players does a rugby union team have on the field?",
+    "options": ["11", "13", "15", "18"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which Finnish town is the Wife Carrying World Championship held?",
+    "options": ["Sonkajärvi", "Kuusamo", "Lahti", "Savonlinna"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country does the throwing game Mölkky come from?",
+    "options": ["Sweden", "Finland", "Estonia", "Norway"],
+    "correct": 1
+  },
+  {
+    "type": "opinion",
+    "prompt": "The greatest Finnish athlete of all time?",
+    "options": ["Paavo Nurmi", "Lasse Virén", "Teemu Selänne", "Kimi Räikkönen"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Summer Olympics or Winter Olympics?",
+    "options": ["Summer", "Winter", "Both equally"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which sport would you like to see more of on TV?",
+    "options": ["Pesäpallo", "Floorball", "Athletics", "Esports"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Your favourite sport to play yourself?",
+    "options": ["Floorball", "Football", "Padel", "Running"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best sports moment to watch live?",
+    "options": [
+      "A last-second winner",
+      "A world record",
+      "A comeback from far behind",
+      "A penalty shoot-out"
+    ]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Should Finland host the Winter Olympics one day?",
+    "options": ["Yes!", "Too expensive", "Only together with other Nordic countries"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which Finnish motorsport star is the biggest legend?",
+    "options": ["Kimi Räikkönen", "Mika Häkkinen", "Keke Rosberg", "Kalle Rovanperä"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best summer sport event in Finland?",
+    "options": [
+      "Pesäpallo's Itä–Länsi game",
+      "The Finland–Sweden athletics meet",
+      "Rally Finland",
+      "Midsummer beach volley"
+    ]
+  },
+  {
+    "type": "opinion",
+    "prompt": "How do you follow sports most?",
+    "options": ["Live on TV", "Streaming", "News and highlights", "At the venue"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Is esports a real sport?",
+    "options": ["Yes", "No", "Somewhere in between"]
+  }
+]

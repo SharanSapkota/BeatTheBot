@@ -1,0 +1,87 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: var(--color_ink);
+}
+
+.bar {
+  flex-grow: 1;
+  min-width: 24px;
+  height: 6px;
+  background: var(--color_brand);
+}
+
+.meta {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color_label);
+}
+
+/* Mobile card title (17 px, sentence case, no bar); the Kaleva title from 900 px. */
+.card .row {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card .title {
+  font-family: var(--font_body);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.25;
+  text-transform: none;
+  color: var(--color_text);
+}
+
+.card .bar {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .row,
+  .card .row {
+    justify-content: flex-start;
+    gap: 16px;
+  }
+
+  .title,
+  .card .title {
+    font-family: var(--font_display);
+    font-weight: 800;
+    font-size: 30px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--color_ink);
+  }
+
+  .bar,
+  .card .bar {
+    display: block;
+    height: 8px;
+  }
+
+  .meta {
+    font-size: 15px;
+  }
+
+  .mobile_only {
+    display: none;
+  }
+}

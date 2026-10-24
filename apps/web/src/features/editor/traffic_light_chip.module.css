@@ -1,0 +1,26 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius_pill);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--color_line);
+  background: var(--color_surface_soft);
+  color: var(--color_text);
+}
+
+.green {
+  background: var(--color_good_tint);
+  color: var(--color_good_dark);
+}
+
+.yellow {
+  background: var(--color_brand_tint);
+  color: var(--color_brand_dark);
+}
+
+.red {
+  background: var(--color_bad_tint);
+  color: var(--color_bad_dark);
+}

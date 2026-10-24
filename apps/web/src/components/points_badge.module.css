@@ -1,0 +1,14 @@
+.badge {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color_brand_text);
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .badge {
+    font-weight: 800;
+    font-size: 22px;
+  }
+}

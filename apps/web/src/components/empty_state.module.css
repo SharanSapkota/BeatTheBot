@@ -1,0 +1,29 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  background: var(--color_card);
+  border: 1px solid var(--color_line);
+  border-radius: var(--radius_card);
+  padding: 28px 16px;
+}
+
+.title {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 24px;
+}
+
+.text {
+  font-size: 14px;
+  color: var(--color_text_soft);
+  line-height: 1.45;
+}
+
+@media (min-width: 900px) {
+  .empty {
+    border-radius: 0;
+  }
+}

@@ -1,0 +1,44 @@
+.timer {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  color: var(--color_brand_text);
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color_label);
+}
+
+.type {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: var(--radius_pill);
+  background: var(--color_dark);
+  color: var(--color_on_dark);
+}
+
+.prompt {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.waiting,
+.count {
+  font-size: 14px;
+  color: var(--color_text_soft);
+}
+
+@media (min-width: 900px) {
+  .prompt {
+    font-size: 28px;
+  }
+}

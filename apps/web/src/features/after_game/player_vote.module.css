@@ -1,0 +1,34 @@
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option {
+  min-height: var(--touch_min);
+  padding: 0 14px;
+  border-radius: var(--radius_pill);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color_card);
+  color: var(--color_text);
+  border: 1px solid var(--color_line);
+}
+
+.option:hover {
+  border-color: var(--color_fans_track);
+}
+
+.selected,
+.selected:hover {
+  background: var(--color_dark);
+  color: var(--color_on_dark);
+  border: 2px solid var(--color_dark);
+  padding: 0 13px;
+}
+
+@media (min-width: 900px) {
+  .option {
+    font-size: 17px;
+  }
+}

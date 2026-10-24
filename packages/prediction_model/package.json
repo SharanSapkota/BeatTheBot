@@ -1,0 +1,20 @@
+{
+  "name": "@voita_kone/prediction_model",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:quiet": "vitest run --reporter=dot --silent=passed-only",
+    "backtest": "pnpm --filter @voita_kone/api backtest"
+  },
+  "devDependencies": {
+    "@voita_kone/config": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

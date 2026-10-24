@@ -1,0 +1,283 @@
+[
+  {
+    "type": "trivia",
+    "prompt": "Which city is Kärpät's home?",
+    "options": ["Oulu", "Kuopio", "Rauma", "Lahti"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many players does a team have on the ice at full strength, goalie included?",
+    "options": ["5", "6", "7", "11"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is one regular period in a Liiga game?",
+    "options": ["15 minutes", "20 minutes", "25 minutes", "30 minutes"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many periods does a regular hockey game have?",
+    "options": ["2", "3", "4", "5"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which year did Finland win its first men's Ice Hockey World Championship?",
+    "options": ["1988", "1995", "2011", "2019"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which year did Finland win its first Olympic gold in men's ice hockey?",
+    "options": ["1998", "2006", "2014", "2022"],
+    "correct": 3
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which trophy goes to the NHL champion?",
+    "options": ["Stanley Cup", "Kanada-malja", "Gagarin Cup", "Spengler Cup"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the nickname of Finland's men's national ice hockey team?",
+    "options": ["Huuhkajat", "Susijengi", "Leijonat", "Helmarit"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the nickname of Finland's women's national ice hockey team?",
+    "options": ["Naisleijonat", "Helmarit", "Susijengi", "Akatemia"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "For which NHL team did Teemu Selänne play the most seasons?",
+    "options": ["Winnipeg Jets", "Anaheim Ducks", "San Jose Sharks", "Colorado Avalanche"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is Teemu Selänne's famous nickname?",
+    "options": ["The Great One", "The Finnish Flash", "The Rocket", "Mr. Hockey"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many goals did Teemu Selänne score in his NHL rookie season 1992–93?",
+    "options": ["46", "56", "66", "76"],
+    "correct": 3
+  },
+  {
+    "type": "trivia",
+    "prompt": "With which team did Jari Kurri win his Stanley Cups?",
+    "options": ["Edmonton Oilers", "New York Rangers", "Los Angeles Kings", "Boston Bruins"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Kärpät means which animal in English?",
+    "options": ["Fox", "Wolf", "Stoat", "Eagle"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is Tappara's home?",
+    "options": ["Tampere", "Turku", "Pori", "Hämeenlinna"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is HIFK's home?",
+    "options": ["Espoo", "Helsinki", "Vantaa", "Lahti"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is TPS's home?",
+    "options": ["Turku", "Tampere", "Pori", "Rauma"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is KalPa's home?",
+    "options": ["Kajaani", "Kuopio", "Joensuu", "Mikkeli"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is Ässät's home?",
+    "options": ["Rauma", "Pori", "Vaasa", "Seinäjoki"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is JYP's home?",
+    "options": ["Jyväskylä", "Joensuu", "Jämsä", "Kuopio"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is Lukko's home?",
+    "options": ["Pori", "Turku", "Rauma", "Uusikaupunki"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is Pelicans' home?",
+    "options": ["Lahti", "Lappeenranta", "Kouvola", "Hämeenlinna"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is a minor penalty in ice hockey?",
+    "options": ["1 minute", "2 minutes", "5 minutes", "10 minutes"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is it called when one player scores three goals in a game?",
+    "options": ["Hat trick", "Grand slam", "Triple play", "Power play"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the Finnish champions' trophy called?",
+    "options": ["Stanley Cup", "Kanada-malja", "Kultainen kypärä", "Aaro Kivilinna"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is a hockey puck made of?",
+    "options": ["Wood", "Plastic", "Vulcanized rubber", "Leather"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Saku Koivu was the long-time captain of which NHL team?",
+    "options": ["Montreal Canadiens", "Toronto Maple Leafs", "Anaheim Ducks", "Detroit Red Wings"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Who won the 2022 men's Ice Hockey World Championship, played in Tampere?",
+    "options": ["Canada", "Sweden", "Finland", "Czechia"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "In which city did Finland win the 2019 men's World Championship final?",
+    "options": ["Bratislava", "Stockholm", "Riga", "Prague"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How wide is a hockey goal?",
+    "options": ["1.22 m", "1.83 m", "2.44 m", "3.00 m"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "With which team did Mikko Rantanen win the Stanley Cup in 2022?",
+    "options": ["Colorado Avalanche", "Tampa Bay Lightning", "Florida Panthers", "Dallas Stars"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Aleksander Barkov is the captain of which NHL team?",
+    "options": ["Carolina Hurricanes", "Florida Panthers", "Nashville Predators", "Calgary Flames"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which team picked Patrik Laine second overall in the 2016 NHL draft?",
+    "options": ["Winnipeg Jets", "Columbus Blue Jackets", "Toronto Maple Leafs", "Edmonton Oilers"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many shooters does each team get in an NHL regular-season shootout before sudden death?",
+    "options": ["2", "3", "5", "6"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is an international (IIHF) ice rink?",
+    "options": ["50 m", "60 m", "70 m", "80 m"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What do you call a team playing with more skaters because of an opponent's penalty?",
+    "options": ["Power play", "Breakaway", "Icing", "Face-off"],
+    "correct": 0
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best Finnish hockey player of all time?",
+    "options": ["Teemu Selänne", "Jari Kurri", "Saku Koivu", "Aleksander Barkov"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best Finnish goalie of all time?",
+    "options": ["Miikka Kiprusoff", "Pekka Rinne", "Tuukka Rask", "Juuse Saros"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "The best part of a hockey game?",
+    "options": ["The first face-off", "A tight third period", "Overtime", "The shootout"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Where do you like to watch hockey most?",
+    "options": ["In the arena", "At home on the couch", "In a sports bar", "On my phone"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "The nicest kind of goal?",
+    "options": [
+      "A slapshot from the blue line",
+      "A quick wrist shot",
+      "A deflection",
+      "A breakaway deke"
+    ]
+  },
+  {
+    "type": "opinion",
+    "prompt": "How should a tied game be decided?",
+    "options": ["Shootout", "Longer overtime", "A tie is fine", "Sudden death 3 vs 3 until a goal"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Will Finland win the next men's World Championship?",
+    "options": ["Gold, of course", "A medal, not gold", "No medal this time"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which Finnish NHL star is the most fun to watch?",
+    "options": ["Aleksander Barkov", "Mikko Rantanen", "Miro Heiskanen", "Sebastian Aho"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best snack at a hockey game?",
+    "options": ["Sausage", "Coffee and a pulla", "Popcorn", "Nothing, I'm too nervous"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which matters most to a winning team?",
+    "options": ["The goalie", "The top line", "Defence", "The coach"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best time for a Liiga game to start?",
+    "options": ["17:00", "18:30", "19:00", "Weekend afternoon"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Who has the loudest fans in Liiga?",
+    "options": ["Kärpät", "Tappara", "HIFK", "Ässät"]
+  }
+]

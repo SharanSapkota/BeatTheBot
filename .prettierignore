@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+dist
+coverage
+# Docs are written by hand; keep their formatting.
+*.md
+# Downloaded API data: keep it byte-for-byte.
+docs/liiga_api/*.json
+apps/api/test/fixtures/

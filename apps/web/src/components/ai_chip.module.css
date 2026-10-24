@@ -1,0 +1,43 @@
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color_ai_tint);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.fans {
+  background: var(--color_surface_gray);
+}
+
+.fans .text {
+  color: var(--color_text);
+}
+
+.icon {
+  display: flex;
+  color: var(--color_ai);
+}
+
+.text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color_ai_dark);
+}
+
+@media (min-width: 900px) {
+  .hero {
+    background: none;
+    padding: 0;
+  }
+
+  .hero .icon {
+    display: none;
+  }
+
+  .hero .text {
+    font-size: 20px;
+    color: var(--color_on_dark);
+  }
+}

@@ -1,0 +1,13 @@
+.note {
+  font-size: 11px;
+  color: var(--color_label);
+  padding: 0 4px;
+  line-height: 1.45;
+}
+
+@media (min-width: 900px) {
+  .note {
+    font-size: 14px;
+    padding: 0;
+  }
+}

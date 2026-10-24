@@ -1,0 +1,17 @@
+.main {
+  padding: var(--space_page);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap_cards);
+  flex-grow: 1;
+}
+
+@media (min-width: 900px) {
+  .main {
+    width: 100%;
+    max-width: var(--content_max_width);
+    margin: 0 auto;
+    padding: 40px var(--desktop_gutter) 56px;
+    gap: 32px;
+  }
+}

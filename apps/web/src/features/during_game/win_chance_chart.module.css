@@ -1,0 +1,47 @@
+.updates {
+  font-size: 12px;
+  color: var(--color_ai);
+  font-weight: 600;
+}
+
+.source {
+  font-size: 12px;
+  color: var(--color_label);
+}
+
+.mid_line {
+  stroke: var(--color_line);
+}
+
+.line {
+  stroke: var(--color_ai);
+}
+
+.dot {
+  fill: var(--color_ai);
+}
+
+.axis_label {
+  fill: var(--color_label);
+}
+
+.value_label {
+  fill: var(--color_text);
+}
+
+@media (min-width: 900px) {
+  .updates,
+  .source {
+    font-size: 16px;
+  }
+
+  .updates {
+    white-space: nowrap;
+  }
+
+  /* The chart scales with the main column (viewBox 340 x 110). */
+  .chart {
+    height: auto;
+    max-height: 180px;
+  }
+}

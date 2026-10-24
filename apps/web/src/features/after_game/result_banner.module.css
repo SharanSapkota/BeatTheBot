@@ -1,0 +1,58 @@
+.kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color_on_brand_soft);
+}
+
+.headline {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.box {
+  background: var(--color_brand_box);
+  border-radius: var(--radius_control);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--color_on_brand_soft);
+}
+
+.points {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.15;
+}
+
+@media (min-width: 900px) {
+  .box {
+    border-radius: 0;
+  }
+
+  .kicker,
+  .label {
+    font-size: 15px;
+  }
+
+  .headline {
+    font-size: 40px;
+  }
+
+  .points {
+    font-size: 40px;
+  }
+}

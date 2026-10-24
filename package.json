@@ -1,0 +1,32 @@
+{
+  "name": "voita_kone",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "prettier": "@voita_kone/config/prettier",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:quiet": "scripts/quiet_run.sh test pnpm -r --no-bail --reporter=append-only test:quiet",
+    "e2e:quiet": "scripts/quiet_run.sh e2e pnpm --filter @voita_kone/web e2e:quiet",
+    "lint:quiet": "scripts/quiet_run.sh lint pnpm lint",
+    "typecheck:quiet": "scripts/quiet_run.sh typecheck pnpm typecheck",
+    "db:migrate": "pnpm --filter @voita_kone/api db:migrate",
+    "db:migrate:down": "pnpm --filter @voita_kone/api db:migrate:down",
+    "db:codegen": "pnpm --filter @voita_kone/api db:codegen",
+    "db:seed": "pnpm --filter @voita_kone/api db:seed",
+    "db:reset": "pnpm --filter @voita_kone/api db:reset",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@voita_kone/config": "workspace:*",
+    "prettier": "catalog:"
+  }
+}

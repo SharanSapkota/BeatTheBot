@@ -1,0 +1,149 @@
+.card {
+  background: var(--color_card);
+  border: 1px solid var(--color_line);
+  border-radius: var(--radius_card);
+  padding: 8px 16px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color_line_soft);
+}
+
+.rank {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 20px;
+  width: 28px;
+  color: var(--color_label);
+}
+
+.rank_first {
+  color: var(--color_brand_text);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color_line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.name_column {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.points {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.row_you {
+  padding: 12px 8px;
+  margin: 0 -8px 8px;
+  border-radius: 10px;
+  background: var(--color_brand_tint);
+  border: 2px solid var(--color_brand);
+}
+
+.row_you .rank {
+  color: var(--color_brand_text);
+}
+
+.row_you .name {
+  font-weight: 700;
+}
+
+.avatar_you {
+  background: var(--color_brand);
+  color: var(--color_on_brand);
+}
+
+.movement {
+  font-size: 12px;
+  color: var(--color_brand_dark);
+}
+
+.gap {
+  text-align: center;
+  color: var(--color_label);
+  font-size: 13px;
+  padding: 6px 0;
+}
+
+/* Desktop: a ranking table with 1 px dividers and square highlights. */
+@media (min-width: 900px) {
+  .card {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .row {
+    padding: 16px 0;
+    border-bottom-color: var(--color_line);
+    gap: 16px;
+  }
+
+  .rank {
+    font-size: 28px;
+    width: 56px;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .name {
+    font-size: 20px;
+  }
+
+  .points {
+    font-family: var(--font_display);
+    font-weight: 800;
+    font-size: 26px;
+  }
+
+  .row_you {
+    padding: 16px 12px;
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 0;
+  }
+
+  .movement {
+    font-size: 16px;
+  }
+
+  .gap {
+    font-size: 16px;
+    padding: 10px 0;
+  }
+}

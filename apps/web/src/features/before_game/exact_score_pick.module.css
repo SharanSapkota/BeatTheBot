@@ -1,0 +1,33 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash {
+  font-family: var(--font_display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--color_label);
+  padding-top: 24px;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--color_label);
+}
+
+@media (min-width: 900px) {
+  .row {
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .dash {
+    font-size: 32px;
+  }
+
+  .note {
+    font-size: 15px;
+  }
+}

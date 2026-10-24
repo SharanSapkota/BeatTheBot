@@ -1,0 +1,30 @@
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.baseline {
+  align-items: baseline;
+}
+
+.center {
+  align-items: center;
+}
+
+.title_16 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.title_17 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .title_16,
+  .title_17 {
+    font-size: 21px;
+  }
+}

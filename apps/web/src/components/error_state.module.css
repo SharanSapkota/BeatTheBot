@@ -1,0 +1,27 @@
+.error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color_card);
+  border: 1px solid var(--color_line);
+  border-top: 4px solid var(--color_bad);
+  border-radius: var(--radius_card);
+  padding: 16px;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.text {
+  font-size: 14px;
+  color: var(--color_text_soft);
+  line-height: 1.45;
+}
+
+@media (min-width: 900px) {
+  .error {
+    border-radius: 0;
+  }
+}

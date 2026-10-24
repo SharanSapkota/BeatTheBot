@@ -1,0 +1,119 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-height: var(--touch_min);
+  padding: 8px 10px;
+  border: 1px solid var(--color_label);
+  border-radius: var(--radius_desktop);
+  background: var(--color_card);
+  color: var(--color_text);
+  font: inherit;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+.field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch_min);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.check input {
+  width: 20px;
+  height: 20px;
+}
+
+.hint {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--color_label);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button,
+.secondary,
+.danger {
+  min-height: var(--touch_min);
+  padding: 0 18px;
+  border-radius: var(--radius_desktop);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* Primary: Kaleva orange with dark text. */
+.button {
+  border: none;
+  background: var(--color_brand);
+  color: var(--color_on_brand);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color_brand_hover);
+}
+
+.secondary {
+  border: 2px solid var(--color_dark);
+  background: var(--color_card);
+  color: var(--color_dark);
+}
+
+.danger {
+  border: 2px solid var(--color_bad);
+  background: var(--color_card);
+  color: var(--color_bad);
+}
+
+.button:disabled,
+.secondary:disabled,
+.danger:disabled {
+  opacity: 0.5;
+}
+
+.error {
+  color: var(--color_bad);
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

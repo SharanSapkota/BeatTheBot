@@ -1,0 +1,84 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius_card);
+  min-width: 0;
+}
+
+.white {
+  background: var(--color_card);
+  border: 1px solid var(--color_line);
+}
+
+.dark {
+  background: var(--color_dark);
+  color: var(--color_on_dark);
+}
+
+/* AI content (preview, summary): the light AI blue tint. */
+.ai_tint {
+  background: var(--color_ai_tint);
+  border: 1px solid var(--color_ai_track);
+}
+
+.orange {
+  background: var(--color_brand);
+  color: var(--color_on_brand);
+}
+
+.padding_normal {
+  padding: var(--space_card);
+}
+
+.padding_list {
+  padding: 4px 16px;
+}
+
+.padding_none {
+  padding: 0;
+  overflow: hidden;
+}
+
+.accent_ai {
+  border-top: 4px solid var(--color_ai);
+}
+
+.accent_you {
+  border-top: 4px solid var(--color_brand);
+}
+
+/* Desktop: Kaleva sections instead of cards. Square corners; white cards lose their box and get
+   a divider when the page grid asks for one (sidebar). */
+@media (min-width: 900px) {
+  .card {
+    border-radius: 0;
+  }
+
+  .white {
+    background: transparent;
+    border: none;
+    border-bottom: var(--card_divider, none);
+  }
+
+  .white.padding_normal,
+  .white.padding_list {
+    padding: 0 0 var(--card_divider_space, 0);
+  }
+
+  .dark.padding_normal,
+  .orange.padding_normal {
+    padding: 22px;
+  }
+
+  .accent_ai,
+  .accent_you {
+    border-top: none;
+  }
+}
+
+@media (min-width: 900px) {
+  /* List cards (the hub's game list) draw their own row lines. */
+  .white.padding_list {
+    border-bottom: none;
+  }
+}

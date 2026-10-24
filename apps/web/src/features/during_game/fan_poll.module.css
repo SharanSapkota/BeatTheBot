@@ -1,0 +1,94 @@
+.no_points {
+  font-size: 12px;
+  color: var(--color_label);
+  white-space: nowrap;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.track {
+  flex-grow: 1;
+  height: 10px;
+  background: var(--color_track);
+  border-radius: var(--radius_pill);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 10px;
+  background: var(--color_fans);
+}
+
+.value {
+  width: 36px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .no_points {
+    font-size: 15px;
+  }
+
+  .label,
+  .value {
+    font-size: 17px;
+  }
+
+  .track,
+  .fill {
+    height: 12px;
+    border-radius: 0;
+  }
+}
+
+.mine {
+  font-weight: 700;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option {
+  min-height: var(--touch_min);
+  padding: 0 14px;
+  border-radius: var(--radius_pill);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color_card);
+  color: var(--color_text);
+  border: 1px solid var(--color_line);
+}
+
+.option:hover:enabled {
+  border-color: var(--color_fans_track);
+}
+
+.selected,
+.selected:hover {
+  background: var(--color_dark);
+  color: var(--color_on_dark);
+  border: 2px solid var(--color_dark);
+  padding: 0 13px;
+}

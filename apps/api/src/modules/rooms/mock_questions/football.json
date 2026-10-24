@@ -1,0 +1,260 @@
+[
+  {
+    "type": "trivia",
+    "prompt": "How many players does a football team have on the pitch?",
+    "options": ["9", "10", "11", "12"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How long is a regular football match (without stoppage time)?",
+    "options": ["60 minutes", "80 minutes", "90 minutes", "100 minutes"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the nickname of Finland's men's national football team?",
+    "options": ["Leijonat", "Huuhkajat", "Susijengi", "Helmarit"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is the nickname of Finland's women's national football team?",
+    "options": ["Helmarit", "Huuhkajat", "Naisleijonat", "Korpit"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "What was the first major tournament Finland's men's team qualified for?",
+    "options": ["World Cup 2014", "Euro 2016", "Euro 2020", "World Cup 2022"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Who scored Finland's first ever goal at a men's European Championship?",
+    "options": ["Teemu Pukki", "Joel Pohjanpalo", "Jari Litmanen", "Glen Kamara"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "With which club did Jari Litmanen win the Champions League in 1995?",
+    "options": ["Barcelona", "Ajax", "Liverpool", "Bayern Munich"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Sami Hyypiä was a captain of which English club?",
+    "options": ["Liverpool", "Arsenal", "Everton", "Chelsea"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "For which English club did Teemu Pukki play from 2018 to 2023?",
+    "options": ["Norwich City", "Leeds United", "Brighton", "Fulham"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won the 2022 men's World Cup?",
+    "options": ["France", "Brazil", "Argentina", "Croatia"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won the 2018 men's World Cup?",
+    "options": ["France", "Germany", "Spain", "Belgium"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country has won the most men's World Cups?",
+    "options": ["Germany", "Italy", "Argentina", "Brazil"],
+    "correct": 3
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country hosted the 2022 men's World Cup?",
+    "options": ["Russia", "Qatar", "Saudi Arabia", "Japan"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "The 2026 men's World Cup is hosted by the USA, Canada and…?",
+    "options": ["Brazil", "Mexico", "Spain", "England"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won the men's Euro 2024?",
+    "options": ["England", "Spain", "France", "Germany"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country hosted the men's Euro 2024?",
+    "options": ["Germany", "England", "Italy", "Netherlands"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which card sends a player off the pitch?",
+    "options": ["Yellow", "Red", "Green", "Blue"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is Finland's top men's football league called?",
+    "options": ["Ykkönen", "Veikkausliiga", "Kansallinen Liiga", "Korisliiga"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is HJK's home?",
+    "options": ["Helsinki", "Turku", "Tampere", "Lahti"],
+    "correct": 0
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which city is AC Oulu's home?",
+    "options": ["Kokkola", "Oulu", "Rovaniemi", "Kajaani"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How far from the goal is the penalty spot?",
+    "options": ["9 m", "11 m", "13 m", "16 m"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Who has won the most Ballon d'Or awards?",
+    "options": ["Cristiano Ronaldo", "Lionel Messi", "Michel Platini", "Johan Cruyff"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which club is nicknamed \"The Red Devils\"?",
+    "options": ["Liverpool", "Arsenal", "Manchester United", "AC Milan"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which club plays at Camp Nou?",
+    "options": ["Real Madrid", "Barcelona", "Atlético Madrid", "Valencia"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which club plays at Anfield?",
+    "options": ["Everton", "Liverpool", "Manchester City", "Newcastle"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "How many teams play in the English Premier League?",
+    "options": ["18", "20", "22", "24"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won the first World Cup in 1930?",
+    "options": ["Brazil", "Italy", "Uruguay", "Argentina"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which club has won the most European Cup / Champions League titles?",
+    "options": ["AC Milan", "Bayern Munich", "Liverpool", "Real Madrid"],
+    "correct": 3
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country is Cristiano Ronaldo from?",
+    "options": ["Spain", "Brazil", "Portugal", "Italy"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which country won the 2023 Women's World Cup?",
+    "options": ["USA", "England", "Spain", "Sweden"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "How wide is a full-size football goal?",
+    "options": ["5.50 m", "6.40 m", "7.32 m", "8.00 m"],
+    "correct": 2
+  },
+  {
+    "type": "trivia",
+    "prompt": "Which player position may handle the ball inside their own penalty area?",
+    "options": ["Defender", "Goalkeeper", "Midfielder", "Captain"],
+    "correct": 1
+  },
+  {
+    "type": "trivia",
+    "prompt": "What is a match decided from the spot after extra time called?",
+    "options": ["Golden goal", "Penalty shoot-out", "Replay", "Free kick"],
+    "correct": 1
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best Finnish football player of all time?",
+    "options": ["Jari Litmanen", "Sami Hyypiä", "Teemu Pukki", "Lukas Hradecky"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Messi or Ronaldo?",
+    "options": ["Messi", "Ronaldo", "Both are great", "Neither"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Is VAR good for football?",
+    "options": ["Yes, fairer games", "No, it kills the joy", "Only for goals", "Not sure"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which league is the most fun to watch?",
+    "options": ["Premier League", "La Liga", "Bundesliga", "Veikkausliiga"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Will Finland's men qualify for the next World Cup?",
+    "options": ["Yes", "Close, but no", "Not this time"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Best way to take a penalty?",
+    "options": [
+      "Hard and high",
+      "Placed low in the corner",
+      "A cheeky chip down the middle",
+      "Wait for the keeper to move"
+    ]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Which position would you want to play?",
+    "options": ["Goalkeeper", "Defender", "Midfielder", "Striker"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Is a 48-team World Cup a good idea?",
+    "options": ["Yes, more countries get in", "No, too many games", "Don't mind"]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Nicest kind of goal?",
+    "options": [
+      "A long-range screamer",
+      "A bicycle kick",
+      "A team move with many passes",
+      "A last-minute winner"
+    ]
+  },
+  {
+    "type": "opinion",
+    "prompt": "Where do you watch big football games?",
+    "options": ["At the stadium", "At home", "In a pub", "On my phone"]
+  }
+]

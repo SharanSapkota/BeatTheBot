@@ -1,0 +1,26 @@
+.caption {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .caption {
+    background: var(--color_page);
+    padding: 24px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .headline {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color_ink);
+  }
+
+  .text {
+    font-size: 20px;
+    line-height: 1.45;
+    color: var(--color_text_soft);
+  }
+}

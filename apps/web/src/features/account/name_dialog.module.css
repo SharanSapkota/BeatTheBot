@@ -1,0 +1,109 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--color_backdrop);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space_page);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 398px;
+  background: var(--color_card);
+  border-radius: var(--radius_card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.title {
+  font-family: var(--font_display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.05;
+  color: var(--color_ink);
+}
+
+.text {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color_text_soft);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.input {
+  min-height: var(--touch_min);
+  border: 2px solid var(--color_line);
+  border-radius: var(--radius_control);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color_text);
+  background: var(--color_card);
+}
+
+.input:focus-visible {
+  border-color: var(--color_brand);
+  outline-offset: 0;
+}
+
+.error {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color_bad);
+}
+
+.cancel {
+  min-height: var(--touch_min);
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color_text_soft);
+}
+
+/* Desktop: a centered Kaleva-style box with square corners. */
+@media (min-width: 900px) {
+  .backdrop {
+    align-items: center;
+  }
+
+  .dialog {
+    max-width: 480px;
+    border-radius: 0;
+    padding: 28px;
+    gap: 14px;
+  }
+
+  .title {
+    font-size: 34px;
+    text-transform: uppercase;
+  }
+
+  .text {
+    font-size: 18px;
+  }
+
+  .input {
+    border-radius: var(--radius_desktop);
+  }
+}

@@ -1,0 +1,78 @@
+import type { ReplayMoment } from "@voita_kone/shared_types";
+
+// Game day hub text from docs/design/source/Main.dc.html.
+export const game_day_copy = {
+  page_title: "Fans vs fans",
+  intro: "Pick before, during and after every game, and see how you do against all fans.",
+  title: "Today's games",
+  game_count: (count: number, league: string) =>
+    `${String(count)} ${count === 1 ? "game" : "games"} · ${league}`,
+  sport_tabs_label: "Sports",
+  sport_tab_label: (sport: string, count: number) =>
+    `${sport}, ${String(count)} ${count === 1 ? "game" : "games"} today`,
+  time_jump_label: "PROTOTYPE · JUMP IN TIME",
+  time_jump_group: "Demo time",
+  moments: [
+    { id: "before", label: "Before · 16:00" },
+    { id: "live", label: "Live · 19:42" },
+    { id: "final", label: "Final · 21:45" },
+  ] satisfies { id: ReplayMoment; label: string }[],
+  your_team: "YOUR TEAM'S GAME",
+  top_game: "TODAY'S TOP GAME",
+  vs: "VS",
+  today_at: (time: string) => `Today ${time}`,
+  live: "LIVE",
+  live_at: (period: string, clock: string) => `LIVE · ${period} ${clock}`,
+  final: "FINAL",
+  fans_split: (team: string, percent: string) => `Fans: ${percent} ${team}`,
+  fans_draw: (percent: string) => `Fans: ${percent} draw`,
+  fans_none: "Be the first to pick",
+  data_now: (team: string, percent: string) => `Data says now: ${team} ${percent}`,
+  data_not_ready: "Data says: not calculated for this game",
+  fans_picked_winner: (percent: string, team: string) => `${percent} of fans picked ${team}`,
+  fans_picked_draw: (percent: string) => `${percent} of fans picked a draw`,
+  fans_no_picks: "No fan picks for this game",
+  picks_not_made: (points: number) => `Your picks: not made yet · up to ${String(points)} pts`,
+  picks_saved: (points: number) => `Your picks: saved · up to ${String(points)} pts`,
+  live_pick_open: "Next-goal pick is open · +5 pts",
+  live_poll_open: "Fan poll is open",
+  your_points: (points: number) => `You +${String(points)} pts tonight`,
+  no_picks_made: "You made no picks for this game",
+  button_before: "Make your picks",
+  button_before_saved: "Edit your picks",
+  button_live: "Make live picks",
+  button_final: "See result and highlight",
+  row_headline: (home: string, away: string, time: string) => `${home} vs ${away}, ${time}`,
+  category_tag: (sport: string, league: string) => `${sport} · ${league}`,
+  stake_noun: {
+    relegation: "relegation risk",
+    top_4: "top-4 chance",
+    playoffs: "playoff chance",
+  },
+  stakes_headline: (home: string, away: string, team: string, noun: string, percent: string) =>
+    `${home} vs ${away}: a win puts ${team}'s ${noun} at ${percent}`,
+  stakes_text: (percent: string, time: string) =>
+    `A loss would make it ${percent}. Make your picks before ${time} and see how you do against all fans.`,
+  upcoming_headline: (home: string, away: string, time: string) =>
+    `${home} vs ${away} tonight at ${time}`,
+  upcoming_text: (time: string) =>
+    `Make your picks before ${time} and see how you do against all fans.`,
+  live_headline: (home: string, away: string, score: string) =>
+    `${home} vs ${away} is live: ${score}`,
+  live_text: "Pick who scores the next goal and see what the data says after every goal.",
+  live_text_no_data: "Make your live picks and follow the score.",
+  final_headline: (home: string, away: string, score: string) => `${home} ${score} ${away}`,
+  final_text: "See the result, the AI summary and how your picks did against all fans.",
+  row_live: "Live picks open",
+  row_final: "See result",
+  open_game: (home: string, away: string) => `${home} vs ${away}`,
+  mini_title: "This week: you vs all fans",
+  mini_title_desktop: "This week",
+  mini_link: "Leaders",
+  mini_full_link: "See the full leaderboard",
+  you: "You",
+  fans: "All fans",
+  empty_title: (sport: string) => `No ${sport.toLowerCase()} games today`,
+  empty_text: "Check back on the next game day, or watch a real game replayed in the demo.",
+  show_demo: "Show demo",
+} as const;

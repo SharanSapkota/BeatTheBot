@@ -1,0 +1,58 @@
+.group {
+  display: grid;
+  gap: 8px;
+}
+
+.choice {
+  border-radius: var(--radius_control);
+  font-weight: 700;
+  background: var(--color_card);
+  color: var(--color_text);
+  border: 2px solid var(--color_line);
+  line-height: 1.2;
+}
+
+.large {
+  min-height: 56px;
+  font-size: 17px;
+}
+
+.medium {
+  min-height: 52px;
+  font-size: 15px;
+  padding: 6px;
+}
+
+.choice:not(:disabled):hover {
+  border-color: var(--color_fans_track);
+}
+
+.choice:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.selected,
+.selected:not(:disabled):hover {
+  background: var(--color_brand);
+  color: var(--color_on_brand);
+  border-color: var(--color_brand);
+}
+
+.choice:disabled:not(.selected) {
+  color: var(--color_label);
+}
+
+@media (min-width: 900px) {
+  .choice {
+    border-radius: var(--radius_desktop);
+  }
+
+  .large {
+    font-size: 20px;
+  }
+
+  .medium {
+    min-height: 56px;
+    font-size: 18px;
+  }
+}

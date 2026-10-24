@@ -1,0 +1,81 @@
+/* Kaleva theme tokens from docs/design/README.md. Color meaning: You = orange, AI = blue, all fans = gray.
+   Components use only these variables. Layout breakpoint: 900px (mobile below, desktop from it). */
+:root {
+  --color_ink: #000000;
+  --color_dark: #111111;
+  --color_dark_2: #2b2b2b;
+  --color_dark_3: #1f1f1f;
+  --color_dark_line: #4d4d4d;
+  --color_page: #f3f3f3;
+  --color_card: #ffffff;
+  --color_line: #d9d9d9;
+  --color_line_soft: #f3f3f3;
+  --color_track: #e6e6e6;
+  --color_surface_soft: #f7f7f7;
+  --color_surface_gray: #f3f3f3;
+  --color_text: #111111;
+  --color_text_strong: #222222;
+  --color_text_soft: #3a3a3a;
+  /* Kaleva gray is #767676; one step darker so it passes 4.5:1 on the gray #f3f3f3 page too. */
+  --color_label: #6b6b6b;
+  --color_tick: #a6a6a6;
+  --color_on_dark: #ffffff;
+  --color_on_dark_soft: #bdbdbd;
+  --color_on_dark_softer: #dddddd;
+
+  /* Kaleva orange: backgrounds, bars and points on dark. Text on it is dark. */
+  --color_brand: #f09247;
+  --color_brand_hover: #e5823a;
+  --color_on_brand: #111111;
+  --color_on_brand_soft: #3d2208;
+  /* Orange text on white (4.5:1 or more). Never use --color_brand as text on white. */
+  --color_brand_text: #b4530f;
+  --color_brand_dark: #9a3412;
+  --color_brand_tint: #fff4ec;
+  --color_brand_box: rgb(255 255 255 / 14%);
+  --color_backdrop: rgb(0 0 0 / 55%);
+  --color_tag: #757575;
+
+  --color_ai: #1d5fd1;
+  --color_ai_hover: #174ba6;
+  --color_ai_dark: #173a73;
+  --color_ai_tint: #e8f0fc;
+  --color_ai_track: #b9c9e3;
+
+  --color_fans: #8c8c8c;
+  --color_fans_track: #d0d0d0;
+
+  --color_live: #c8102e;
+  --color_good: #15803d;
+  --color_good_dark: #14532d;
+  --color_good_tint: #eaf6ee;
+  --color_bad: #b42318;
+  --color_bad_dark: #7a1b12;
+  --color_bad_tint: #fdecec;
+
+  --team_karpat_bg: #111111;
+  --team_karpat_fg: #ffd200;
+  --team_ilves_bg: #0f6b3a;
+  --team_ilves_fg: #ffffff;
+  --team_neutral_bg: #d9d9d9;
+  --team_neutral_on_dark_bg: #f3f3f3;
+  --team_neutral_fg: #111111;
+  /* Other teams on the timeline and event dots: dark (home) or gray (away). */
+  --team_other_home: #111111;
+  --team_other_away: #a6a6a6;
+
+  --font_display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font_body: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+
+  --radius_card: 16px;
+  --radius_control: 12px;
+  --radius_pill: 999px;
+  --radius_desktop: 4px;
+  --space_page: 16px;
+  --space_card: 16px;
+  --gap_cards: 16px;
+  --touch_min: 44px;
+  --app_max_width: 430px;
+  --content_max_width: 1320px;
+  --desktop_gutter: 24px;
+}

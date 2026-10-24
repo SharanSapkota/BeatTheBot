@@ -1,0 +1,96 @@
+@import "@fontsource/barlow-semi-condensed/300.css";
+@import "@fontsource/barlow-semi-condensed/400.css";
+@import "@fontsource/barlow-semi-condensed/500.css";
+@import "@fontsource/barlow-semi-condensed/600.css";
+@import "@fontsource/barlow-semi-condensed/700.css";
+@import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow-condensed/800.css";
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color_page);
+  color: var(--color_text);
+  font-family: var(--font_body);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--color_ai);
+}
+
+a:hover {
+  color: var(--color_ai_hover);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+/* Visible keyboard focus everywhere, never on mouse click. */
+:focus-visible {
+  outline: 3px solid var(--color_ai);
+  outline-offset: 2px;
+}
+
+.visually_hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* One layout breakpoint: 900px. Below it the phone layout, from it the Kaleva desktop layout.
+   (Media queries can't read CSS variables, so 900px is repeated in the CSS modules.) */
+.desktop_only {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  body {
+    background: var(--color_card);
+  }
+
+  .mobile_only {
+    display: none;
+  }
+
+  .desktop_only {
+    display: revert;
+  }
+}

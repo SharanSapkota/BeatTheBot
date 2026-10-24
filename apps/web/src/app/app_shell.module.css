@@ -1,0 +1,25 @@
+.shell {
+  width: 100%;
+  max-width: var(--app_max_width);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--color_page);
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+}
+
+@media (min-width: 431px) and (max-width: 899px) {
+  .shell {
+    box-shadow: 0 0 0 1px var(--color_line);
+  }
+}
+
+/* Desktop: full-width white page; each page centers its own content (max 1320 px). */
+@media (min-width: 900px) {
+  .shell {
+    max-width: none;
+    background: var(--color_card);
+  }
+}

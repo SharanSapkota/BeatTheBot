@@ -1,0 +1,10 @@
+.note {
+  font-size: 12px;
+  color: var(--color_label);
+}
+
+@media (min-width: 900px) {
+  .note {
+    font-size: 15px;
+  }
+}
