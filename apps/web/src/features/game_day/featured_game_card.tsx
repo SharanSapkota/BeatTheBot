@@ -119,10 +119,10 @@ function button_text(game: GameSummary, has_saved_picks: boolean): string {
 }
 
 /**
- * The user's team's game. Mobile: a card with a 2 px orange border. Desktop: Kaleva's hero, a
+ * The user's team's game (`kicker` overrides "YOUR TEAM'S GAME", e.g. "NEXT BIG GAME"). Mobile: a card with a 2 px orange border. Desktop: Kaleva's hero, a
  * dark panel and a gray caption box with the stakes. The card (panel) is the link.
  */
-export function FeaturedGameCard({ game }: { game: GameSummary }) {
+export function FeaturedGameCard({ game, kicker }: { game: GameSummary; kicker?: string }) {
   const { link_to } = useDemoMode();
   const [picks] = useGamePicks(game);
   const status = game_status(game, true);
@@ -132,7 +132,7 @@ export function FeaturedGameCard({ game }: { game: GameSummary }) {
       <Link to={link_to(`/games/${game.id}`)} className={styles.card}>
         <div className={styles.top}>
           <span className={styles.kicker}>
-            {game.featured ? game_day_copy.your_team : game_day_copy.top_game}
+            {kicker ?? (game.featured ? game_day_copy.your_team : game_day_copy.top_game)}
             {game.data_source === "demo" && <SampleBadge />}
           </span>
           <StatusPill tone={status.tone} dark_on_desktop>

@@ -155,9 +155,9 @@ Renumbered 2026-10-24 (fans vs fans). The PWA UI (5 screens, matches docs/design
 - [x] 5. AI preview + AI summary + `fact_checker` + traffic light + editor page (unfinished parts → step 10)
 - [x] 6. Questions: live picks (next goal, period goal), result quiz, player vote
 - [x] 7. Elections: 4 main menus (Games · Elections · Rooms · Leaders), admin role + `/admin`, elections + candidates + picks + results, election leaderboard
-- [ ] 8. Games: sport categories (hockey, football, basketball) + fans vs fans (the AI is not a player anymore)
+- [x] 8. Games: sport categories (hockey, football, basketball) + fans vs fans (the AI is not a player anymore)
 - [x] 9. Rooms (join key, rotating questions from mock data, LLM later; room scoreboard; reactions)
-- [ ] 10. AI preview + summary (finish the half-done step 5 code)
+- [x] 10. AI preview + summary (finish the half-done step 5 code) + games hub never empty
 - [ ] 11. Share + referral
 - [ ] 12. Highlights editor
 - [ ] 13. PWA features: manifest, icons, service worker, offline, update toast, install button, Lighthouse check

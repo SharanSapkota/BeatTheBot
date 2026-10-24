@@ -1,6 +1,6 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { game_summary_schema } from "@voita_kone/shared_types";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { save_session_token } from "../../lib/session";
 import { build_game } from "../../test_helpers/game_fixture";
 import { mock_api } from "../../test_helpers/mock_api";
@@ -18,12 +18,76 @@ const SPORTS_DAY = {
   ],
 };
 
+/** The overview of a day without games unless `today` is given. */
+function overview(today: unknown[] = [], extra: Record<string, unknown> = {}) {
+  return {
+    date: "2026-10-24",
+    today,
+    latest_results: null,
+    coming_up: null,
+    next_7_days_count: 0,
+    ...extra,
+  };
+}
+
 describe("GameDayPage", () => {
-  it('shows "No hockey games today" with a Show demo button', async () => {
+  beforeEach(() => {
+    // Saturday 24 Oct 2026, 15:00 in Helsinki. Only Date is faked (React Query keeps its timers).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-24T12:00:00Z"));
+  });
+
+  it("shows latest results, coming up and the next big game on a day without games", async () => {
+    const final = game_summary_schema.parse(build_game("final", { featured: false }));
+    const next = game_summary_schema.parse(
+      build_game("upcoming", { start_time: "2026-10-27T15:30:00.000Z" }),
+    );
     mock_api({
-      "/game_days/today?sport=hockey": { date: "2026-10-24", games: [], demo_replay: false },
+      "/games/overview?sport=hockey&date=2026-10-24": overview([], {
+        latest_results: {
+          date: "2026-10-23",
+          games: [{ ...final, id: "f0000000-0000-4000-8000-000000000001" }],
+          summary_lines: { "f0000000-0000-4000-8000-000000000001": "Kärpät beat Ilves 3–1." },
+        },
+        coming_up: { date: "2026-10-27", games: [next] },
+        next_7_days_count: 1,
+      }),
     });
     render_at(<GameDayPage sport="hockey" />);
+
+    expect(await screen.findByRole("heading", { name: "No games today." })).toBeInTheDocument();
+    expect(screen.getByText("Next games: Tue 27 Oct")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Latest results" })).toBeInTheDocument();
+    expect(screen.getByText("Yesterday")).toBeInTheDocument();
+    expect(screen.getAllByText("Kärpät beat Ilves 3–1.").length).toBeGreaterThan(0);
+    const hero = screen.getByText("NEXT BIG GAME").closest("a");
+    expect(within(hero as HTMLElement).getByText("Tue 27 Oct 17:30")).toBeInTheDocument();
+  });
+
+  it("browses another day with the day switcher", async () => {
+    const api = mock_api({
+      "/games/overview?sport=hockey&date=2026-10-24": overview(),
+      "/game_days/2026-10-23?sport=hockey": { date: "2026-10-23", games: [], demo_replay: false },
+    });
+    render_at(<GameDayPage sport="hockey" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Previous day: Fri 23 Oct" }));
+    expect(
+      await screen.findByRole("heading", { name: "No games on Fri 23 Oct." }),
+    ).toBeInTheDocument();
+    expect(api.requested_paths).toContain("/game_days/2026-10-23?sport=hockey");
+    expect(screen.getByRole("button", { name: "Today" })).toBeInTheDocument();
+  });
+
+  it('shows "No hockey games today" with a Show demo button in demo mode', async () => {
+    mock_api({
+      "/demo/game_day?moment=before&sport=hockey": {
+        date: "2026-10-24",
+        games: [],
+        demo_replay: true,
+      },
+    });
+    render_at(<GameDayPage sport="hockey" />, { url: "/?demo=1&moment=before" });
 
     expect(
       await screen.findByRole("heading", { name: "No hockey games today" }),
@@ -36,7 +100,7 @@ describe("GameDayPage", () => {
     const game = game_summary_schema.parse(build_game("upcoming"));
     save_session_token("test-token");
     mock_api({
-      "/game_days/today?sport=hockey": { date: "2026-10-24", games: [game], demo_replay: false },
+      "/games/overview?sport=hockey&date=2026-10-24": overview([game]),
       "/me": { id: USER_ID, display_name: "Mika", role: "user", total_points: 1240 },
       [`/games/${game.id}/crowd`]: {
         total_picks: 50,
@@ -59,12 +123,10 @@ describe("GameDayPage", () => {
   });
 
   it("hides the points pill while signed out (no /me request)", async () => {
-    const api = mock_api({
-      "/game_days/today?sport=hockey": { date: "2026-10-24", games: [], demo_replay: false },
-    });
+    const api = mock_api({ "/games/overview?sport=hockey&date=2026-10-24": overview() });
     render_at(<GameDayPage sport="hockey" />);
 
-    await screen.findByRole("heading", { name: "No hockey games today" });
+    await screen.findByRole("heading", { name: "No games today." });
     expect(screen.getByRole("banner")).not.toHaveTextContent("pts");
     expect(api.requested_paths).not.toContain("/me");
   });
@@ -123,7 +185,7 @@ describe("GameDayPage", () => {
     );
     mock_api({
       "/sports": SPORTS_DAY,
-      "/game_days/today?sport=football": { date: "2026-10-24", games: [game], demo_replay: false },
+      "/games/overview?sport=football&date=2026-10-24": overview([game]),
       [`/games/${game.id}/crowd`]: {
         total_picks: 10,
         home_picks: 3,

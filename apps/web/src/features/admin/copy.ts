@@ -8,13 +8,19 @@ export const admin_copy = {
   tabs: [
     { id: "elections", label: "Elections" },
     { id: "matches", label: "Matches" },
+    { id: "stories", label: "Stories" },
   ] as const,
-  admins_only_title: "Admins only",
-  admins_only_text: "This page is for Kaleva staff with the admin role.",
+  /** Editors see only the story queue. */
+  editor_tabs: [{ id: "stories", label: "Stories" }] as const,
+  admins_only_title: "Staff only",
+  admins_only_text:
+    "This page is for Kaleva staff: editors see the AI story queue, admins also elections and matches.",
   your_user_id: (user_id: string) => `Your user id: ${user_id}`,
   signed_out_hint: "Sign in on this device first (make a pick), then open this page again.",
   make_admin_hint: "To make this account an admin, run:",
   make_admin_command: (user_id: string) => `pnpm --filter api make:admin -- --user_id ${user_id}`,
+  make_editor_hint: "For the story queue only (editor), run:",
+  make_editor_command: (user_id: string) => `pnpm --filter api make:editor -- --user_id ${user_id}`,
   list_label: "Elections",
   new_election: "New election",
   no_elections: "No elections yet.",

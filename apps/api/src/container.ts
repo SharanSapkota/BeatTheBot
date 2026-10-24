@@ -9,6 +9,8 @@ import { create_liiga_client } from "./integrations/liiga_client/create_liiga_cl
 import { GenerateStoriesJob } from "./jobs/generate_stories";
 import { JobScheduler } from "./jobs/job_scheduler";
 import { LiveSyncJob, LiveSyncPoller } from "./jobs/live_sync";
+import { RefreshDemoDataJob } from "./jobs/refresh_demo_data";
+import { KyselyRefreshDemoDataRepository } from "./jobs/refresh_demo_data_repository";
 import { RunModelJob } from "./jobs/run_model";
 import { ScoreAnswersJob } from "./jobs/score_answers";
 import { KyselyScoreAnswersRepository } from "./jobs/score_answers_repository";
@@ -66,6 +68,8 @@ export interface Container {
   answers_scoring_scheduler: JobScheduler;
   /** Writes AI previews and summaries (on start, every 10 minutes and when a game ends). */
   stories_scheduler: JobScheduler;
+  /** Keeps the sample football / basketball fixtures and the demo election current (hourly). */
+  demo_refresh_scheduler: JobScheduler;
 }
 
 /** POST /auth/device: new accounts per client IP per hour. */
@@ -186,20 +190,31 @@ export function build_container(env: Env): Container {
     "Answer scoring",
   );
   const stories_repository = new KyselyStoriesRepository(db);
+  const llm_client = create_llm_client(env);
   const stories_scheduler = new JobScheduler(
     new GenerateStoriesJob(
       stories_repository,
       new StoryGenerationService(
         stories_repository,
         new KyselyModelInputsRepository(db),
-        create_llm_client(env),
+        llm_client,
         clock,
       ),
       logger,
       clock,
+      { has_llm: llm_client !== undefined },
     ),
     logger,
     "Story generation",
+  );
+  const demo_refresh_scheduler = new JobScheduler(
+    new RefreshDemoDataJob(new KyselyRefreshDemoDataRepository(db), logger, clock, [
+      scoring_scheduler,
+      answers_scoring_scheduler,
+      stories_scheduler,
+    ]),
+    logger,
+    "Demo data refresh",
   );
   const live_sync_poller = env.LIVE_SYNC_ENABLED
     ? new LiveSyncPoller(
@@ -223,6 +238,7 @@ export function build_container(env: Env): Container {
     scoring_scheduler,
     answers_scoring_scheduler,
     stories_scheduler,
+    demo_refresh_scheduler,
     app_dependencies: {
       logger,
       cors_allowed_origins: env.CORS_ALLOWED_ORIGINS,
@@ -233,7 +249,7 @@ export function build_container(env: Env): Container {
           demo_replay_enabled: env.DEMO_REPLAY_ENABLED,
           room_question_generator: create_question_generator(
             env.ROOM_QUESTIONS_SOURCE,
-            create_llm_client(env),
+            llm_client,
             logger,
             new MockQuestionGenerator(),
           ),

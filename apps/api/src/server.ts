@@ -12,6 +12,7 @@ const {
   scoring_scheduler,
   answers_scoring_scheduler,
   stories_scheduler,
+  demo_refresh_scheduler,
 } = build_container(env);
 const { logger } = app_dependencies;
 const app = create_app(app_dependencies);
@@ -28,6 +29,7 @@ const server = app.listen(env.API_PORT, (error) => {
   scoring_scheduler.request_run("api start");
   answers_scoring_scheduler.request_run("api start");
   stories_scheduler.request_run("api start");
+  demo_refresh_scheduler.request_run("api start");
 });
 
 // Previews appear when a game enters the 7-day window and are refreshed 2 h before puck drop.
@@ -36,6 +38,13 @@ const stories_timer = setInterval(() => {
   stories_scheduler.request_run("timer");
 }, STORIES_INTERVAL_MS);
 stories_timer.unref();
+
+// Passed sample games become results and the coming week keeps its sample games.
+const DEMO_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+const demo_refresh_timer = setInterval(() => {
+  demo_refresh_scheduler.request_run("timer");
+}, DEMO_REFRESH_INTERVAL_MS);
+demo_refresh_timer.unref();
 
 function shut_down(signal: NodeJS.Signals): void {
   logger.info(`${signal} received, shutting down`);
@@ -46,6 +55,7 @@ function shut_down(signal: NodeJS.Signals): void {
   }, SHUTDOWN_TIMEOUT_MS).unref();
 
   clearInterval(stories_timer);
+  clearInterval(demo_refresh_timer);
   server.close((server_error) => {
     if (server_error) {
       logger.error({ err: server_error }, "Error while closing the server");
@@ -57,6 +67,7 @@ function shut_down(signal: NodeJS.Signals): void {
           scoring_scheduler.idle(),
           answers_scoring_scheduler.idle(),
           stories_scheduler.idle(),
+          demo_refresh_scheduler.idle(),
         ]),
       )
       .then(() => db.destroy())

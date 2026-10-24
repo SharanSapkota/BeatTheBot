@@ -2,9 +2,8 @@ import type { RequestHandler } from "express";
 import {
   replay_moment_schema,
   story_report_request_schema,
-  story_type_schema,
   type ApiSuccess,
-  type Story,
+  type GameStories,
 } from "@voita_kone/shared_types";
 import { z } from "zod";
 import { set_cache_control } from "../../common/cache_control";
@@ -14,8 +13,7 @@ import { story_not_found, type StoriesService } from "./stories_service";
 
 const game_params_schema = z.object({ game_id: z.string() });
 const story_params_schema = z.object({ story_id: z.string() });
-const query_schema = z.object({ type: story_type_schema });
-const demo_query_schema = query_schema.extend({ moment: replay_moment_schema });
+const demo_query_schema = z.object({ moment: replay_moment_schema });
 
 function parse_uuid(value: string, not_found: (id: string) => Error): string {
   if (!z.uuid().safeParse(value).success) {
@@ -27,21 +25,21 @@ function parse_uuid(value: string, not_found: (id: string) => Error): string {
 export class StoriesController {
   constructor(private readonly stories_service: StoriesService) {}
 
-  get_story: RequestHandler = async (req, res) => {
+  /** GET /games/:id/stories → { preview, summary }: published only, else null. */
+  get_stories: RequestHandler = async (req, res) => {
     const game_id = parse_uuid(game_params_schema.parse(req.params).game_id, game_not_found);
-    const { type } = query_schema.parse(req.query);
-    const response: ApiSuccess<Story | null> = {
-      data: await this.stories_service.get_published(game_id, type),
+    const response: ApiSuccess<GameStories> = {
+      data: await this.stories_service.get_game_stories(game_id),
     };
     set_cache_control(res, false);
     res.json(response);
   };
 
-  get_demo_story: RequestHandler = async (req, res) => {
+  get_demo_stories: RequestHandler = async (req, res) => {
     const game_id = parse_uuid(game_params_schema.parse(req.params).game_id, game_not_found);
-    const { type, moment } = demo_query_schema.parse(req.query);
-    const response: ApiSuccess<Story | null> = {
-      data: await this.stories_service.get_demo_published(game_id, type, moment),
+    const { moment } = demo_query_schema.parse(req.query);
+    const response: ApiSuccess<GameStories> = {
+      data: await this.stories_service.get_demo_game_stories(game_id, moment),
     };
     res.set("Cache-Control", "no-store").json(response);
   };

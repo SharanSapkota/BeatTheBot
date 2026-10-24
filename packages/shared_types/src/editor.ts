@@ -2,7 +2,7 @@ import { z } from "zod";
 import { api_success_schema } from "./api_response";
 import { story_type_schema, traffic_light_schema } from "./stories";
 
-// The minimal editor page (/editor): the story queue with each claim marked, and the actions.
+// /admin → Stories (role editor or admin): the story queue with each claim marked, and actions.
 
 export const claim_status_schema = z.enum(["verified", "not_found", "wrong"]);
 
@@ -21,7 +21,7 @@ export const editor_fact_schema = z.object({
   source: z.string(),
 });
 
-/** GET /editor/stories: stories waiting for an editor (🟡 and 🔴). */
+/** GET /admin/stories: stories waiting for an editor (🟡 and 🔴). */
 export const editor_story_schema = z.object({
   id: z.uuid(),
   game_id: z.uuid(),
@@ -41,14 +41,19 @@ export const editor_story_schema = z.object({
   created_at: z.iso.datetime(),
 });
 
-/** POST /editor/stories/:id/edit */
+/** GET /admin/stories?status=yellow|red (both when left out). */
+export const editor_queue_query_schema = z.object({
+  status: z.enum(["yellow", "red"]).optional(),
+});
+
+/** PUT /admin/stories/:id (edit → fact check again → approve) */
 export const editor_edit_request_schema = z.object({
   body: z.string().trim().min(10).max(2000),
   /** What was wrong (shown in the correction note when the story had been published). */
   note: z.string().trim().max(300).optional(),
 });
 
-/** POST /editor/stories/:id/reject */
+/** POST /admin/stories/:id/reject */
 export const editor_reject_request_schema = z.object({
   note: z.string().trim().max(300).optional(),
 });

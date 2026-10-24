@@ -53,6 +53,8 @@ export interface FactSheetInput {
   /** e.g. "prediction_model:poisson_mc_v1". */
   odds_source: FactSource;
   next_games: readonly FactSheetNextGame[];
+  /** Where the game data comes from (default liiga_api). */
+  data_source?: "liiga_api" | "sample_data";
 }
 
 const SHOOTOUT_PERIOD = 5;
@@ -88,6 +90,7 @@ export function biggest_change(odds: FactSheetOdds): StakeKind {
 export function build_fact_sheet(input: FactSheetInput): FactSheet {
   const facts: Fact[] = [];
   const next_id = () => `f${String(facts.length + 1)}`;
+  const data_source = input.data_source ?? "liiga_api";
 
   facts.push({
     fact_id: next_id(),
@@ -100,7 +103,7 @@ export function build_fact_sheet(input: FactSheetInput): FactSheet {
       ended_in: input.ended_in,
       date: input.date,
     },
-    source: "liiga_api",
+    source: data_source,
   });
 
   const score = { home: 0, away: 0 };
@@ -124,7 +127,7 @@ export function build_fact_sheet(input: FactSheetInput): FactSheet {
         game_time: format_game_time(goal.game_time_seconds),
         score_after: { ...score },
       },
-      source: "liiga_api",
+      source: data_source,
     });
   }
 
@@ -161,11 +164,69 @@ export function build_fact_sheet(input: FactSheetInput): FactSheet {
       fact_id: next_id(),
       type: "next_game",
       value: { ...next_game, weekday: weekday_of(next_game.date) },
-      source: "liiga_api",
+      source: data_source,
     });
   }
 
+  // Last, so the ids of the facts above stay the same.
+  const lead = lead_changes_of(input, real_goals);
+  if (lead) {
+    facts.push({ fact_id: next_id(), type: "lead_changes", value: lead, source: "derived" });
+  }
+
   return { game_id: input.game_id, built_at: input.built_at, facts, kind: "summary" };
+}
+
+/**
+ * Lead changes and a comeback, from the goals in time order. Null when goals are missing (the
+ * goals don't add up to the score) or nobody scored.
+ */
+export function lead_changes_of(
+  input: Pick<FactSheetInput, "home_team" | "away_team" | "home_goals" | "away_goals">,
+  real_goals: readonly FactSheetGoal[],
+): { lead_changes: number; comeback: { team: string; from_behind: number } | null } | null {
+  const home_scored = real_goals.filter((goal) => goal.team === input.home_team).length;
+  const away_scored = real_goals.length - home_scored;
+  // Shootout winners get one extra goal on the score: compare the lowest totals.
+  const complete =
+    real_goals.length > 0 &&
+    home_scored <= input.home_goals &&
+    away_scored <= input.away_goals &&
+    input.home_goals - home_scored <= 1 &&
+    input.away_goals - away_scored <= 1 &&
+    input.home_goals - home_scored + (input.away_goals - away_scored) <= 1;
+  if (!complete) {
+    return null;
+  }
+  let home = 0;
+  let away = 0;
+  let leader: "home" | "away" | null = null;
+  let lead_changes = 0;
+  let home_worst = 0;
+  let away_worst = 0;
+  for (const goal of real_goals) {
+    if (goal.team === input.home_team) {
+      home += 1;
+    } else {
+      away += 1;
+    }
+    const now_leading = home > away ? "home" : away > home ? "away" : null;
+    if (now_leading !== null && leader !== null && now_leading !== leader) {
+      lead_changes += 1;
+    }
+    if (now_leading !== null) {
+      leader = now_leading;
+    }
+    home_worst = Math.max(home_worst, away - home);
+    away_worst = Math.max(away_worst, home - away);
+  }
+  let comeback: { team: string; from_behind: number } | null = null;
+  if (input.home_goals > input.away_goals && home_worst > 0) {
+    comeback = { team: input.home_team, from_behind: home_worst };
+  } else if (input.away_goals > input.home_goals && away_worst > 0) {
+    comeback = { team: input.away_team, from_behind: away_worst };
+  }
+  return { lead_changes, comeback };
 }
 
 /**

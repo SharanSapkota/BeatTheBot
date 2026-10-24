@@ -16,18 +16,12 @@ import { seed_demo_data, type SeedSummary } from "../seed/seed_demo_data";
 
 function print_seed_summary(summary: SeedSummary): void {
   console.log(
-    `Demo fill-ins: ${String(summary.demo_game_count)} games, ${String(summary.demo_event_count)} events, ` +
-      `${String(summary.user_count)} users, ${String(summary.prediction_count)} picks, ` +
+    `Demo data: ${String(summary.user_count)} users, ${String(summary.prediction_count)} picks, ` +
       `demo election with ${String(summary.election_pick_count)} picks, ` +
       `demo room with ${String(summary.room_answer_count)} answers, ` +
       `${String(summary.sample_game_count)} sample football/basketball games ` +
       `(${String(summary.sample_pick_count)} picks).`,
   );
-  if (summary.unfilled_states.length > 0) {
-    console.warn(
-      `No game today for: ${summary.unfilled_states.join(", ")} (not enough free teams).`,
-    );
-  }
 }
 
 /** Real Liiga data first. If the API can't be reached, fall back to the saved fixtures. */

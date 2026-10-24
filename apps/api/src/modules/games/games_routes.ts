@@ -10,6 +10,8 @@ export function create_game_day_routes(games_controller: GamesController): Route
 export function create_games_routes(games_controller: GamesController): Router {
   const router = Router();
   router.get("/", games_controller.list_games);
+  // Before /:game_id, which would otherwise see "overview".
+  router.get("/overview", games_controller.get_overview);
   router.get("/:game_id", games_controller.get_game);
   return router;
 }

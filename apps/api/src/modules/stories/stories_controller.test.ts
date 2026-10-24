@@ -4,7 +4,7 @@ import {
   editor_action_response_schema,
   editor_stories_response_schema,
   game_day_response_schema,
-  story_response_schema,
+  game_stories_response_schema,
 } from "@voita_kone/shared_types";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -38,9 +38,9 @@ async function sign_in(display_name: string): Promise<{ token: string; user_id: 
 }
 
 async function published(type: "preview" | "summary") {
-  const response = await request(app).get(`/api/v1/games/${game_id}/stories?type=${type}`);
+  const response = await request(app).get(`/api/v1/games/${game_id}/stories`);
   expect(response.status).toBe(200);
-  return story_response_schema.parse(response.body).data;
+  return game_stories_response_schema.parse(response.body).data[type];
 }
 
 function error_code(body: unknown): string {
@@ -100,24 +100,20 @@ describe("AI preview and AI summary", () => {
   });
 
   it("demo replay: the preview before puck drop, the summary at the end", async () => {
-    const before = await request(app).get(
-      `/api/v1/demo/games/${game_id}/stories?type=preview&moment=before`,
-    );
-    const final_preview = await request(app).get(
-      `/api/v1/demo/games/${game_id}/stories?type=preview&moment=final`,
-    );
-    const final_summary = await request(app).get(
-      `/api/v1/demo/games/${game_id}/stories?type=summary&moment=final`,
-    );
+    const before = await request(app).get(`/api/v1/demo/games/${game_id}/stories?moment=before`);
+    const final = await request(app).get(`/api/v1/demo/games/${game_id}/stories?moment=final`);
 
-    expect(story_response_schema.parse(before.body).data?.story_type).toBe("preview");
-    expect(story_response_schema.parse(final_preview.body).data).toBeNull();
-    expect(story_response_schema.parse(final_summary.body).data?.story_type).toBe("summary");
+    const before_data = game_stories_response_schema.parse(before.body).data;
+    expect(before_data.preview?.story_type).toBe("preview");
+    expect(before_data.summary).toBeNull();
+    const final_data = game_stories_response_schema.parse(final.body).data;
+    expect(final_data.preview).toBeNull();
+    expect(final_data.summary?.story_type).toBe("summary");
   });
 
-  it("400 for an unknown story type", async () => {
-    const response = await request(app).get(`/api/v1/games/${game_id}/stories?type=what_it_means`);
-    expect(response.status).toBe(400);
+  it("404 for an unknown game id", async () => {
+    const response = await request(app).get(`/api/v1/games/not-a-game/stories`);
+    expect(response.status).toBe(404);
   });
 });
 
@@ -151,20 +147,20 @@ describe("Report an error → editor", () => {
   });
 
   it("editor routes: 401 anonymous, 403 for a normal user", async () => {
-    expect((await request(app).get("/api/v1/editor/stories")).status).toBe(401);
+    expect((await request(app).get("/api/v1/admin/stories")).status).toBe(401);
     const forbidden = await request(app)
-      .get("/api/v1/editor/stories")
+      .get("/api/v1/admin/stories")
       .set("Authorization", player_token);
     expect(forbidden.status).toBe(403);
     const approve = await request(app)
-      .post(`/api/v1/editor/stories/${summary_id}/approve`)
+      .post(`/api/v1/admin/stories/${summary_id}/approve`)
       .set("Authorization", player_token);
     expect(error_code(approve.body)).toBe("FORBIDDEN");
   });
 
   it("the queue shows the text, each claim's status, the fact sheet and the report", async () => {
     const response = await request(app)
-      .get("/api/v1/editor/stories")
+      .get("/api/v1/admin/stories")
       .set("Authorization", editor_token);
 
     const queue = editor_stories_response_schema.parse(response.body).data;
@@ -180,9 +176,30 @@ describe("Report an error → editor", () => {
     expect(story?.reports).toEqual([expect.objectContaining({ reason: "The score is wrong" })]);
   });
 
+  it("filters the queue by traffic light", async () => {
+    const yellow = await request(app)
+      .get("/api/v1/admin/stories?status=yellow")
+      .set("Authorization", editor_token);
+    const yellow_queue = editor_stories_response_schema.parse(yellow.body).data;
+    expect(yellow_queue.some((item) => item.id === summary_id)).toBe(true);
+    expect(yellow_queue.every((item) => item.traffic_light === "yellow")).toBe(true);
+
+    const red = await request(app)
+      .get("/api/v1/admin/stories?status=red")
+      .set("Authorization", editor_token);
+    expect(
+      editor_stories_response_schema.parse(red.body).data.some((item) => item.id === summary_id),
+    ).toBe(false);
+
+    const bad = await request(app)
+      .get("/api/v1/admin/stories?status=green")
+      .set("Authorization", editor_token);
+    expect(bad.status).toBe(400);
+  });
+
   it("edit + approve runs the fact checker again: a wrong score is refused", async () => {
     const response = await request(app)
-      .post(`/api/v1/editor/stories/${summary_id}/edit`)
+      .put(`/api/v1/admin/stories/${summary_id}`)
       .set("Authorization", editor_token)
       .send({ body: "Kärpät won 9–8 after a wild night." });
 
@@ -197,7 +214,7 @@ describe("Report an error → editor", () => {
       .where("id", "=", summary_id)
       .executeTakeFirstOrThrow();
     const response = await request(app)
-      .post(`/api/v1/editor/stories/${summary_id}/edit`)
+      .put(`/api/v1/admin/stories/${summary_id}`)
       .set("Authorization", editor_token)
       .send({ body: story.body, note: "The scorer list was checked" });
 
@@ -216,21 +233,21 @@ describe("Report an error → editor", () => {
     expect(await published("preview")).toBeNull();
 
     const approve = await request(app)
-      .post(`/api/v1/editor/stories/${preview_id}/approve`)
+      .post(`/api/v1/admin/stories/${preview_id}/approve`)
       .set("Authorization", editor_token);
     expect(editor_action_response_schema.parse(approve.body).data.status).toBe("published");
     expect((await published("preview"))?.id).toBe(preview_id);
 
     await request(app).post(`/api/v1/stories/${preview_id}/reports`).send({ reason: "Still old" });
     const reject = await request(app)
-      .post(`/api/v1/editor/stories/${preview_id}/reject`)
+      .post(`/api/v1/admin/stories/${preview_id}/reject`)
       .set("Authorization", editor_token)
       .send({ note: "Wait for the refresh" });
     expect(editor_action_response_schema.parse(reject.body).data.status).toBe("rejected");
     expect(await published("preview")).toBeNull();
 
     const again = await request(app)
-      .post(`/api/v1/editor/stories/${preview_id}/approve`)
+      .post(`/api/v1/admin/stories/${preview_id}/approve`)
       .set("Authorization", editor_token);
     expect(error_code(again.body)).toBe("STORY_NOT_IN_REVIEW");
     const actions = await db

@@ -8,22 +8,26 @@ import { render_at } from "../../test_helpers/render_app";
 import { AfterGameScreen } from "./after_game_screen";
 
 const GAME = build_game("final");
-const STORY_PATH = `/games/${GAME.id}/stories?type=summary`;
+const STORY_PATH = `/games/${GAME.id}/stories`;
 
 describe("AfterGameScreen: AI summary", () => {
   it("shows the published summary with its label and report button", async () => {
     mock_api({
       [STORY_PATH]: {
-        id: "33333333-3333-4333-8333-333333333333",
-        story_type: "summary",
-        headline: "Kärpät's relegation risk drops to 27%",
-        body: "Kärpät beat Ilves 3–1 at home.",
-        bullets: [],
-        label_text: "Written with AI from Liiga data · checked by Kaleva",
-        source: "llm",
-        last_meetings: [],
-        correction: { corrected_at: "2026-10-24T19:47:00.000Z", note: "The scorer was fixed" },
-        published_at: "2026-10-24T19:30:00.000Z",
+        preview: null,
+        summary: {
+          id: "33333333-3333-4333-8333-333333333333",
+          story_type: "summary",
+          headline: "Kärpät's relegation risk drops to 27%",
+          body: "Kärpät beat Ilves 3–1 at home.",
+          bullets: [],
+          why_it_matters: null,
+          label_text: "Written with AI from Liiga data · checked by Kaleva",
+          source: "llm",
+          last_meetings: [],
+          correction: { corrected_at: "2026-10-24T19:47:00.000Z", note: "The scorer was fixed" },
+          published_at: "2026-10-24T19:30:00.000Z",
+        },
       },
     });
     render_at(<AfterGameScreen game={GAME} />);
@@ -40,7 +44,7 @@ describe("AfterGameScreen: AI summary", () => {
   });
 
   it("says the summary is coming soon until it is published (no sample text)", async () => {
-    mock_api({ [STORY_PATH]: null });
+    mock_api({ [STORY_PATH]: { preview: null, summary: null } });
     render_at(<AfterGameScreen game={GAME} />);
 
     expect(await screen.findByRole("heading", { name: "Summary coming soon" })).toBeInTheDocument();

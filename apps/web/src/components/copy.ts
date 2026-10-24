@@ -22,6 +22,7 @@ export const shared_copy = {
       ? "The AI preview is written from Liiga data during the week before puck drop."
       : "The AI summary is written from Liiga data after the final horn.",
   last_meetings: "Last meetings",
+  why_it_matters: "Why it matters:",
   corrected: (time: string, note: string) => `Corrected ${time}: ${note}`,
   report_error: "Report an error",
   report_thanks: "Thanks. The sports desk will check it.",

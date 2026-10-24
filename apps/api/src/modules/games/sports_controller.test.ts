@@ -2,6 +2,7 @@ import {
   api_error_schema,
   game_day_response_schema,
   game_detail_response_schema,
+  games_overview_response_schema,
   games_response_schema,
   sports_day_response_schema,
   teams_response_schema,
@@ -155,5 +156,28 @@ describe("demo replay per sport", () => {
       ["football", 2],
       ["basketball", 2],
     ]);
+  });
+});
+
+describe("GET /api/v1/games/overview", () => {
+  it("gives today's games, the latest results and the next games of a sport", async () => {
+    const response = await request(app).get("/api/v1/games/overview?sport=football");
+
+    expect(response.status).toBe(200);
+    const { data } = games_overview_response_schema.parse(response.body);
+    expect(data.date).toBe("2026-10-24");
+    expect(data.today).toHaveLength(3);
+    expect(data.latest_results?.date).toBe("2026-10-23");
+    expect(data.latest_results?.games.every((game) => game.state === "final")).toBe(true);
+    expect(data.coming_up?.date).toBe("2026-10-25");
+    expect(data.coming_up?.games.every((game) => game.state === "upcoming")).toBe(true);
+    expect(data.next_7_days_count).toBeGreaterThan(0);
+  });
+
+  it("defaults to hockey and rejects an unknown sport", async () => {
+    const hockey = await request(app).get("/api/v1/games/overview");
+    expect(games_overview_response_schema.parse(hockey.body).data.today[0]?.sport).toBe("hockey");
+    const unknown = await request(app).get("/api/v1/games/overview?sport=curling");
+    expect(unknown.status).toBe(400);
   });
 });

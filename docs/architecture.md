@@ -57,21 +57,30 @@ Dependencies are passed through **constructors**. A single `container.ts` builds
 - Real Liiga data first. Rows created to fill gaps (missing games, events or players for the demo) get `data_source = 'demo'`; synced rows get `'liiga_api'`.
 - Sync never overwrites a `liiga_api` row with demo data. The UI may show a small "demo data" tag on demo rows.
 
-## Content pipeline (one game)
-The AI is a guide, not a player: it writes an **AI preview** before the game and an **AI summary** after it. Details: `content_generation.md`, `fact_checker.md`, `editorial_rules.md`.
-1. `sync_games` stores games, events and standings.
-2. Before the game: `prediction_model` runs and stores `ai_predictions`. The app shows them only as **"Data says"** (win chance + stakes); no AI pick.
-3. Code builds a fact sheet (`fact_sheets.kind`): `preview` (form, head to head, home/away record, player form, table position, win chance, stakes) before puck drop, `summary` (final score, goals, winning goal, standing and season odds before → after, next game) when the game is final. Every fact has an id (`f1`, `f2`, …) and a `source`.
-4. The LLM writes the text **only** from the fact sheet, each sentence citing its fact ids. Preview = exactly 3 bullets; summary = one paragraph (60–90 words).
-5. `classify_claims` marks every claim `verified`, `not_found` or `wrong`; `find_tips` and `find_escalation_words` scan the text. On failed claims, retry up to 2 times with the failed claims listed.
-6. **Template fallback:** no LLM key, or the LLM call fails (network / 5xx / timeout) → template text from the same fact sheet, also checked, source `template`, green, label "Automatic preview/summary from Liiga data".
-7. Traffic light (reasons stored in `stories.check_result.traffic_light_reasons`):
-   - 🟢 every claim verified, no tip, no sensitive topic → auto-published.
-   - 🟡 any `not_found` claim, or a story type not in the auto-publish list (`preview`, `summary`) → one-tap editor approval.
-   - 🔴 any `wrong` claim, a tip/prediction of a winner, an injury/legal/personal topic, or an LLM error (empty / unusable output, wrong length) → full review, never auto-published.
-8. The app shows only `published` / `corrected` stories, with labels, a "Report an error" button and a correction note if edited after publishing. Nothing published → "Preview coming soon" / "Summary coming soon".
-9. **Reports:** `POST /stories/:id/reports` writes `error_reports` and `audit_log` and sends the story back to 🟡 `in_review` (hidden until approved again).
-10. **Editor page** (`/editor`, `require_role('editor' | 'admin')`): queue of in_review stories with the text next to the fact sheet and claims marked; approve, edit (checker re-runs; any `wrong` claim → `422 CHECK_FAILED`) or reject. Editing a published story makes it `corrected` (correction note + time). Every action writes `audit_log`.
+## Content pipeline (one game, every sport)
+The AI is a guide, not a player: it writes an **AI preview** before the game and an **AI summary** after it; it explains, it never competes or tips. Step 10 finished the step 5 code (step 5 is merged into step 10). Details: `content_generation.md`, `fact_checker.md`, `editorial_rules.md`.
+1. `sync_games` stores Liiga games, events and standings. Football / basketball: the sample fixtures (their only data for now, see Games hub below).
+2. Before a hockey game: `prediction_model` runs and stores `ai_predictions`, shown only as **"Data says"** (win chance + stakes); no AI pick.
+3. **Fact sheet** (code only, from the database; every fact has an id `f1`, `f2`, … and a `source`: `liiga_api`, `sample_data`, `derived` or `prediction_model:…`):
+   - **Preview:** form (last 5, W/D/L), head to head (last 5 meetings with dates and scores) + this season's series, home/away record, player in form, table positions; hockey also "Data says" win chance and the stakes (playoff / top-4 / relegation odds if they win or lose).
+   - **Summary:** final score, scorers, winning goal, lead changes / comeback, table before → after, hockey also season odds before → after, both teams' next game.
+   - Football / basketball sample games: data facts only (results, scorers, a table counted from the results: football 3/1/0, basketball 2/0), labelled "from sample data". Basketball has no player-in-form fact (the data has only each game's top scorer).
+4. **LLM** (`AnthropicLlmClient`, at most `LLM_MAX_CALLS_PER_MINUTE` calls a minute): writes **only** from the fact sheet, each sentence citing its fact ids. Prompts live in one versioned file (`modules/stories/story_prompt.ts`, now `preview_en_v2` / `summary_en_v2`). The system prompt forbids numbers, names or claims not in the sheet, predictions, tips and betting language. Preview = exactly 3 bullets + one "Why it matters:" line, max 70 words; summary = 60–90 words. Simple English, friendly neutral sports-reporter tone.
+5. **Fact checker:** `classify_claims` matches every number, name, team, score, date and percent to a fact id → `verified` / `not_found` / `wrong`; it also flags tips / predictions (`find_tips`), betting words (`find_betting_words`, whole words, so "Veikkausliiga" is not a hit) and injury / legal / personal topics (`find_escalation_words`). Failed claims → up to 2 retries with the problems listed.
+6. **Template fallback:** no `LLM_API_KEY`, or the LLM is down → a template text from the same fact sheet, checked too, source `template`, label "Automatic preview / summary from Liiga data" (or "from sample data"). The job writes it again with the LLM once one works (the retry).
+7. **Traffic light** (stored with the story: `check_result.traffic_light_reasons`, `model_name`, `prompt_version`):
+   - 🟢 every claim verified, no flag → auto-published (labelled, spot-checked).
+   - 🟡 a claim not found in the sheet, or a story type not in the auto-publish list (`preview`, `summary`) → one-tap editor approval.
+   - 🔴 a wrong claim, any flag (tip, betting language, sensitive topic) or an LLM error (empty / unusable output, wrong length or shape) → full review, never auto-published.
+8. **When** (`GenerateStoriesJob`, idempotent, on API start, every 10 minutes and when a game ends): previews for games in the next 7 days (refreshed once 2 h before the start), a summary when a game is final, a **backfill** of summaries for each sport's latest results (even older than 7 days, so the hub always has them), and the template retry. **Input hash:** `fact_sheets.input_hash` = SHA-256 of the facts + prompt and template versions; unchanged → no new story and no LLM call.
+9. The app shows only `published` / `corrected` stories, with the label, "Report an error" (reason sheet) and a correction note with the time if an editor edited a published text. Nothing published → "Preview coming soon" / "Summary coming soon" (no sample text). The hub's LATEST RESULTS cards show the summary's first sentence.
+10. **Reports:** `POST /stories/:id/reports` (10 per IP per hour) writes `error_reports` and `audit_log` and sends the story back to 🟡 `in_review` (hidden until approved again).
+11. **Editor queue:** `/admin` → **Stories** (`require_role('editor' | 'admin')`; editors see only this tab; the old `/editor` link redirects): 🟡 / 🔴 queue (filter), the text next to the fact sheet with every claim marked; approve, edit + approve (the checker re-runs; a wrong claim, tip or betting word → `422 CHECK_FAILED`) or reject. Editing a published story makes it `corrected`. Every action writes `audit_log`.
+
+## Games hub (step 10)
+- **Never empty:** `GET /games/overview?sport=` gives today's games, LATEST RESULTS (the latest Helsinki day with finals before today, with each summary's first sentence) and COMING UP (the next day with scheduled games). A day switcher (‹ yesterday · today · tomorrow ›, Helsinki) browses any day with `GET /game_days/:date`. Empty day: "No games today. Next games: Tue 27 Oct". The hero shows the day's featured game, or on an empty day the next big game (Kärpät first).
+- **Hockey** has real Liiga data only: no demo hockey games any more (the `db:seed` hub fill-in was removed; tests add their own games for the test day).
+- **Football / basketball** have no data API yet, so their sample fixtures count as their real data for now (they stay on the leaderboards, with a "Sample data" badge) until a real source replaces them. `RefreshDemoDataJob` (on API start and hourly, idempotent) keeps them current: passed sample games become finals with a demo result (deterministic, with goal events), every day of the coming week gets a sample game, and the demo election's poll stays about three weeks ahead. Finished games trigger scoring and the story job.
 
 ## Navigation (`apps/web`)
 Four main menus, from one list (`components/use_main_nav.ts`): **Games** (`/games`, the hub and `/games/:id`), **Elections** (`/elections`, `/elections/:id`), **Rooms** (`/rooms`, `/rooms/new`, `/rooms/join/:key`, `/rooms/:id`), **Leaders** (`/leaders`, tabs Games / Elections).
@@ -101,6 +110,19 @@ No AI in elections: no LLM text, no model numbers. Admins write every text about
 4. **Points:** correct prediction = 20 points, on a **separate election leaderboard** (Leaders → Elections), not in the games points. No prizes for election picks.
 5. **Delete:** deleting a user deletes their election picks (`ON DELETE CASCADE`).
 6. **Demo data:** only fictional candidates (invented names); real politicians' names are never used in seed or test data. Demo elections have `is_demo = true` and show a "Demo" badge.
+
+## Sport categories (step 8)
+- **One config per sport:** `SPORTS` in `packages/scoring/src/sports.ts` (shared by the API and the app) holds each sport's regulation periods, whether a draw is possible, its before-the-game picks, live questions and after questions, and `has_model`. Adding a sport (e.g. floorball) = one entry there + the `sport` CHECK in a new migration.
+
+| Sport | Picks before | Live | After | "Data says" + AI texts |
+|---|---|---|---|---|
+| Hockey (Liiga, real data) | winner 10, exact score 25, scorer 15 | next goal, period goal, poll | quiz, vote | yes |
+| Football (Veikkausliiga) | home / draw / away 10, exact score after 90 min 25, scorer 15 | next goal, poll | quiz, vote | no |
+| Basketball (Korisliiga) | winner 10, margin band (1–5 / 6–10 / 11+) 15, top scorer 15 | poll | vote | no |
+
+- **Data:** hockey comes from the Liiga sync only. Football and basketball have no API yet: an admin enters matches and results in `/admin` → Matches (`data_source = 'admin'`); the result scores the match's picks at once. `db:seed` (or `sports:seed_demo`) adds demo fixtures and demo picks for both.
+- **Hockey only:** the prediction model ("Data says"), the AI preview / summary and the fact checker run only on real Liiga games (`has_model`). The bold call bonus works for every sport.
+- **Web:** the hub has sport tabs (`/games/hockey|football|basketball`, game counts from `GET /sports`; `/games` opens the tab used last on this device). The Before screen shows the sport's picks; Leaders has tabs Games (all sports) · Hockey · Football · Basketball · Elections. Existing endpoints default to `sport=hockey`, so old links keep working.
 
 ## Rooms (step 9)
 A private room for a group (club, friends, workplace). Module `modules/rooms` (routes → controller → `RoomsService` → `KyselyRoomsRepository`); pure helpers with tests: `join_key.ts`, `room_slots.ts`, `question_picker.ts`, `room_reveal.ts`.

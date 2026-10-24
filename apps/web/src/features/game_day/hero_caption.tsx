@@ -1,8 +1,8 @@
 import type { GameSummary } from "@voita_kone/shared_types";
 import { CategoryTag } from "../../components/category_tag";
-import { format_clock_time, format_percent } from "../../lib/format";
+import { format_clock_time, format_day_label, format_percent } from "../../lib/format";
 import { useDataSays } from "../game/api";
-import { center_text } from "./game_status";
+import { center_text, is_today } from "./game_status";
 import { game_day_copy } from "./copy";
 import { category_of } from "./game_row";
 import { config_of } from "../../lib/sports";
@@ -34,7 +34,9 @@ function caption_text(game: GameSummary, stake_line: CaptionText | null): Captio
   }
   return (
     stake_line ?? {
-      headline: game_day_copy.upcoming_headline(home, away, time),
+      headline: is_today(game.start_time)
+        ? game_day_copy.upcoming_headline(home, away, time)
+        : game_day_copy.upcoming_headline_day(home, away, format_day_label(game.start_time), time),
       text: game_day_copy.upcoming_text(time),
     }
   );

@@ -11,7 +11,6 @@ import { AiStoryCard } from "../../components/ai_story_card";
 import { useCrowd, useTeamPlayers } from "../game/api";
 import { report_story, useStory } from "../game/stories_api";
 import { winner_team_id } from "../../lib/points";
-import { config_of } from "../../lib/sports";
 import { useGamePoints } from "../game/use_game_points";
 import { find_question, useAnswerQuestion, useQuestions } from "../game/questions_api";
 import { account_copy } from "../account/copy";
@@ -65,8 +64,7 @@ export function AfterGameScreen({ game }: { game: GameDetail }) {
   const { is_demo } = useDemoMode();
   const points = useGamePoints(game);
   const highlight = useHighlight(game);
-  const has_model = config_of(game.sport).has_model;
-  const story = useStory(game, "summary", has_model);
+  const story = useStory(game, "summary");
   const crowd = useCrowd(game.id);
   const questions = useQuestions(game, "after");
   const answering = useAnswerQuestion(game);
@@ -110,9 +108,7 @@ export function AfterGameScreen({ game }: { game: GameDetail }) {
                 )}
               </GridItem>
               <GridItem mobile_order={3}>
-                {has_model && (
-                  <AiStoryCard story_type="summary" story={story.data} on_report={report_story} />
-                )}
+                <AiStoryCard story_type="summary" story={story.data} on_report={report_story} />
                 {game.sport === "basketball" ? (
                   <TopScorerCard game={game} />
                 ) : (

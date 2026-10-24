@@ -17,6 +17,7 @@ const BASE = {
   claims: [claim("verified")],
   tips: [],
   escalation_words: [],
+  betting_words: [],
   llm_error: null,
 };
 
@@ -28,6 +29,7 @@ describe("decide_traffic_light", () => {
     ["a wrong claim", { ...BASE, claims: [claim("wrong"), claim("not_found")] }, "red"],
     ["a tip", { ...BASE, tips: ["will win"] }, "red"],
     ["a sensitive topic", { ...BASE, escalation_words: ["injur"] }, "red"],
+    ["betting language", { ...BASE, betting_words: ["bookmaker"] }, "red"],
     ["an LLM error", { ...BASE, llm_error: "empty answer" }, "red"],
   ] as const)("%s → %s", (_label, input, expected) => {
     expect(decide_traffic_light(input).traffic_light).toBe(expected);

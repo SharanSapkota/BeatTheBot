@@ -38,6 +38,8 @@ export const env_schema = z.object({
   // Not needed until a later step, so an empty string is allowed for now.
   LLM_API_KEY: z.string().default(""),
   LLM_MODEL: z.string().default(""),
+  // AI previews and summaries: at most this many LLM calls a minute.
+  LLM_MAX_CALLS_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   // Where room questions come from. "llm" is not built yet and falls back to the mock bank.
   ROOM_QUESTIONS_SOURCE: z.enum(["mock", "llm"]).default("mock"),
 });

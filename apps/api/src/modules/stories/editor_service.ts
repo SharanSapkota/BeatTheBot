@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AppError } from "../../common/app_error";
 import type { Clock } from "../../common/clock";
 import type { QueueStoryRow, StoriesRepository, StoryRow } from "./stories_repository";
-import { AI_STORY_LABEL, TEMPLATE_LABELS } from "./story_generation_service";
+import { label_for } from "./story_generation_service";
 import { story_not_found } from "./stories_service";
 import { check_text } from "./story_writer";
 import { to_traffic_light } from "./traffic_light";
@@ -53,9 +53,14 @@ export function to_editor_story(row: QueueStoryRow): EditorStory {
   };
 }
 
-function label_of(story: StoryRow): string {
+/** The label for the story's game: "Liiga data" or "sample data" (football, basketball). */
+function label_of(
+  story: StoryRow,
+  source: "llm" | "template" = story.source === "template" ? "template" : "llm",
+): string {
   const type = story.story_type === "preview" ? "preview" : "summary";
-  return story.source === "template" ? TEMPLATE_LABELS[type] : AI_STORY_LABEL;
+  const is_sample = story.data_source !== "liiga_api";
+  return label_for(type, source, is_sample);
 }
 
 /** Editorial decisions stay with humans: approve, edit + approve (checked again), reject. */
@@ -65,8 +70,12 @@ export class EditorService {
     private readonly clock: Clock,
   ) {}
 
-  async list_queue(): Promise<EditorStory[]> {
-    return (await this.repository.list_queue()).map(to_editor_story);
+  /** The queue (🟡 and 🔴), or only one traffic light. */
+  async list_queue(status?: "yellow" | "red"): Promise<EditorStory[]> {
+    const rows = await this.repository.list_queue();
+    return rows
+      .filter((row) => status === undefined || row.traffic_light === status)
+      .map(to_editor_story);
   }
 
   async approve(editor_user_id: string, story_id: string): Promise<EditorActionResult> {
@@ -101,10 +110,11 @@ export class EditorService {
     };
     const { traffic_light, check } = check_text(story.story_type, body, sheet, known_names, null);
     const wrong = check.claims.filter((claim) => claim.status === "wrong");
-    if (wrong.length > 0 || check.tips.length > 0) {
+    if (wrong.length > 0 || check.tips.length > 0 || check.betting_words.length > 0) {
       const problems = [
         ...wrong.map((claim) => `"${claim.claim}" (${claim.reason ?? "wrong"})`),
         ...check.tips.map((tip) => `"${tip}" (tips a winner)`),
+        ...check.betting_words.map((word) => `"${word}" (betting language)`),
       ];
       throw new AppError(
         "CHECK_FAILED",
@@ -113,17 +123,19 @@ export class EditorService {
       );
     }
     const correction_note = story.published_at ? (note ?? DEFAULT_CORRECTION_NOTE) : null;
+    // An edited text is the editor's and the AI's: it carries the AI label.
+    const label_text = label_of(story, "llm");
     await this.repository.publish_story({
       story_id,
       editor_user_id,
-      label_text: AI_STORY_LABEL,
+      label_text,
       at: this.clock(),
       edit: { body, check_result: check, traffic_light, correction_note },
     });
     return {
       id: story_id,
       status: correction_note ? "corrected" : "published",
-      label_text: AI_STORY_LABEL,
+      label_text,
     };
   }
 

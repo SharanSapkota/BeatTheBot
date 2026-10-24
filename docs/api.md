@@ -27,7 +27,16 @@ Schemas: `packages/shared_types/src/accounts.ts`. Every request may send `Author
 - `400 CODE_INVALID`, `410 CODE_EXPIRED`, `429 TOO_MANY_ATTEMPTS` (5 tries per code; rate limit per email and IP)
 
 ## Games, teams, standings (step 2)
-Response schemas live in `packages/shared_types/src/games.ts` (`game_summary`, `game_detail`, `game_day`, `standings_row`, `player_summary`, `team_summary`, `game_event`). Times are ISO UTC; "days" are Europe/Helsinki days. Every game and team has `data_source` (`liiga_api` | `demo`).
+Response schemas live in `packages/shared_types/src/games.ts` (`game_summary`, `game_detail`, `game_day`, `standings_row`, `player_summary`, `team_summary`, `game_event`). Times are ISO UTC; "days" are Europe/Helsinki days. Every game and team has `sport` (`hockey` | `football` | `basketball`), `league` (`{ id, name }`) and `data_source` (`liiga_api` | `admin` | `demo`).
+**Overview (step 10):** `GET /games/overview?sport=&date=` (`date` default `today`; the app sends its own Helsinki today) → the hub is never empty:
+```json
+{ "data": { "date": "2026-10-25", "today": [],
+  "latest_results": { "date": "2026-10-24", "games": ["…game_summary"], "summary_lines": { "<game id>": "KalPa won 5–1 away at Kärpät." } },
+  "coming_up": { "date": "2026-10-27", "games": ["…game_summary"] },
+  "next_7_days_count": 24 } }
+```
+- `latest_results` = the most recent Helsinki day with finals before `date` (`summary_lines`: the first sentence of each published AI summary); `coming_up` = the next day with scheduled games after `date`; either is `null` when there is none. `next_7_days_count` = scheduled games from now to 7 days ahead.
+**Sport (step 8):** `GET /game_days/:date` and `GET /games` take `?sport=hockey|football|basketball` (default `hockey`, so old links keep working). `GET /sports?date=YYYY-MM-DD|today` → `{ date, sports: [{ sport, game_count, live_count }] }` in config order (the hub's sport tabs).
 Caching: responses with a live game send `Cache-Control: no-store`; others `public, max-age=60` + `ETag` (304 on `If-None-Match`).
 Errors: `404 GAME_NOT_FOUND`, `404 TEAM_NOT_FOUND`, `400 INVALID_DATE`, `400 RANGE_TOO_LARGE`, `400 VALIDATION_ERROR` (bad query values).
 
@@ -123,7 +132,10 @@ Demo replay (same model): `GET /demo/games/:game_id/data_says?moment=…` (the r
 
 ## Before-game predictions (step 4)
 Schemas: `packages/shared_types/src/predictions.ts`. One pick per user and game, editable until puck drop.
-`POST /games/:game_id/predictions` (auth) body `{ predicted_winner_team_id, predicted_home_goals, predicted_away_goals, predicted_scorer_id | null }` (goals 0–20) → `201` the saved pick
+`POST /games/:game_id/predictions` (auth) body `{ predicted_winner_team_id, predicted_home_goals, predicted_away_goals, predicted_scorer_id, predicted_margin_band }` (goals 0–20; nullable fields) → `201` the saved pick. What each sport needs (step 8, checked by the API):
+  - hockey: winner (a team), home + away goals, scorer (optional)
+  - football: winner (a team, or `null` = draw), home + away goals, scorer (optional)
+  - basketball: winner (a team), `predicted_margin_band` (`1_5` | `6_10` | `11_plus`, optional), top scorer in `predicted_scorer_id` (optional); goals `null`
 `PUT /games/:game_id/predictions` (auth): same body, changes the pick → `200`
 ```json
 { "data": { "game_id": "…", "predicted_winner_team_id": "…", "predicted_home_goals": 3, "predicted_away_goals": 2,
@@ -131,7 +143,7 @@ Schemas: `packages/shared_types/src/predictions.ts`. One pick per user and game,
 ```
 - `409 PREDICTION_LOCKED` at/after `start_time` · `409 PREDICTION_EXISTS` (POST twice → use `PUT`) · `404 PREDICTION_NOT_FOUND` (PUT without a pick) · `404 GAME_NOT_FOUND` · `400 INVALID_PICK` (winner not one of the two teams, scorer not on either roster) · `400 VALIDATION_ERROR`
 `GET /me/predictions?game_id=` (auth, `no-store`) → the user's picks, newest game first (one game with `game_id`)
-- Scoring: `jobs/score_predictions.ts` fills `points_awarded` (rules in `packages/scoring`: winner 10, exact score after 60 min 25, scorer 15, **bold call** +5 when the winner is right and fewer than 30% of fans picked that winner at puck drop, only with at least 20 picks) for finished games. Picks store `scoring_version` (current 2); the idempotent job re-scores every pick of a final game with a lower version (or never scored). It runs on API start, when live sync sees a final, after `sync:liiga` and after `db:seed`.
+- Scoring: `jobs/score_predictions.ts` fills `points_awarded` (rules in `packages/scoring`: winner / football outcome incl. draw 10, exact score after regulation 25, scorer 15, basketball margin band 15 and top scorer 15, **bold call** +5 when the winner is right and fewer than 30% of fans picked that winner at puck drop, only with at least 20 picks) for finished games. Picks store `scoring_version` (current 2); the idempotent job re-scores every pick of a final game with a lower version (or never scored). It runs on API start, when live sync sees a final, after `sync:liiga` and after `db:seed`.
 - Demo replay games: the web app keeps picks on the device (the replayed game is already over).
 
 ## Questions (step 6: live picks, result quiz, player vote)
@@ -161,7 +173,7 @@ Schemas: `packages/shared_types/src/questions.ts`. A game's questions are create
 
 ## Leaderboard (step 4)
 Schema: `packages/shared_types/src/leaderboard.ts`. Fans only: built from the current season's finished games and real users' scored picks and answers. No "Kaleva AI" row, no "All fans" row.
-`GET /leaderboard?period=week|season` (default `week`; weeks run Monday–Sunday, Helsinki) → `public, max-age=60` anonymous, `private, no-store` when signed in
+`GET /leaderboard?period=week|season&sport=all|hockey|football|basketball` (defaults `week`, `all`; weeks run Monday–Sunday, Helsinki) → `public, max-age=60` anonymous, `private, no-store` when signed in
 ```json
 { "data": { "period": "week",
   "summary": { "you_accuracy": 0.64, "fans_accuracy": 0.58, "games_count": 32 },
@@ -172,32 +184,32 @@ Schema: `packages/shared_types/src/leaderboard.ts`. Fans only: built from the cu
 - `summary.you_accuracy` / `fans_accuracy` = share of correct winner picks in the period (you vs all fans); `null` without picks (`you_accuracy` also when signed out). `games_count` = finished games in the period.
 - Rows: top 10, plus the "you" row when it ranks lower. Equal points share a rank. `kind` = `user` | `you`. `movement` = places gained since the last game day (you only).
 
-## Stories (step 5: AI preview + AI summary)
-Schemas: `packages/shared_types`. Only `published` (or `corrected`) stories are returned.
-`GET /games/:game_id/stories?type=preview|summary` → the published story, or `null` (the app shows "Preview coming soon" / "Summary coming soon")
+## Stories (step 10: AI preview + AI summary, every sport)
+Schemas: `packages/shared_types/src/stories.ts`. Only `published` (or `corrected`) stories are returned.
+`GET /games/:game_id/stories` → `{ preview, summary }`, each the published story or `null` (the app shows "Preview coming soon" / "Summary coming soon")
 ```json
-{ "data": { "id": "…", "story_type": "preview", "headline": "…", "body": "…",
-  "bullets": ["…", "…", "…"],
-  "label_text": "Written with AI from Liiga data · checked by Kaleva",
-  "source": "llm",
-  "last_meetings": [{ "date": "2026-09-30", "home_team": "KalPa", "away_team": "Kärpät", "home_goals": 2, "away_goals": 3 }],
-  "correction": null,
-  "published_at": "…" } }
+{ "data": {
+  "preview": { "id": "…", "story_type": "preview", "headline": "K-Espoo vs TPS", "body": "- …\n- …\n- …\nWhy it matters: …",
+    "bullets": ["…", "…", "…"], "why_it_matters": "A win would put K-Espoo's chance of making the playoffs at 83%, a loss at 74%.",
+    "label_text": "Written with AI from Liiga data · checked by Kaleva", "source": "llm",
+    "last_meetings": [{ "date": "2026-10-16", "home_team": "TPS", "away_team": "K-Espoo", "home_goals": 4, "away_goals": 2 }],
+    "correction": null, "published_at": "…" },
+  "summary": null } }
 ```
-- `bullets` (the 3 preview lines) and `last_meetings` are for previews. `source` = `llm` | `template` (template label: "Automatic preview from Liiga data" / "Automatic summary from Liiga data"). `correction` = `{ corrected_at, note }` when edited after publishing, else `null`.
-- Demo replay: `GET /demo/games/:game_id/stories?type=&moment=` (preview at `before` / `live`, summary at `final`).
+- `bullets` (the 3 preview lines), `why_it_matters` and `last_meetings` are for previews. `source` = `llm` | `template`. Labels: "Written with AI from Liiga data · checked by Kaleva" / "Written with AI from sample data · checked by Kaleva" (football, basketball); templates "Automatic preview / summary from Liiga data" (or "from sample data"). `correction` = `{ corrected_at, note }` when edited after publishing, else `null`.
+- `404 GAME_NOT_FOUND` for an unknown or malformed id. Demo replay: `GET /demo/games/:game_id/stories?moment=` (preview at `before` / `live`, summary at `final`).
 
-`POST /stories/:story_id/reports` (auth optional) body `{ reason }` → `201`
+`POST /stories/:story_id/reports` (auth optional) body `{ reason }` (3–500 chars) → `201`
 - Writes `error_reports` and `audit_log`, and sends the story back to 🟡 `in_review` (hidden until an editor approves it again).
 - `429 RATE_LIMITED` after 10 reports per IP per hour.
 
-## Editor (step 5)
-Bearer token with `require_role('editor' | 'admin')`; otherwise `403 FORBIDDEN`. Every action writes `audit_log` (who, what, target, when, details).
-`GET /editor/stories` → the queue: `in_review` stories (🟡 and 🔴), each with body, traffic light + reasons, claims (`verified` / `not_found` / `wrong`), the fact sheet facts and open reports.
-`POST /editor/stories/:id/approve` → `published` (label with the time).
-`POST /editor/stories/:id/edit` body `{ body }` → the fact checker re-runs; any `wrong` claim → `422 CHECK_FAILED` with the claims; otherwise published. A story that was published before becomes `corrected`, with a correction note + time (also in `corrections`).
-`POST /editor/stories/:id/reject` body `{ note? }` → `rejected`.
-- Make an editor: `pnpm --filter api make:editor -- --user_id <id>` (sets role `editor`, logged as `user.make_editor`).
+## Admin stories (editor queue, step 10)
+Bearer token with `require_role('editor' | 'admin')`; anonymous `401`, other roles `403 FORBIDDEN`. Every action writes `audit_log`. (Replaces the step 5 `/editor/stories` routes.)
+`GET /admin/stories?status=yellow|red` (both when left out) → the queue: `in_review` stories, each with body, traffic light + reasons, claims (`verified` / `not_found` / `wrong`), the fact sheet facts and open reports. `400` for another status.
+`POST /admin/stories/:id/approve` → `published` (with the label).
+`PUT /admin/stories/:id` body `{ body, note? }` → the fact checker re-runs; a `wrong` claim, a tip or a betting word → `422 CHECK_FAILED` with the problems; otherwise published. A story that was published before becomes `corrected`, with a correction note + time.
+`POST /admin/stories/:id/reject` body `{ note? }` → `rejected`.
+- Make an editor: `pnpm --filter api make:editor -- --user_id <id>`.
 
 ## Elections (step 7)
 Schemas: `packages/shared_types/src/elections.ts`. No AI. Only `published`, `closed` and `resulted` elections are visible to users (`draft` → `404 ELECTION_NOT_FOUND`). All `no-store` (the order and `my_pick` depend on the user).
@@ -301,6 +313,13 @@ Every `/admin/*` route uses `require_role('admin')`: `401` anonymous, `403 FORBI
 `POST /admin/corrections` body `{ target_type, target_id, what_was_wrong, corrected_body }`
 `GET /admin/review/stats` → approval rate, edit rate, review time, errors
 `POST /admin/highlights/:highlight_id/texts/:language/ai_draft` → AI translation draft from the editor's text
+
+**Matches (step 8):** football and basketball have no API yet, so an admin adds them; Liiga (hockey) games come only from the Liiga sync. Schemas: `packages/shared_types/src/admin_matches.ts`. Matches get `data_source = 'admin'`.
+`GET /admin/leagues` → the leagues an admin can add matches to (Veikkausliiga, Korisliiga), each with its teams
+`GET /admin/matches` → admin-entered matches with `pick_count`, `goals` and `top_scorer`
+`POST /admin/matches` body `{ league_id, home_team_id, away_team_id, start_time }` → `201` the match · `PUT /admin/matches/:id` same body → `200` · `DELETE /admin/matches/:id` → `204`
+`POST /admin/matches/:id/result` body `{ home_goals, away_goals, ended_in (regulation | overtime), goals: [{ team_id, player_id | null, minute }] (football), top_scorer_player_id (basketball) }` → the match; scores its picks at once (entering it again re-scores)
+- `400 INVALID_MATCH` (not a football / basketball league, a team not in the league) · `400 VALIDATION_ERROR` (same team twice, bad values) · `400 INVALID_RESULT` (goals don't add up, a scorer or top scorer not on the teams, overtime in football, the wrong result fields for the sport) · `409 MATCH_LOCKED` (only a match not yet played can change) · `409 MATCH_HAS_PICKS` (can't change teams or delete once fans picked) · `409 MATCH_NOT_STARTED` (result before the start time) · `404 MATCH_NOT_FOUND`
 
 ## Jobs (internal / admin)
 `POST /admin/jobs/sync_games` · `POST /admin/jobs/run_model` (not built; for now `pnpm --filter @voita_kone/api model:run`, and `sync:liiga` runs the model after syncing) · `POST /admin/jobs/generate_stories/:game_id` · LATER: `POST /admin/jobs/generate_daily`

@@ -55,7 +55,8 @@ function useRowLine(game: GameSummary): string {
  * One of the other games of the day. Mobile: both teams, status and fans line. Desktop: a
  * kaleva.fi list item (dark thumbnail with the badges, headline, fans line, category label).
  */
-export function GameRow({ game }: { game: GameSummary }) {
+/** `summary_line`: a finished game's first AI summary sentence (Latest results). */
+export function GameRow({ game, summary_line }: { game: GameSummary; summary_line?: string }) {
   const { link_to } = useDemoMode();
   const status = game_status(game, false);
   const center = center_text(game);
@@ -86,6 +87,7 @@ export function GameRow({ game }: { game: GameSummary }) {
         <span className={styles.chevron}>
           <ChevronRightIcon />
         </span>
+        {summary_line && <span className={styles.summary}>{summary_line}</span>}
       </span>
       <span className={styles.media}>
         <span className={styles.thumb}>
@@ -96,7 +98,7 @@ export function GameRow({ game }: { game: GameSummary }) {
           <span className={styles.headline}>
             {game_day_copy.row_headline(game.home_team.name, game.away_team.name, headline_time)}
           </span>
-          <span className={styles.detail}>{ai_line}</span>
+          <span className={styles.detail}>{summary_line ?? ai_line}</span>
           <span className={styles.category}>
             {category_of(game)}
             {game.data_source === "demo" && <SampleBadge />}

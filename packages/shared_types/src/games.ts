@@ -127,6 +127,33 @@ export const players_response_schema = api_success_schema(z.array(player_summary
 export const games_response_schema = api_success_schema(z.array(game_summary_schema));
 export const game_detail_response_schema = api_success_schema(game_detail_schema);
 export const game_day_response_schema = api_success_schema(game_day_schema);
+
+/** One Helsinki day of games, or null when there is none. */
+const overview_day_schema = z
+  .object({ date: local_date_schema, games: z.array(game_summary_schema) })
+  .nullable();
+
+/**
+ * GET /games/overview?sport=: the hub is never empty. Today's games, the latest day with
+ * results (before today) and the next day with scheduled games (after today).
+ */
+export const games_overview_schema = z.object({
+  date: local_date_schema,
+  today: z.array(game_summary_schema),
+  /** `summary_lines`: game id → the first sentence of its published AI summary. */
+  latest_results: z
+    .object({
+      date: local_date_schema,
+      games: z.array(game_summary_schema),
+      summary_lines: z.record(z.string(), z.string()),
+    })
+    .nullable(),
+  coming_up: overview_day_schema,
+  /** Games still to start in the next 7 days (from now). */
+  next_7_days_count: z.number().int().min(0),
+});
+
+export const games_overview_response_schema = api_success_schema(games_overview_schema);
 export const standings_response_schema = api_success_schema(standings_schema);
 
 export type DataSource = z.infer<typeof data_source_schema>;
@@ -143,6 +170,7 @@ export type Score = z.infer<typeof score_schema>;
 export type GameEvent = z.infer<typeof game_event_schema>;
 export type GameDetail = z.infer<typeof game_detail_schema>;
 export type GameDay = z.infer<typeof game_day_schema>;
+export type GamesOverview = z.infer<typeof games_overview_schema>;
 export type PlayerSummary = z.infer<typeof player_summary_schema>;
 export type StandingsRow = z.infer<typeof standings_row_schema>;
 export type Standings = z.infer<typeof standings_schema>;

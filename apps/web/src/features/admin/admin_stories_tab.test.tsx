@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { save_session_token } from "../../lib/session";
 import { mock_api } from "../../test_helpers/mock_api";
 import { render_at } from "../../test_helpers/render_app";
-import { EditorPage } from "./editor_page";
+import { AdminPage } from "../admin/admin_page";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const STORY_ID = "22222222-2222-4222-8222-222222222222";
@@ -45,40 +45,58 @@ const STORY: EditorStory = {
   created_at: "2026-10-24T17:30:00.000Z",
 };
 
-describe("EditorPage", () => {
-  it("shows Editors only when signed out", async () => {
-    mock_api({});
-    render_at(<EditorPage />);
+/** /admin?tab=stories: the Stories tab (role editor or admin). */
+function render_stories_tab() {
+  return render_at(<AdminPage />, { url: "/admin?tab=stories", path: "/admin" });
+}
 
-    expect(await screen.findByRole("heading", { name: "Editors only" })).toBeInTheDocument();
-    expect(screen.queryByText(/make:editor/)).not.toBeInTheDocument();
+describe("/admin → Stories", () => {
+  it("shows Staff only when signed out", async () => {
+    mock_api({});
+    render_stories_tab();
+
+    expect(await screen.findByRole("heading", { name: "Staff only" })).toBeInTheDocument();
   });
 
-  it("shows Editors only with the user id and the make:editor hint for a player", async () => {
+  it("shows Staff only with the user id for a normal user, and no queue request", async () => {
     save_session_token("token-1");
     const api = mock_api({ "/me": make_user("user") });
-    render_at(<EditorPage />);
+    render_stories_tab();
 
-    expect(await screen.findByRole("heading", { name: "Editors only" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Staff only" })).toBeInTheDocument();
     expect(screen.getByText(`Your user id: ${USER_ID}`)).toBeInTheDocument();
-    expect(
-      screen.getByText(`pnpm --filter api make:editor -- --user_id ${USER_ID}`),
-    ).toBeInTheDocument();
-    expect(api.requested_paths).not.toContain("/editor/stories");
+    expect(api.requested_paths).not.toContain("/admin/stories");
+  });
+
+  it("gives an editor only the Stories tab and filters the queue by traffic light", async () => {
+    save_session_token("token-1");
+    const api = mock_api({
+      "/me": make_user("editor"),
+      "/admin/stories": [STORY],
+      "/admin/stories?status=red": [],
+    });
+    render_at(<AdminPage />, { url: "/admin", path: "/admin" });
+
+    const tabs = await screen.findByRole("tablist", { name: "Admin sections" });
+    expect(tabs).toHaveTextContent("Stories");
+    expect(tabs).not.toHaveTextContent("Elections");
+    fireEvent.click(await screen.findByRole("tab", { name: "🔴 Red" }));
+    expect(await screen.findByRole("heading", { name: "The queue is empty" })).toBeInTheDocument();
+    expect(api.requested_paths).toContain("/admin/stories?status=red");
   });
 
   it("shows the queue with claims marked and approves the story", async () => {
     save_session_token("token-1");
     const api = mock_api({
       "/me": make_user("editor"),
-      "/editor/stories": [STORY],
-      [`POST /editor/stories/${STORY_ID}/approve`]: {
+      "/admin/stories": [STORY],
+      [`POST /admin/stories/${STORY_ID}/approve`]: {
         id: STORY_ID,
         status: "published",
         label_text: "AI-written from Liiga data.",
       },
     });
-    render_at(<EditorPage />);
+    render_stories_tab();
 
     expect(
       await screen.findByRole("button", { name: "Kärpät vs KalPa · summary" }),
@@ -98,23 +116,23 @@ describe("EditorPage", () => {
       expect(
         api.requests.some(
           (request) =>
-            request.method === "POST" && request.path === `/editor/stories/${STORY_ID}/approve`,
+            request.method === "POST" && request.path === `/admin/stories/${STORY_ID}/approve`,
         ),
       ).toBe(true);
     });
     expect(await screen.findByRole("status")).toHaveTextContent("Published: Kärpät beat KalPa");
     await waitFor(() => {
-      expect(api.requested_paths.filter((path) => path === "/editor/stories")).toHaveLength(2);
+      expect(api.requested_paths.filter((path) => path === "/admin/stories")).toHaveLength(2);
     });
   });
 
   it("shows the fact checker's message when an edit is refused", async () => {
     save_session_token("token-1");
     const api = mock_api(
-      { "/me": make_user("admin"), "/editor/stories": [STORY] },
-      { [`POST /editor/stories/${STORY_ID}/edit`]: { status: 422, code: "CHECK_FAILED" } },
+      { "/me": make_user("admin"), "/admin/stories": [STORY] },
+      { [`PUT /admin/stories/${STORY_ID}`]: { status: 422, code: "CHECK_FAILED" } },
     );
-    render_at(<EditorPage />);
+    render_stories_tab();
 
     fireEvent.click(await screen.findByRole("button", { name: "Edit and approve" }));
     const textarea = screen.getByLabelText("Story text");
@@ -125,7 +143,7 @@ describe("EditorPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save and approve" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The fact checker refused the text");
-    const edit_request = api.requests.find((request) => request.path.endsWith("/edit"));
+    const edit_request = api.requests.find((request) => request.method === "PUT");
     expect(edit_request?.body).toEqual({ body: STORY.body, note: "Wrong scorer" });
   });
 });

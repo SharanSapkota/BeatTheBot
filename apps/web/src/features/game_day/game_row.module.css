@@ -11,6 +11,7 @@
 
 .compact {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   flex-grow: 1;
@@ -134,4 +135,14 @@
     text-transform: uppercase;
     color: var(--color_label);
   }
+}
+
+/* Latest results: the first sentence of the AI summary under the score. */
+.summary {
+  flex-basis: 100%;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--color_text_soft);
+  border-left: 3px solid var(--color_ai);
+  padding-left: 8px;
 }

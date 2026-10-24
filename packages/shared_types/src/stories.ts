@@ -23,6 +23,8 @@ export const story_schema = z.object({
   body: z.string(),
   /** Preview: the 3 bullet lines (without "- "). Summary: empty. */
   bullets: z.array(z.string()),
+  /** Preview: the "Why it matters" line (without the prefix). Summary: null. */
+  why_it_matters: z.string().nullable(),
   /** "Written with AI from Liiga data · checked by Kaleva", or "Automatic … from Liiga data". */
   label_text: z.string(),
   /** llm = written with AI; template = the automatic text (no LLM available). */
@@ -41,8 +43,16 @@ export const story_report_request_schema = z.object({
 
 export const story_response_schema = api_success_schema(story_schema.nullable());
 
+/** GET /games/:game_id/stories: the published preview and summary (null when not published). */
+export const game_stories_schema = z.object({
+  preview: story_schema.nullable(),
+  summary: story_schema.nullable(),
+});
+export const game_stories_response_schema = api_success_schema(game_stories_schema);
+
 export type StoryType = z.infer<typeof story_type_schema>;
 export type TrafficLightValue = z.infer<typeof traffic_light_schema>;
 export type LastMeeting = z.infer<typeof last_meeting_schema>;
 export type Story = z.infer<typeof story_schema>;
+export type GameStories = z.infer<typeof game_stories_schema>;
 export type StoryReportRequest = z.infer<typeof story_report_request_schema>;

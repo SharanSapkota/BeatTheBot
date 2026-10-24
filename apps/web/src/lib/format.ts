@@ -35,6 +35,53 @@ export function format_day_label(instant: string | Date): string {
   return `${part("weekday")} ${part("day")} ${part("month")}`;
 }
 
+const date_key_formatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: HELSINKI,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** The Helsinki calendar day of an instant: "2026-10-25". */
+export function helsinki_date_of(instant: string | Date): string {
+  return date_key_formatter.format(new Date(instant));
+}
+
+/** True for a real calendar day written as "YYYY-MM-DD" (e.g. a ?date= in the URL). */
+export function is_local_date_text(value: string): boolean {
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(`${value}T12:00:00Z`)) &&
+    add_days_to_date(value, 0) === value
+  );
+}
+
+/** A calendar day plus `days` (negative goes back): "2026-10-25" + 2 → "2026-10-27". */
+export function add_days_to_date(date: string, days: number): string {
+  const shifted = new Date(`${date}T12:00:00Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
+/** "Sat 24 Oct" for a calendar day ("2026-10-24"); noon UTC keeps it on that Helsinki day. */
+export function format_date_label(date: string): string {
+  return format_day_label(`${date}T12:00:00Z`);
+}
+
+/** "Today", "Yesterday", "Tomorrow" or "Tue 27 Oct". */
+export function format_relative_day(date: string, today: string): string {
+  if (date === today) {
+    return "Today";
+  }
+  if (date === add_days_to_date(today, -1)) {
+    return "Yesterday";
+  }
+  if (date === add_days_to_date(today, 1)) {
+    return "Tomorrow";
+  }
+  return format_date_label(date);
+}
+
 /** "3 – 1", "2 – 1 OT" */
 export function format_score(
   home_goals: number,

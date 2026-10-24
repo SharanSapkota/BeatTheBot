@@ -5,7 +5,7 @@ import type { StoriesController } from "./stories_controller";
 /** Mounted on /games. */
 export function create_story_routes(controller: StoriesController): Router {
   const router = Router();
-  router.get("/:game_id/stories", controller.get_story);
+  router.get("/:game_id/stories", controller.get_stories);
   return router;
 }
 
@@ -22,16 +22,16 @@ export function create_story_report_routes(
 /** Mounted on /demo/games (only when the demo replay is on). */
 export function create_demo_story_routes(controller: StoriesController): Router {
   const router = Router();
-  router.get("/:game_id/stories", controller.get_demo_story);
+  router.get("/:game_id/stories", controller.get_demo_stories);
   return router;
 }
 
-/** Mounted on /editor/stories (role editor or admin). */
+/** Mounted on /admin/stories (role editor or admin). */
 export function create_editor_routes(controller: EditorController): Router {
   const router = Router();
   router.get("/", controller.list);
   router.post("/:story_id/approve", controller.approve);
-  router.post("/:story_id/edit", controller.edit);
+  router.put("/:story_id", controller.edit);
   router.post("/:story_id/reject", controller.reject);
   return router;
 }

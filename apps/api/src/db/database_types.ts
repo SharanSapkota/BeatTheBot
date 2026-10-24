@@ -143,6 +143,7 @@ export interface FactSheets {
   facts: Json;
   game_id: string;
   id: Generated<string>;
+  input_hash: string | null;
   kind: Generated<string>;
   updated_at: Generated<Timestamp>;
 }

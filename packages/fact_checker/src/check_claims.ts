@@ -179,6 +179,7 @@ function collect_allowed(sheet: FactSheet): Allowed {
         const { value } = fact;
         name(value.team);
         integer(value.wins);
+        integer(value.draws);
         integer(value.losses);
         integer(value.games);
         break;
@@ -195,8 +196,32 @@ function collect_allowed(sheet: FactSheet): Allowed {
         const { value } = fact;
         name(value.team);
         integer(value.wins);
+        integer(value.draws);
         integer(value.losses);
         integer(value.games);
+        break;
+      }
+      case "season_series": {
+        const { value } = fact;
+        name(value.home_team);
+        name(value.away_team);
+        for (const number of [
+          value.home_team_wins,
+          value.away_team_wins,
+          value.draws,
+          value.games,
+        ]) {
+          integer(number);
+        }
+        break;
+      }
+      case "lead_changes": {
+        const { value } = fact;
+        integer(value.lead_changes);
+        if (value.comeback) {
+          name(value.comeback.team);
+          integer(value.comeback.from_behind);
+        }
         break;
       }
       case "player_form": {

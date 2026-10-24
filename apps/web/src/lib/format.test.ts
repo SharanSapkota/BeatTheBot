@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  add_days_to_date,
   format_clock_time,
   format_countdown,
   format_day_label,
   format_event_time,
   format_number,
   format_period_clock,
+  format_relative_day,
   format_score,
+  helsinki_date_of,
   initials_of,
+  is_local_date_text,
 } from "./format";
 
 describe("format", () => {
@@ -37,5 +41,24 @@ describe("format", () => {
     expect(initials_of("sanna.l")).toBe("SL");
     expect(initials_of("TappaJani")).toBe("TJ");
     expect(initials_of("Eetu Laine")).toBe("EL");
+  });
+});
+
+describe("Helsinki days", () => {
+  it("gives the Helsinki day around midnight and the summer time change", () => {
+    // 23:30 Helsinki (UTC+3) on 24 Oct; 00:30 on the 25th; 00:30 on the 26th (UTC+2).
+    expect(helsinki_date_of("2026-10-24T20:30:00Z")).toBe("2026-10-24");
+    expect(helsinki_date_of("2026-10-24T21:30:00Z")).toBe("2026-10-25");
+    expect(helsinki_date_of("2026-10-25T22:30:00Z")).toBe("2026-10-26");
+    expect(add_days_to_date("2026-10-31", 1)).toBe("2026-11-01");
+    expect(add_days_to_date("2026-10-25", -1)).toBe("2026-10-24");
+    expect(format_relative_day("2026-10-25", "2026-10-25")).toBe("Today");
+    expect(format_relative_day("2026-10-24", "2026-10-25")).toBe("Yesterday");
+    expect(format_relative_day("2026-10-26", "2026-10-25")).toBe("Tomorrow");
+    expect(format_relative_day("2026-10-27", "2026-10-25")).toBe("Tue 27 Oct");
+    expect(is_local_date_text("2026-10-27")).toBe(true);
+    expect(is_local_date_text("2026-02-30")).toBe(false);
+    expect(is_local_date_text("2026-13-01")).toBe(false);
+    expect(is_local_date_text("27.10.2026")).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 import {
   classify_claims,
+  find_betting_words,
   find_escalation_words,
   find_strong_words,
   find_tips,
@@ -16,10 +17,11 @@ import {
   STORY_MAX_TOKENS,
   SYSTEM_PROMPT,
   TEMPLATE_VERSIONS,
+  WORD_LIMITS,
   build_story_prompt,
   type GeneratedStoryType,
 } from "./story_prompt";
-import { template_preview, template_summary } from "./story_templates";
+import { WHY_IT_MATTERS, template_preview, template_summary } from "./story_templates";
 import { decide_traffic_light, type TrafficLight } from "./traffic_light";
 
 // fact sheet → prompt → LLM → check every claim → retry (max 2) → traffic light. Without an
@@ -28,14 +30,13 @@ import { decide_traffic_light, type TrafficLight } from "./traffic_light";
 /** The first try plus at most 2 retries with the problems listed. */
 export const MAX_GENERATION_ATTEMPTS = 3;
 export const TEMPLATE_MODEL_NAME = "template";
-const MIN_WORDS = 40;
-const MAX_WORDS = 130;
 const PREVIEW_BULLETS = 3;
 
 export interface CheckDetails {
   claims: ClassifiedClaim[];
   tips: string[];
   escalation_words: string[];
+  betting_words: string[];
   strong_words: string[];
   llm_error: string | null;
   traffic_light_reasons: string[];
@@ -56,19 +57,27 @@ function word_count(text: string): number {
   return text.split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
 }
 
-/** Empty, too short or long, or (preview) not 3 bullets: the LLM's answer is unusable. */
+/**
+ * Empty, too short or long, or (preview) not 3 bullets plus one "Why it matters:" line: the
+ * LLM's answer is unusable.
+ */
 export function output_problem(story_type: GeneratedStoryType, body: string): string | null {
   const words = word_count(body);
   if (words === 0) {
     return "empty answer";
   }
-  if (words < MIN_WORDS || words > MAX_WORDS) {
-    return `${String(words)} words (expected about 60–90)`;
+  const { min, max } = WORD_LIMITS[story_type];
+  if (words < min || words > max) {
+    return `${String(words)} words (expected ${String(min)}–${String(max)})`;
   }
   if (story_type === "preview") {
-    const bullets = body.split("\n").filter((line) => line.trim().startsWith("-")).length;
+    const lines = body.split("\n").map((line) => line.trim());
+    const bullets = lines.filter((line) => line.startsWith("-")).length;
     if (bullets !== PREVIEW_BULLETS) {
       return `${String(bullets)} bullets (expected 3)`;
+    }
+    if (lines.filter((line) => line.startsWith(WHY_IT_MATTERS)).length !== 1) {
+      return `no "${WHY_IT_MATTERS}" line`;
     }
   }
   return null;
@@ -93,13 +102,22 @@ export function check_text(
   const claims = [...classify_claims(raw, sheet, known_names), ...unknown_ids];
   const tips = find_tips(body);
   const escalation_words = find_escalation_words(body);
-  const decision = decide_traffic_light({ story_type, claims, tips, escalation_words, llm_error });
+  const betting_words = find_betting_words(body);
+  const decision = decide_traffic_light({
+    story_type,
+    claims,
+    tips,
+    escalation_words,
+    betting_words,
+    llm_error,
+  });
   return {
     traffic_light: decision.traffic_light,
     check: {
       claims,
       tips,
       escalation_words,
+      betting_words,
       strong_words: find_strong_words(body),
       llm_error,
       traffic_light_reasons: decision.reasons,
@@ -120,6 +138,11 @@ function problems_of(check: CheckDetails): FailedClaim[] {
       claim: word,
       type: "name" as const,
       reason: "sensitive topic",
+    })),
+    ...check.betting_words.map((word) => ({
+      claim: word,
+      type: "name" as const,
+      reason: "betting language",
     })),
   ];
 }

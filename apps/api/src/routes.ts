@@ -93,7 +93,7 @@ export function create_api_router(dependencies: AppDependencies): Router {
     create_story_report_routes(stories_controller, dependencies.report_rate_limit),
   );
   router.use(
-    "/editor/stories",
+    "/admin/stories",
     create_editor_routes(new EditorController(dependencies.editor_service)),
   );
   router.use("/games", create_game_question_routes(questions_controller));

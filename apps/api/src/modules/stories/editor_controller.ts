@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import {
   editor_edit_request_schema,
+  editor_queue_query_schema,
   editor_reject_request_schema,
   type ApiSuccess,
   type EditorActionResult,
@@ -28,7 +29,10 @@ export class EditorController {
 
   list: RequestHandler = async (req, res) => {
     require_role(req, EDITOR_ROLES);
-    const response: ApiSuccess<EditorStory[]> = { data: await this.editor_service.list_queue() };
+    const { status } = editor_queue_query_schema.parse(req.query);
+    const response: ApiSuccess<EditorStory[]> = {
+      data: await this.editor_service.list_queue(status),
+    };
     res.set("Cache-Control", "no-store").json(response);
   };
 

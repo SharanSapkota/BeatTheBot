@@ -225,9 +225,10 @@ test("an editor approves a yellow story and it appears on the After screen", asy
   // The editor page is desktop first: run it once, in the desktop project.
   test.skip(test.info().project.name !== "desktop", "runs once, in the desktop project");
   const game = await featured_final_game(request);
-  const story_response = await request.get(`${API}/games/${game?.id ?? ""}/stories?type=summary`);
-  const story = ((await story_response.json()) as { data: { id: string; body: string } | null })
-    .data;
+  const story_response = await request.get(`${API}/games/${game?.id ?? ""}/stories`);
+  const story = (
+    (await story_response.json()) as { data: { summary: { id: string; body: string } | null } }
+  ).data.summary;
   test.skip(game === undefined || story === null, "the demo game has no published summary yet");
 
   // A reader report sends the summary back to yellow: it is hidden until an editor decides.
@@ -257,7 +258,10 @@ test("an editor approves a yellow story and it appears on the After screen", asy
     window.localStorage.clear();
     window.localStorage.setItem("voita_kaleva_session", JSON.stringify(token));
   }, auth.token);
+  // The old /editor link opens /admin → Stories (editors see only that tab).
   await page.goto("/editor");
+  await expect(page).toHaveURL(/\/admin\?tab=stories$/);
+  await expect(page.getByRole("tab", { name: "Stories" })).toBeVisible();
   const name = `${game?.home_team.name ?? ""} vs ${game?.away_team.name ?? ""} · summary`;
   await page.getByRole("button", { name }).first().click();
   await expect(page.getByText("e2e: please check the scorers").first()).toBeVisible();

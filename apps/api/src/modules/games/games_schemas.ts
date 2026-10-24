@@ -12,6 +12,10 @@ export const game_params_schema = z.object({ game_id: z.string() });
 export const sport_query_schema = z.object({ sport: sport_schema.default(DEFAULT_SPORT) });
 
 export const sports_query_schema = z.object({ date: z.string().default("today") });
+/** GET /games/overview: the sport and the day the hub calls "today" (default: the server's). */
+export const overview_query_schema = sport_query_schema.extend({
+  date: z.string().default("today"),
+});
 
 export const game_list_query_schema = z.object({
   from: z.string().optional(),
