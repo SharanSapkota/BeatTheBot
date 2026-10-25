@@ -39,8 +39,8 @@ RUN pnpm install --frozen-lockfile --prod --filter "@voita_kone/api..."
 
 # --- runtime ---
 FROM base AS runtime
-ENV NODE_ENV=production \
-    PORT=3000
+# No PORT here: Render / Railway set it, and the API uses it (else API_PORT, default 3000).
+ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=prod_deps /repo ./
 COPY --from=build /repo/apps/api/dist apps/api/dist
