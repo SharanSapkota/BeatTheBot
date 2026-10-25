@@ -5,10 +5,10 @@ import type { EndedIn, Fact, FactSheet, FactSource, StakeKind } from "./fact_she
 
 export interface PreviewTeamFacts {
   team: string;
-  /** Last 5 finished games, oldest first: "W" or "L". */
+  /** Last 5 finished games, oldest first: "W", "D" (football) or "L". */
   form: string;
   /** Home team: home record; away team: away record (this season). */
-  venue_record: { wins: number; losses: number };
+  venue_record: { wins: number; draws?: number; losses: number };
   table: { rank: number; points: number; games_played: number } | null;
   /** The team's top scorer in its last 5 games (null if nobody scored). */
   top_scorer: { player: string; goals: number } | null;
@@ -35,6 +35,10 @@ export interface PreviewFactSheetInput {
   win_chance: { home_win: number; away_win: number } | null;
   /** e.g. "prediction_model:poisson_mc_v1". */
   model_source: FactSource;
+  /** This season's meetings so far (from the home team's view); null when none. */
+  season_series?: { home_team_wins: number; away_team_wins: number; draws: number } | null;
+  /** Where the game data comes from (default liiga_api). */
+  data_source?: "liiga_api" | "sample_data";
 }
 
 export const FORM_GAMES = 5;
@@ -53,6 +57,7 @@ function team_facts(
         team: team.team,
         results: team.form,
         wins: [...team.form].filter((result) => result === "W").length,
+        draws: [...team.form].filter((result) => result === "D").length,
         losses: [...team.form].filter((result) => result === "L").length,
         games: team.form.length,
       },
@@ -60,10 +65,11 @@ function team_facts(
     });
   }
   const { wins, losses } = team.venue_record;
-  if (wins + losses > 0) {
+  const draws = team.venue_record.draws ?? 0;
+  if (wins + draws + losses > 0) {
     push({
       type: "home_away_record",
-      value: { team: team.team, venue, wins, losses, games: wins + losses },
+      value: { team: team.team, venue, wins, draws, losses, games: wins + draws + losses },
       source: "derived",
     });
   }
@@ -107,8 +113,22 @@ export function build_preview_fact_sheet(input: PreviewFactSheetInput): FactShee
   }
   team_facts(input.home, "home", input, push);
   team_facts(input.away, "away", input, push);
+  const data_source = input.data_source ?? "liiga_api";
   for (const meeting of input.meetings.slice(0, MEETING_COUNT)) {
-    push({ type: "head_to_head", value: { ...meeting }, source: "liiga_api" });
+    push({ type: "head_to_head", value: { ...meeting }, source: data_source });
+  }
+  const series = input.season_series;
+  if (series) {
+    push({
+      type: "season_series",
+      value: {
+        home_team: input.home.team,
+        away_team: input.away.team,
+        ...series,
+        games: series.home_team_wins + series.away_team_wins + series.draws,
+      },
+      source: "derived",
+    });
   }
   return { game_id: input.game_id, built_at: input.built_at, facts, kind: "preview" };
 }

@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   api_success_schema,
-  story_response_schema,
+  game_stories_response_schema,
+  type GameStories,
   type GameSummary,
   type Story,
   type StoryType,
@@ -12,20 +13,21 @@ import { useDemoMode } from "../../lib/demo_mode";
 
 /**
  * The published AI preview or AI summary, or null ("coming soon": not written yet or waiting
- * for an editor). Demo replays: the replayed game's preview before the end, summary at the end.
- * Only Liiga games have AI stories (`enabled` false for other sports).
+ * for an editor). One request per game (GET /games/:id/stories → { preview, summary }), shared
+ * by both cards. Demo replays: the preview before the end, the summary at the end.
  */
 export function useStory(game: GameSummary, story_type: StoryType, enabled = true) {
   const { is_demo, moment } = useDemoMode();
   return useQuery({
-    queryKey: ["story", game.id, story_type, is_demo ? moment : "real"],
+    queryKey: ["stories", game.id, is_demo ? moment : "real"],
     enabled,
-    queryFn: async (): Promise<Story | null> => {
+    queryFn: async (): Promise<GameStories> => {
       const path = is_demo
-        ? `/demo/games/${game.id}/stories?type=${story_type}&moment=${moment}`
-        : `/games/${game.id}/stories?type=${story_type}`;
-      return (await api_get(path, story_response_schema)).data;
+        ? `/demo/games/${game.id}/stories?moment=${moment}`
+        : `/games/${game.id}/stories`;
+      return (await api_get(path, game_stories_response_schema)).data;
     },
+    select: (stories): Story | null => stories[story_type],
   });
 }
 

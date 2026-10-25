@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { AppHeader } from "../../components/app_header";
 import { Card } from "../../components/card";
 import { ErrorState } from "../../components/error_state";
@@ -9,6 +9,7 @@ import { Skeleton } from "../../components/skeleton";
 import { ApiError } from "../../lib/api_client";
 import { useSessionToken } from "../../lib/session";
 import { useUserSummary } from "../account/api";
+import { StoriesTab } from "../editor/stories_tab";
 import { AdminElectionsTab } from "./admin_elections_tab";
 import { AdminMatchesTab } from "./admin_matches_tab";
 import { useAdminElections } from "./api";
@@ -34,19 +35,33 @@ function AdminsOnly({ user_id }: { user_id: string | undefined }) {
           <p>{admin_copy.your_user_id(user_id)}</p>
           <p>{admin_copy.make_admin_hint}</p>
           <code className={styles.command}>{admin_copy.make_admin_command(user_id)}</code>
+          <p>{admin_copy.make_editor_hint}</p>
+          <code className={styles.command}>{admin_copy.make_editor_command(user_id)}</code>
         </>
       )}
     </Card>
   );
 }
 
-/** /admin: desktop first, role admin. First (and for now only) tab: Elections. */
+function is_admin_tab(value: string | null): value is AdminTab {
+  return admin_copy.tabs.some((tab) => tab.id === value);
+}
+
+/**
+ * /admin: desktop first, Kaleva staff. Admins: Elections, Matches, Stories. Editors: Stories
+ * only (the AI story queue). The tab is in the URL (?tab=stories), so links can open it.
+ */
 export function AdminPage() {
   const token = useSessionToken();
   const user = useUserSummary();
   const is_admin = user.data?.role === "admin";
+  const is_editor = user.data?.role === "editor";
   const elections = useAdminElections(is_admin);
-  const [tab, set_tab] = useState<AdminTab>("elections");
+  const [params, set_params] = useSearchParams();
+  const asked = params.get("tab");
+  const tabs = is_admin ? admin_copy.tabs : admin_copy.editor_tabs;
+  const tab: AdminTab = is_editor ? "stories" : is_admin_tab(asked) ? asked : "elections";
+  const set_tab = (next: AdminTab) => set_params({ tab: next });
 
   const header = <AppHeader total_points={user.data?.total_points} />;
   if (token !== null && user.isPending) {
@@ -69,7 +84,7 @@ export function AdminPage() {
       </>
     );
   }
-  if (token === null || !is_admin || is_forbidden(elections.error)) {
+  if (token === null || !(is_admin || is_editor) || is_forbidden(elections.error)) {
     return (
       <>
         {header}
@@ -85,18 +100,14 @@ export function AdminPage() {
       {header}
       <PageMain>
         <KalevaSectionTitle title={admin_copy.title} meta={admin_copy.meta} level="h1" />
-        <SegmentTabs
-          label={admin_copy.tabs_label}
-          tabs={admin_copy.tabs}
-          selected={tab}
-          on_change={set_tab}
-        />
+        <SegmentTabs label={admin_copy.tabs_label} tabs={tabs} selected={tab} on_change={set_tab} />
         {tab === "elections" && elections.isPending && <Skeleton card_heights={[120, 320]} />}
         {tab === "elections" && elections.isError && (
           <ErrorState on_retry={() => void elections.refetch()} />
         )}
         {elections.data && tab === "elections" && <AdminElectionsTab elections={elections.data} />}
         {tab === "matches" && <AdminMatchesTab />}
+        {tab === "stories" && <StoriesTab />}
       </PageMain>
     </>
   );

@@ -47,6 +47,11 @@ export function AiStoryCard({ story_type, story, on_report }: AiStoryCardProps) 
           ))}
         </ul>
       )}
+      {story?.why_it_matters && (
+        <p className={styles.why}>
+          <strong>{shared_copy.why_it_matters}</strong> {story.why_it_matters}
+        </p>
+      )}
       {story && story.bullets.length === 0 && <p className={styles.body}>{story.body}</p>}
       {story && story.last_meetings.length > 0 && (
         <div className={styles.meetings}>

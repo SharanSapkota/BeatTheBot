@@ -3,13 +3,15 @@
 All tables have `id` (uuid, PK), `created_at` and `updated_at` unless noted. `external_id` = ID from the Liiga API. `language` is always `fi` | `sv` | `en` (MVP uses `fi` only).
 
 ## Sports data (from Liiga sync)
-Every sports-data table (`teams`, `players`, `games`, `game_events`, `standings_snapshots`) also has `data_source` (`liiga_api` | `demo`). Real Liiga data first; `demo` rows only fill gaps and are never written over `liiga_api` rows.
+Every sports-data table (`teams`, `players`, `games`, `game_events`, `standings_snapshots`) also has `data_source` (`liiga_api` | `admin` | `demo`; `admin` = a football / basketball match an admin entered, step 8). Real Liiga data first; `demo` rows only fill gaps and are never written over `liiga_api` rows.
 
-**teams**: `external_id`, `name`, `short_name`, `city`, `logo_url`
+**leagues** (step 8, migration `0012_sport_categories`; reference rows with fixed ids, kept by `truncate_all_tables`): `key` (unique), `name`, `sport` (`hockey` | `football` | `basketball`), `country` (default `FI`), `data_source`. Rows: Liiga (hockey, `liiga_api`, the default league), Veikkausliiga (football, `admin`), Korisliiga (basketball, `admin`). Unique (`id`, `sport`), so teams and games reference (`league_id`, `sport`) and their sport always matches the league. Adding a sport = one entry in `SPORTS` (`packages/scoring`) + the `sport` CHECK in a new migration.
+
+**teams**: `external_id`, `name`, `short_name`, `city`, `logo_url`, `sport` (default `hockey`), `league_id` (default Liiga)
 
 **players**: `external_id`, `team_id` → teams, `first_name`, `last_name`, `jersey_number`, `position`, `birth_year`
 
-**games**: `external_id`, `season`, `home_team_id`, `away_team_id`, `start_time`, `status` (`scheduled` | `live` | `final`), `home_goals`, `away_goals`, `ended_in` (`regulation` | `overtime` | `shootout`), `period` (current period while live, last period when final), `game_clock_seconds` (seconds since game start, live only). The API shows `status` as `state`: `upcoming` | `live` | `final`.
+**games**: `external_id`, `season`, `home_team_id`, `away_team_id`, `start_time`, `status` (`scheduled` | `live` | `final`), `home_goals`, `away_goals`, `ended_in` (`regulation` | `overtime` | `shootout`), `period` (current period while live, last period when final), `game_clock_seconds` (seconds since game start, live only), `sport` (default `hockey`), `league_id` (default Liiga), `top_scorer_player_id` (basketball: the player with the most points, entered with the result). Index (`sport`, `start_time`). The API shows `status` as `state`: `upcoming` | `live` | `final`.
 
 **game_events**: `game_id`, `event_type` (`goal` | `penalty` | `period_end` ...), `period`, `game_time_seconds`, `team_id`, `player_id`, `assist_player_ids` (uuid[]), `raw` (jsonb)
 
@@ -36,13 +38,13 @@ Designed for account linking: a user is the person, identities are the ways they
 **login_codes** (LATER, email OTP): `email`, `code_hash` (never the plain code), `expires_at` (10 min), `attempt_count` (max 5), `used_at`, `ip_hash`. `marketing_opt_in` (default false) is added to `users` with it.
 
 ## Games and points
-**user_predictions** (before the game): `user_id`, `game_id`, `predicted_winner_team_id`, `predicted_home_goals`, `predicted_away_goals`, `predicted_scorer_id`, `points_awarded`, `scored_at`, `scoring_version` (int, default 1; current rules = 2; the scoring job re-scores final games' picks with a lower version). Unique (`user_id`, `game_id`). Locked at `games.start_time`.
+**user_predictions** (before the game): `user_id`, `game_id`, `predicted_winner_team_id` (nullable since `0012`: null = a football draw pick), `predicted_home_goals`, `predicted_away_goals` (nullable: basketball has no exact score), `predicted_scorer_id` (basketball: the top scorer pick), `predicted_margin_band` (`1_5` | `6_10` | `11_plus`, basketball), `points_awarded`, `scored_at`, `scoring_version` (int, default 1; current rules = 2; the scoring job re-scores final games' picks with a lower version). Unique (`user_id`, `game_id`). Locked at `games.start_time`.
 
 **questions** (live picks, result quiz, player vote; daily games LATER): `game_id` (null for daily, later), `phase` (`live` | `after`; `daily` later), `question_type` (MVP: `next_goal` | `period_goal` | `result_quiz` | `player_vote` | `poll`; later: `question_of_day` | `brain_calculator` | `higher_lower` | `quiz`), `question_key` (e.g. `next_goal:2`, `period_goal:3`, `result_quiz:1`, `player_vote`, `poll`; unique per `game_id`, so creating questions on the first request is safe to repeat), `target` (next_goal: goals scored when it opened; period_goal: the period), `prompt` (jsonb per language), `options` (jsonb `[{ id, label }]`), `correct_option` (quiz: set when created; live picks: set by `score_answers` once decided; null for votes/polls), `explanation` (jsonb per language `{ right, wrong }`, quiz only), `points`, `fact_ids` (jsonb), `opens_at`, `locks_at`, `status` (`draft` | `in_review` (failed the fact check, not shown) | `live` | `closed` (decided))
 
 **user_answers**: `user_id`, `question_id`, `answer` (option id), `points_awarded` (null until the question is decided), `answered_at`. Unique (`user_id`, `question_id`): one answer per question. Real games only; demo replay answers stay on the device.
 
-**leagues** (later): `name`, `owner_user_id`, `invite_code` · **league_members** (later): `league_id`, `user_id`
+**private_leagues** (later; the never-used `leagues` table, renamed in `0012`): `name`, `owner_user_id`, `invite_code` · **private_league_members** (later): `league_id`, `user_id`
 
 ## Rooms (step 9, migration `0013_rooms`)
 Room points never count on the global leaderboard. Rules: `architecture.md` → Rooms.
@@ -71,9 +73,9 @@ No AI data here. Fairness rules: `architecture.md` → Elections.
 ## Editorial
 Migration `0010_fans_vs_fans` (step 5) adds the story types, `stories.source` / correction columns, `fact_sheets.kind`, `user_predictions.scoring_version` and `audit_log`.
 
-**fact_sheets**: `game_id`, `kind` (`preview` | `summary`, default `summary`), `facts` (jsonb: `[{ fact_id, type, value, source }]`), `built_at`. The result quiz uses the latest `summary` sheet.
+**fact_sheets**: `game_id`, `kind` (`preview` | `summary`, default `summary`), `facts` (jsonb: `[{ fact_id, type, value, source }]`; `source` = `liiga_api` | `sample_data` | `derived` | `prediction_model:…`), `built_at`, `input_hash` (step 10, migration `0014_story_input_hash`: SHA-256 of the facts + prompt and template versions; an unchanged hash means no new story and no LLM call). Index (`game_id`, `kind`). The result quiz uses the latest `summary` sheet. Fact types: `final_score`, `goal`, `winning_goal`, `standing`, `season_odds`, `next_game`, `lead_changes` (step 10), `form` (with `draws`), `head_to_head`, `season_series` (step 10), `home_away_record` (with `draws`), `player_form`, `table_position`, `win_chance`, `stake`.
 
-**stories**: `game_id`, `story_type` (`preview` | `summary`; old `what_it_means` rows become `summary`; older values `ai_pick_reasons` | `recap` are not generated), `language`, `body`, `fact_sheet_id`, `source` (`llm` | `template`), `traffic_light` (`green` | `yellow` | `red`), `status` (`draft` | `in_review` | `published` | `rejected` | `corrected`), `check_result` (jsonb: claims + `traffic_light_reasons`), `generation_attempts`, `prompt_version`, `published_at`, `label_text`, `corrected_at`, `correction_note`
+**stories** (every sport since step 10; demo hockey games get none): `game_id`, `story_type` (`preview` | `summary`; old `what_it_means` rows become `summary`; older values `ai_pick_reasons` | `recap` are not generated), `language`, `body`, `fact_sheet_id`, `source` (`llm` | `template`), `traffic_light` (`green` | `yellow` | `red`), `status` (`draft` | `in_review` | `published` | `rejected` | `corrected`), `check_result` (jsonb: claims + `traffic_light_reasons`), `generation_attempts`, `prompt_version`, `published_at`, `label_text`, `corrected_at`, `correction_note`
 
 **story_reviews**: `story_id`, `editor_user_id`, `decision` (`approve` | `edit` | `reject`), `edited_body`, `notes`, `reviewed_at`
 

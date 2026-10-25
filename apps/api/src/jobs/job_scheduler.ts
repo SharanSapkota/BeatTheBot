@@ -17,6 +17,7 @@ export interface JobTrigger {
 export class JobScheduler implements JobTrigger {
   private current_run: Promise<void> | undefined;
   private pending_reason: string | undefined;
+  private stopped = false;
 
   constructor(
     private readonly job: JobRunner,
@@ -26,6 +27,9 @@ export class JobScheduler implements JobTrigger {
   ) {}
 
   request_run(reason: string): void {
+    if (this.stopped) {
+      return;
+    }
     if (this.current_run) {
       this.pending_reason = reason;
       return;
@@ -38,6 +42,13 @@ export class JobScheduler implements JobTrigger {
         this.request_run(next);
       }
     });
+  }
+
+  /** On shutdown: no new runs (a queued one is dropped); waits for the run in progress. */
+  async stop(): Promise<void> {
+    this.stopped = true;
+    this.pending_reason = undefined;
+    await this.idle();
   }
 
   /** Waits for a run in progress (used on shutdown and in tests). */

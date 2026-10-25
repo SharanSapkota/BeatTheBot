@@ -1,6 +1,6 @@
 # Progress
 
-**Current step:** 9. Rooms ✅ done · step 8 (sport categories) is still open (uncommitted work in the tree) · next: ask
+**Current step:** 10. Games hub never empty + AI preview / summary ✅ done (step 5 merged into 10) · next: 11. Share + referral (ask first)
 **Last updated:** 2026-10-25
 
 | # | Step | Status |
@@ -10,13 +10,13 @@
 | 2 | Games API: today's games with state, game detail, standings | ✅ done |
 | 3 | `prediction_model` + `ai_predictions` (now shown as "Data says": win chance + stakes) | ✅ done |
 | 4 | Accounts (`users`, `auth_identities`, `sessions`, `POST /auth/device`) + before-game predictions + scoring + leaderboard (fans only) | ✅ done |
-| 5 | AI preview + AI summary + `fact_checker` + traffic light + editor page (the unfinished parts move to step 10) | 🟨 partly |
+| 5 | AI preview + AI summary + `fact_checker` + traffic light + editor page | ✅ merged into step 10 |
 | 6 | Questions: live picks (next goal, period goal), result quiz, player vote | ✅ done |
 | – | PWA UI: 5 screens (matches docs/design), pulled forward (old step 8) | ✅ done |
 | 7 | Elections: 4-menu navigation, admin role + `/admin` (elections tab), elections + candidates + picks + results, election leaderboard | ✅ done |
-| 8 | Games: sport categories (hockey, football, basketball) + fans vs fans (the AI is not a player anymore) | ⬜ |
+| 8 | Games: sport categories (hockey, football, basketball) + fans vs fans (the AI is not a player anymore) | ✅ done |
 | 9 | Rooms (join key, rotating questions from mock data, LLM later; room scoreboard; reactions) | ✅ done |
-| 10 | AI preview + summary (finish the half-done step 5 code) | ⬜ |
+| 10 | Games hub never empty + AI preview + summary (finish the step 5 code) | ✅ done |
 | 11 | Share + referral | ⬜ |
 | 12 | Highlights editor | ⬜ |
 | 13 | PWA features: manifest, icons, service worker, offline, update toast, install button, Lighthouse check | ⬜ |
@@ -30,13 +30,37 @@ LATER (not on the roadmap unless asked): daily games, email OTP, languages sv/en
 ## Log
 <!-- Newest first. One short entry per finished step: what was built, files, tests, open issues. -->
 
+### 2026-10-25 · Step 10: the games hub is never empty + AI preview / AI summary ✅ (step 5 merged)
+**Part A, hub**
+- API `GET /games/overview?sport=&date=` (today, `latest_results` with summary first sentences, `coming_up`, `next_7_days_count`; Helsinki days). Repository: `find_latest_final_start`, `find_next_scheduled_start`, `count_scheduled`, `list_published_summaries`.
+- Hockey: real Liiga only. The seed's demo hockey fill-in is gone (`demo_fill.ts` moved to `test_helpers/` with `insert_today_games.ts`, tests only); the demo users pick the latest Liiga final.
+- Football / basketball sample fixtures are their real data for now (they stay on the leaderboards). `jobs/refresh_demo_data.ts` + repository (API start + hourly, idempotent): removes demo hockey games, finishes passed sample games with deterministic demo results + goal events (`db/seed/demo_refresh.ts`: `demo_result`, `finish_sample_game`, `plan_sample_games`), adds a sample game for each day of the coming week, keeps the demo election ~3 weeks ahead; finished games trigger scoring + stories.
+- Web hub: Today / LATEST RESULTS / COMING UP, day switcher (`?date=`, Helsinki helpers in `lib/format.ts`), "No games today. Next games: Tue 27 Oct", hero = next big game (featured first) with a day-aware time ("Tue 27 Oct 18:30"); `ChoiceButtons` unchanged. Demo replay (`?demo=1`) as before.
+**Part B, AI preview + summary**
+- `fact_checker`: facts `season_series`, `lead_changes` (comeback), draws in `form` / `home_away_record`, source `sample_data`, `find_betting_words` (whole words). Traffic light: betting language → red.
+- Stories for every sport: `sample_facts.ts` (football / basketball: table from results, form W/D/L, venue record, player in form (football), season series, table before → after, next games); Liiga previews add the season series. Labels "from sample data" decided by the game's data source.
+- Prompt v2 (`story_prompt.ts`): 3 bullets + "Why it matters:" (max 70 words), summary 60–90 words, betting ban; output check per type. Templates v3: "Why it matters" line, draws, comeback / lead changes, one-game and one-goal wording, draw result sentence.
+- Job: summary backfill for each sport's latest results, template retry once an LLM works, input hash (migration `0014_story_input_hash`, skipped = no LLM call, the sheet is touched), `RateLimitedLlmClient` (`LLM_MAX_CALLS_PER_MINUTE`, default 10).
+- API: `GET /games/:id/stories` → `{ preview, summary }` (`why_it_matters` in the story); editor routes moved to `/admin/stories` (`?status=yellow|red`, approve, `PUT` edit → re-check, reject; editor or admin). Web: `/admin` → Stories tab (editors see only it; `/editor` redirects), AI cards for every sport with "Why it matters", latest-result cards with the summary's first sentence.
+- Tests: fact_checker 54, api 499 (overview incl. Helsinki midnight / summer-time day, refresh job, sample facts, generation integration: sample labels, input-hash skip, template retry, backfill; betting → red; queue filter; stories routes), web 101, e2e 34 + 2 skipped by design (`hub.spec.ts` with a fixed fake date, `stories.spec.ts`, editor test on `/admin?tab=stories`; the football / basketball replay tests now read the replayed game from the API). Screenshots `40_hub_no_games_today` … `45_after_football_sample_summary`.
+- Open: no `LLM_API_KEY` yet, so every real text is the template (green; the LLM path is tested with the scripted client only); the dev DB (Neon) is migrated to `0014`; on the desktop hub the "Today's games" title stays above an empty list on a day without games; basketball has no player-in-form fact.
+
+### 2026-10-25 · Step 8: sport categories (logged after the fact) ✅
+- Built before step 9 and committed with it (`87e58f7`); this entry only records it. "Fans vs fans" was done in step 5.
+- `packages/scoring/src/sports.ts`: `SPORTS` config (hockey, football, basketball: periods, draw, picks, live / after questions, `has_model`), `MARGIN_BANDS`; points margin band 15, top scorer 15. `packages/shared_types/src/sports.ts` + `admin_matches.ts`; prediction body per sport (null winner = draw, `predicted_margin_band`).
+- Migration `0012_sport_categories`: reference `leagues` (Liiga, Veikkausliiga, Korisliiga; old unused `leagues` → `private_leagues`), `sport` + `league_id` on teams and games (FK on (`league_id`, `sport`)), `games.top_scorer_player_id`, data source `admin`, nullable winner / goals and `predicted_margin_band` on picks.
+- API: `GET /sports`, `?sport=` on game days and games (default hockey), `?sport=all|…` on the leaderboard, per-sport pick rules (`pick_rules.ts`) and questions, `modules/admin_matches` (`/admin/leagues`, `/admin/matches` CRUD + result that scores the picks at once). Demo fixtures: `db:seed` / `sports:seed_demo`.
+- Web: sport tabs on the hub (last tab remembered), per-sport Before screens (draw, margin band, top scorer), `/admin` → Matches, Leaders tabs Games · Hockey · Football · Basketball · Elections.
+- Tests: in the step 9 totals (scoring, api, web) + e2e `sports.spec.ts` 4 per layout. Docs written now: `product.md`, `architecture.md` → Sport categories, `api.md`, `data_model.md`.
+- Open: "Data says" and AI texts stay hockey only; football / basketball have no live data source (admin enters the result after the match).
+
 ### 2026-10-25 · Fix: flaky elections result bars after the first pick ✅
 - Cause: on the first pick, signing in changes the results query key, so a results fetch starts before the pick is saved. `invalidateQueries` reuses an in-flight fetch when the query has no data yet (TanStack only cancels when there is data), so that fetch's "pick first" answer stayed on screen whenever it finished after the pick.
 - Fix: `usePickCandidate` (`features/elections/api.ts`) cancels the `election` and `election_results` queries before invalidating them, so the refetch always runs after the pick.
 - Tests: new component test (the sign-in results fetch answers only after the pick; it fails without the fix), web 97; e2e "elections: … see the result bars" 10/10 with `--repeat-each 5` on both layouts (was 3/6 failing).
 
 ### 2026-10-25 · Step 9: rooms ✅
-- Built on top of the uncommitted step 8 work (migration numbering continues at `0013`).
+- Built on top of the step 8 work (migration numbering continues at `0013`).
 - Migration `0013_rooms`: `rooms` (name 3–40 CHECK, topic, unique `join_key`, owner, `question_interval_seconds`, `max_members` 100, status, `is_demo`, plus `schedule_started_at` + `slot_base` so a new interval starts after the current slot), `room_members` (unique room + user), `room_questions` (unique room + slot, `correct_option` null only for opinion), `room_answers` (unique question + user, `points_awarded`), `room_reactions` (unique question + user + emoji). Cascades on user and room delete. DB types written by hand (codegen would read the Neon URL).
 - `packages/scoring/src/rooms.ts`: trivia right 3, opinion 1. `packages/shared_types/src/rooms.ts`: topics, intervals, emojis, key alphabet, `join_key_input_schema`, all request/response schemas.
 - API `modules/rooms`: pure `join_key.ts` (crypto, alphabet without 0/O/1/I/L, retry on clash), `room_slots.ts`, `question_picker.ts` (least-used first, seeded by room + slot, shuffled options), `room_reveal.ts` (split, right names, reactions); `QuestionGenerator` + `MockQuestionGenerator` (banks in `mock_questions/`: hockey 48, football 43, basketball 42, general_sports 43; validated with zod; no politics) + `LlmQuestionGenerator` (TODO, falls back to mock; env `ROOM_QUESTIONS_SOURCE=mock|llm`, default mock); repository, `RoomsService`, controller, routes: `POST /rooms`, `GET /me/rooms`, `POST /rooms/join` (10/IP/min), `GET|PATCH /rooms/:id`, `POST /rooms/:id/regenerate_key`, `POST /rooms/:id/close`, `DELETE /rooms/:id/members/:user_id`, `GET /rooms/:id/current_question|questions|leaderboard`, `POST /room_questions/:id/answers|reactions`. Members only (`403 NOT_A_MEMBER`), max 10 active owned rooms, max members, the owner can't leave. Points saved with the answer, hidden until the reveal; room points never reach the global leaderboard or `/me`.

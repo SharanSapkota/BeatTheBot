@@ -75,6 +75,26 @@ export const TIP_PHRASES: readonly string[] = [
   "vinkki",
 ];
 
+/**
+ * Betting language: never near Kaleva's game content (no betting sponsors, no tips). Matched as
+ * whole words, so "Veikkausliiga" (the league's name) is not a hit.
+ */
+export const BETTING_WORDS: readonly string[] = [
+  "bet",
+  "bets",
+  "betting",
+  "bettor",
+  "bookmaker",
+  "bookie",
+  "wager",
+  "odds-on",
+  "accumulator",
+  "parlay",
+  "free bet",
+  "vedonlyönti",
+  "kerroin",
+];
+
 /** Opinion words that are not facts (the checker can't test tone): flagged for the editor. */
 export const STRONG_WORDS: readonly string[] = [
   "dominant",
@@ -101,6 +121,14 @@ export function find_escalation_words(text: string): string[] {
 /** Tipping or predicting a winner ("will win", "favourite", "our tip", …). */
 export function find_tips(text: string): string[] {
   return find_words(text, TIP_PHRASES);
+}
+
+/** Betting language, as whole words ("bet", "bookmaker", "wager", …). */
+export function find_betting_words(text: string): string[] {
+  const lower = text.toLowerCase();
+  return BETTING_WORDS.filter((word) =>
+    new RegExp(`(^|[^\\p{L}])${word}($|[^\\p{L}])`, "u").test(lower),
+  );
 }
 
 export function find_strong_words(text: string): string[] {

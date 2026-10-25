@@ -1,15 +1,15 @@
 import type { ClaimStatus, EditorActionResult, TrafficLightValue } from "@voita_kone/shared_types";
 
-// Editor page (/editor) text. The page is for the Kaleva sports desk, not for fans.
+// /admin → Stories text (role editor or admin). For the Kaleva sports desk, not for fans.
 export const editor_copy = {
   title: "Editor queue",
   meta: "AI stories waiting for a human check",
-  editors_only_title: "Editors only",
-  editors_only_text: "This page is for the Kaleva sports desk.",
-  your_user_id: (user_id: string) => `Your user id: ${user_id}`,
-  signed_out_hint: "Sign in on this device first (lock in a pick), then open this page again.",
-  make_editor_hint: "To make this account an editor, run:",
-  make_editor_command: (user_id: string) => `pnpm --filter api make:editor -- --user_id ${user_id}`,
+  filter_label: "Show",
+  filters: [
+    { id: "all", label: "All" },
+    { id: "yellow", label: "🟡 Yellow" },
+    { id: "red", label: "🔴 Red" },
+  ] as const,
   queue_label: "Stories in review",
   queue_empty_title: "The queue is empty",
   queue_empty_text: "No AI stories are waiting for review.",

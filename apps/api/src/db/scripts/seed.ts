@@ -4,31 +4,11 @@ import {
   liiga_source_from_args,
   type LiigaSource,
 } from "../../integrations/liiga_client/create_liiga_client";
-import { create_logger } from "../../common/logger";
-import { ScorePredictionsJob } from "../../jobs/score_predictions";
-import { KyselyScorePredictionsRepository } from "../../jobs/score_predictions_repository";
 import { describe_sync_summary, SyncGamesJob } from "../../jobs/sync_games";
 import { KyselySyncGamesRepository } from "../../jobs/sync_games_repository";
 import type { Database } from "../kysely";
 import { create_database } from "../kysely";
-import { FALLBACK_EDITOR_EMAIL } from "../seed/demo_users";
-import { seed_demo_data, type SeedSummary } from "../seed/seed_demo_data";
-
-function print_seed_summary(summary: SeedSummary): void {
-  console.log(
-    `Demo fill-ins: ${String(summary.demo_game_count)} games, ${String(summary.demo_event_count)} events, ` +
-      `${String(summary.user_count)} users, ${String(summary.prediction_count)} picks, ` +
-      `demo election with ${String(summary.election_pick_count)} picks, ` +
-      `demo room with ${String(summary.room_answer_count)} answers, ` +
-      `${String(summary.sample_game_count)} sample football/basketball games ` +
-      `(${String(summary.sample_pick_count)} picks).`,
-  );
-  if (summary.unfilled_states.length > 0) {
-    console.warn(
-      `No game today for: ${summary.unfilled_states.join(", ")} (not enough free teams).`,
-    );
-  }
-}
+import { seed_demo_and_score } from "../seed/seed_demo_and_score";
 
 /** Real Liiga data first. If the API can't be reached, fall back to the saved fixtures. */
 async function sync_liiga(db: Database, source: LiigaSource): Promise<void> {
@@ -52,22 +32,10 @@ async function sync_liiga(db: Database, source: LiigaSource): Promise<void> {
 }
 
 export async function run_seed(source: LiigaSource): Promise<void> {
-  const editor_email = env.ADMIN_EMAILS[0] ?? FALLBACK_EDITOR_EMAIL;
-  if (!env.ADMIN_EMAILS[0]) {
-    console.warn(`ADMIN_EMAILS is empty, so the demo editor is ${FALLBACK_EDITOR_EMAIL}.`);
-  }
-
   const db = create_database(env.DATABASE_URL);
   try {
     await sync_liiga(db, source);
-    print_seed_summary(await seed_demo_data(db, { now: new Date(), editor_email }));
-    // The demo users' picks are on finished games, so they get their points now.
-    const scoring = await new ScorePredictionsJob(
-      new KyselyScorePredictionsRepository(db),
-      create_logger({ level: "warn", pretty: false }),
-      () => new Date(),
-    ).run();
-    console.log(`Scored ${String(scoring.scored_prediction_count)} demo picks.`);
+    console.log((await seed_demo_and_score(db, env.ADMIN_EMAILS)).join("\n"));
   } finally {
     await db.destroy();
   }

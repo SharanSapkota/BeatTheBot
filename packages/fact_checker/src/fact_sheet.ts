@@ -1,7 +1,8 @@
 // The verified facts for one game, built by code from Liiga data and model output.
 // The LLM may only write about these facts; check_claims compares its text with them.
 
-export type FactSource = "liiga_api" | "derived" | `prediction_model:${string}`;
+/** sample_data = football / basketball sample fixtures (no data API yet; labelled "Sample data"). */
+export type FactSource = "liiga_api" | "sample_data" | "derived" | `prediction_model:${string}`;
 export type StakeKind = "playoffs" | "top_4" | "relegation";
 export type EndedIn = "regulation" | "overtime" | "shootout";
 
@@ -81,7 +82,15 @@ export interface WinningGoalFact {
 export interface FormFact {
   fact_id: string;
   type: "form";
-  value: { team: string; results: string; wins: number; losses: number; games: number };
+  /** results: "W" / "D" / "L" per game (draws only in football). */
+  value: {
+    team: string;
+    results: string;
+    wins: number;
+    draws: number;
+    losses: number;
+    games: number;
+  };
   source: FactSource;
 }
 
@@ -105,7 +114,14 @@ export interface HeadToHeadFact {
 export interface HomeAwayRecordFact {
   fact_id: string;
   type: "home_away_record";
-  value: { team: string; venue: "home" | "away"; wins: number; losses: number; games: number };
+  value: {
+    team: string;
+    venue: "home" | "away";
+    wins: number;
+    draws: number;
+    losses: number;
+    games: number;
+  };
   source: FactSource;
 }
 
@@ -122,6 +138,35 @@ export interface TablePositionFact {
   fact_id: string;
   type: "table_position";
   value: { team: string; rank: number; points: number; games_played: number };
+  source: FactSource;
+}
+
+/** Preview: this season's meetings of the two teams so far (wins each, draws). */
+export interface SeasonSeriesFact {
+  fact_id: string;
+  type: "season_series";
+  value: {
+    home_team: string;
+    away_team: string;
+    home_team_wins: number;
+    away_team_wins: number;
+    draws: number;
+    games: number;
+  };
+  source: FactSource;
+}
+
+/**
+ * Summary: how the lead changed hands. `comeback` = the winner trailed by `from_behind` goals
+ * at some point. Only when every goal of the game is known.
+ */
+export interface LeadChangesFact {
+  fact_id: string;
+  type: "lead_changes";
+  value: {
+    lead_changes: number;
+    comeback: { team: string; from_behind: number } | null;
+  };
   source: FactSource;
 }
 
@@ -153,6 +198,8 @@ export type Fact =
   | HomeAwayRecordFact
   | PlayerFormFact
   | TablePositionFact
+  | SeasonSeriesFact
+  | LeadChangesFact
   | WinChanceFact
   | StakeFact;
 

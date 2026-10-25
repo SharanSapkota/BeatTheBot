@@ -1,11 +1,13 @@
 import type { Fact, FactSheet, KnownName, PreviewMeeting } from "@voita_kone/fact_checker";
-import { sql } from "kysely";
+import { sql, type ExpressionBuilder } from "kysely";
 import { z } from "zod";
 import { to_helsinki_date } from "../../common/helsinki_date";
 import { write_audit } from "../../db/audit_log";
+import type { DB } from "../../db/database_types";
 import type { Database } from "../../db/kysely";
 import { to_ended_in } from "../../jobs/score_predictions_repository";
 import type { StoryGoalRow } from "./fact_sheet_input";
+import type { LeagueGame } from "./sample_facts";
 import type { TrafficLight } from "./traffic_light";
 
 export type StoryType = "preview" | "summary";
@@ -14,6 +16,8 @@ export type StorySource = "llm" | "template";
 /** A game as story generation needs it (any state). */
 export interface StoryGameRow {
   id: string;
+  sport: string;
+  league_id: string;
   season: string;
   start_time: Date;
   status: string;
@@ -25,6 +29,13 @@ export interface StoryGameRow {
   home_goals: number | null;
   away_goals: number | null;
   ended_in: "regulation" | "overtime" | "shootout" | null;
+}
+
+/** What the job needs to know about a game's latest story of one type. */
+export interface LatestStoryMeta {
+  input_hash: string | null;
+  source: string;
+  fact_sheet_id: string;
 }
 
 export interface NewStory {
@@ -63,6 +74,8 @@ export interface StoryRow {
   created_at: Date;
   fact_sheet_id: string;
   facts: Fact[];
+  /** The game's: liiga_api, or demo for the football / basketball sample games. */
+  data_source: string;
 }
 
 export interface QueueStoryRow extends StoryRow {
@@ -111,7 +124,22 @@ export interface StoriesRepository {
   ): Promise<string[]>;
   /** Finished games since `since` without a story of this type. */
   list_games_without_story(since: Date, story_type: StoryType, language: string): Promise<string[]>;
-  save_fact_sheet(sheet: FactSheet): Promise<string>;
+  /** Each sport's latest day with results: its finals without a story of this type. */
+  list_latest_results_without_story(story_type: StoryType, language: string): Promise<string[]>;
+  /** Games since `since` whose published story of this type is the template (no LLM then). */
+  list_template_stories(since: Date, story_type: StoryType, language: string): Promise<string[]>;
+  /** The league season's games (football / basketball facts), any state. */
+  list_league_season(league_id: string, season: string): Promise<LeagueGame[]>;
+  /** Goals of these games with the scorer's full name, in time order per game. */
+  list_goals_of(game_ids: readonly string[]): Promise<(StoryGoalRow & { game_id: string })[]>;
+  find_latest_story_meta(
+    game_id: string,
+    story_type: StoryType,
+    language: string,
+  ): Promise<LatestStoryMeta | undefined>;
+  /** Unchanged facts: the existing sheet counts as rebuilt now (no new story). */
+  touch_fact_sheet(fact_sheet_id: string, built_at: Date): Promise<void>;
+  save_fact_sheet(sheet: FactSheet, input_hash: string): Promise<string>;
   insert_story(story: NewStory): Promise<string>;
   find_published_story(
     game_id: string,
@@ -141,6 +169,30 @@ const fact_schema = z.custom<Fact>(
   (value) => typeof value === "object" && value !== null && "fact_id" in value && "type" in value,
 );
 
+/**
+ * Games that get AI stories: real Liiga games, and the football / basketball sample games
+ * (their only data for now). Never demo hockey.
+ */
+function has_stories(eb: ExpressionBuilder<DB, "games">) {
+  return eb.or([
+    eb("games.data_source", "=", "liiga_api"),
+    eb.and([eb("games.data_source", "=", "demo"), eb("games.sport", "<>", "hockey")]),
+  ]);
+}
+
+function story_of_type(
+  eb: ExpressionBuilder<DB, "games">,
+  story_type: StoryType,
+  language: string,
+) {
+  return eb
+    .selectFrom("stories")
+    .select("stories.id")
+    .whereRef("stories.game_id", "=", "games.id")
+    .where("stories.story_type", "=", story_type)
+    .where("stories.language", "=", language);
+}
+
 function to_json(value: unknown): string {
   return JSON.stringify(value);
 }
@@ -155,6 +207,8 @@ export class KyselyStoriesRepository implements StoriesRepository {
       .innerJoin("teams as away", "away.id", "games.away_team_id")
       .select([
         "games.id",
+        "games.sport",
+        "games.league_id",
         "games.season",
         "games.start_time",
         "games.status",
@@ -224,7 +278,7 @@ export class KyselyStoriesRepository implements StoriesRepository {
         ]),
       )
       .where("games.status", "=", "final")
-      .where("games.data_source", "=", "liiga_api")
+      .where(has_stories)
       .where("games.start_time", "<", before)
       .orderBy("games.start_time", "desc")
       .limit(limit)
@@ -281,7 +335,7 @@ export class KyselyStoriesRepository implements StoriesRepository {
           .where("stories.story_type", "=", "preview")
           .as("latest_preview_built_at"),
       )
-      .where("games.data_source", "=", "liiga_api")
+      .where(has_stories)
       .where("games.start_time", ">=", from)
       .where("games.start_time", "<=", to)
       .where("games.status", "in", ["scheduled", "final"])
@@ -312,25 +366,149 @@ export class KyselyStoriesRepository implements StoriesRepository {
       .selectFrom("games")
       .select("games.id")
       .where("games.status", "=", "final")
+      .where(has_stories)
       .where("games.start_time", ">=", since)
-      .where((eb) =>
-        eb.not(
-          eb.exists(
-            eb
-              .selectFrom("stories")
-              .select("stories.id")
-              .whereRef("stories.game_id", "=", "games.id")
-              .where("stories.story_type", "=", story_type)
-              .where("stories.language", "=", language),
-          ),
-        ),
-      )
+      .where((eb) => eb.not(eb.exists(story_of_type(eb, story_type, language))))
       .orderBy("games.start_time")
       .execute();
     return rows.map((row) => row.id);
   }
 
-  async save_fact_sheet(sheet: FactSheet): Promise<string> {
+  async list_latest_results_without_story(
+    story_type: StoryType,
+    language: string,
+  ): Promise<string[]> {
+    // Each sport's latest final, then every final of that Helsinki day.
+    const rows = await this.db
+      .selectFrom("games")
+      .select("games.id")
+      .where("games.status", "=", "final")
+      .where(has_stories)
+      .where((eb) =>
+        eb(
+          sql<string>`(games.start_time AT TIME ZONE 'Europe/Helsinki')::date`,
+          "=",
+          eb
+            .selectFrom("games as latest")
+            .select(
+              sql<string>`max((latest.start_time AT TIME ZONE 'Europe/Helsinki')::date)`.as("day"),
+            )
+            .whereRef("latest.sport", "=", "games.sport")
+            .where("latest.status", "=", "final"),
+        ),
+      )
+      .where((eb) => eb.not(eb.exists(story_of_type(eb, story_type, language))))
+      .orderBy("games.start_time")
+      .execute();
+    return rows.map((row) => row.id);
+  }
+
+  async list_template_stories(
+    since: Date,
+    story_type: StoryType,
+    language: string,
+  ): Promise<string[]> {
+    const rows = await this.db
+      .selectFrom("stories")
+      .innerJoin("games", "games.id", "stories.game_id")
+      .select("stories.game_id")
+      .distinct()
+      .where("stories.story_type", "=", story_type)
+      .where("stories.language", "=", language)
+      .where("stories.source", "=", "template")
+      .where("stories.status", "in", ["published", "corrected"])
+      .where("games.start_time", ">=", since)
+      // Only when no LLM story was written for it since.
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom("stories as newer")
+              .select("newer.id")
+              .whereRef("newer.game_id", "=", "stories.game_id")
+              .where("newer.story_type", "=", story_type)
+              .where("newer.source", "=", "llm"),
+          ),
+        ),
+      )
+      .execute();
+    return rows.map((row) => row.game_id);
+  }
+
+  async list_league_season(league_id: string, season: string): Promise<LeagueGame[]> {
+    return this.db
+      .selectFrom("games")
+      .innerJoin("teams as home", "home.id", "games.home_team_id")
+      .innerJoin("teams as away", "away.id", "games.away_team_id")
+      .select([
+        "games.id",
+        "games.start_time",
+        "games.status",
+        "games.home_team_id",
+        "games.away_team_id",
+        "home.name as home_team",
+        "away.name as away_team",
+        "games.home_goals",
+        "games.away_goals",
+      ])
+      .where("games.league_id", "=", league_id)
+      .where("games.season", "=", season)
+      .orderBy("games.start_time")
+      .execute();
+  }
+
+  async list_goals_of(
+    game_ids: readonly string[],
+  ): Promise<(StoryGoalRow & { game_id: string })[]> {
+    if (game_ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .selectFrom("game_events")
+      .leftJoin("players", "players.id", "game_events.player_id")
+      .select([
+        "game_events.game_id",
+        "game_events.team_id",
+        "game_events.period",
+        "game_events.game_time_seconds",
+        sql<string | null>`players.first_name || ' ' || players.last_name`.as("player_name"),
+      ])
+      .where("game_events.game_id", "in", [...game_ids])
+      .where("game_events.event_type", "=", "goal")
+      .where("game_events.team_id", "is not", null)
+      .orderBy("game_events.game_id")
+      .orderBy("game_events.period")
+      .orderBy("game_events.game_time_seconds")
+      .execute();
+    return rows.flatMap((row) => (row.team_id === null ? [] : [{ ...row, team_id: row.team_id }]));
+  }
+
+  find_latest_story_meta(
+    game_id: string,
+    story_type: StoryType,
+    language: string,
+  ): Promise<LatestStoryMeta | undefined> {
+    return this.db
+      .selectFrom("stories")
+      .innerJoin("fact_sheets", "fact_sheets.id", "stories.fact_sheet_id")
+      .select(["fact_sheets.input_hash", "stories.source", "stories.fact_sheet_id"])
+      .where("stories.game_id", "=", game_id)
+      .where("stories.story_type", "=", story_type)
+      .where("stories.language", "=", language)
+      .orderBy("stories.created_at", "desc")
+      .limit(1)
+      .executeTakeFirst();
+  }
+
+  async touch_fact_sheet(fact_sheet_id: string, built_at: Date): Promise<void> {
+    await this.db
+      .updateTable("fact_sheets")
+      .set({ built_at })
+      .where("id", "=", fact_sheet_id)
+      .execute();
+  }
+
+  async save_fact_sheet(sheet: FactSheet, input_hash: string): Promise<string> {
     const row = await this.db
       .insertInto("fact_sheets")
       .values({
@@ -338,6 +516,7 @@ export class KyselyStoriesRepository implements StoriesRepository {
         facts: to_json(sheet.facts),
         built_at: sheet.built_at,
         kind: sheet.kind ?? "summary",
+        input_hash,
       })
       .returning("id")
       .executeTakeFirstOrThrow();
@@ -376,7 +555,9 @@ export class KyselyStoriesRepository implements StoriesRepository {
     return this.db
       .selectFrom("stories")
       .innerJoin("fact_sheets", "fact_sheets.id", "stories.fact_sheet_id")
+      .innerJoin("games", "games.id", "stories.game_id")
       .select([
+        "games.data_source",
         "stories.id",
         "stories.game_id",
         "stories.story_type",
@@ -411,6 +592,8 @@ export class KyselyStoriesRepository implements StoriesRepository {
       .where("stories.language", "=", language)
       .where("stories.status", "in", ["published", "corrected"])
       .orderBy("stories.published_at", "desc")
+      // Two stories published in the same instant: the newer one wins.
+      .orderBy("stories.created_at", "desc")
       .limit(1)
       .executeTakeFirst();
     return row ? this.to_story_row(row) : undefined;
@@ -422,8 +605,8 @@ export class KyselyStoriesRepository implements StoriesRepository {
   }
 
   async list_queue(): Promise<QueueStoryRow[]> {
+    // select_stories() already joins games.
     const rows = await this.select_stories()
-      .innerJoin("games", "games.id", "stories.game_id")
       .innerJoin("teams as home", "home.id", "games.home_team_id")
       .innerJoin("teams as away", "away.id", "games.away_team_id")
       .select(["home.name as home_team", "away.name as away_team", "games.start_time"])

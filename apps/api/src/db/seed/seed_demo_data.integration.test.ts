@@ -23,26 +23,6 @@ async function count_games(data_source: "liiga_api" | "demo", sport = "hockey") 
   return row.count;
 }
 
-async function find_demo_game(external_id: string) {
-  return db
-    .selectFrom("games")
-    .innerJoin("teams as home", "home.id", "games.home_team_id")
-    .innerJoin("teams as away", "away.id", "games.away_team_id")
-    .select([
-      "games.id",
-      "games.status",
-      "games.home_goals",
-      "games.away_goals",
-      "games.ended_in",
-      "games.data_source",
-      "home.name as home_name",
-      "away.name as away_name",
-      "home.data_source as home_source",
-    ])
-    .where("games.external_id", "=", external_id)
-    .executeTakeFirstOrThrow();
-}
-
 describe("seed_demo_data (test database)", () => {
   let summary: SeedSummary;
 
@@ -64,56 +44,9 @@ describe("seed_demo_data (test database)", () => {
     await db.destroy();
   });
 
-  it("keeps all Liiga games and only adds the missing hub states", async () => {
+  it("keeps all Liiga games and adds no demo hockey games (hockey has real data)", async () => {
     expect(await count_games("liiga_api")).toBe(9);
-    expect(await count_games("demo")).toBe(2);
-    expect(summary).toMatchObject({
-      demo_game_count: 2,
-      demo_event_count: 6,
-      unfilled_states: [],
-    });
-    // The real Kärpät game today is upcoming, so no demo upcoming game is needed.
-    await expect(find_demo_game("demo_upcoming")).rejects.toThrow();
-  });
-
-  it("creates a 3-1 demo final and a 1-1 live game between real teams that are free today", async () => {
-    const final = await find_demo_game("demo_final");
-    const live = await find_demo_game("demo_live");
-    const playing_today = ["Kärpät", "KalPa"];
-
-    expect(final).toMatchObject({
-      status: "final",
-      home_goals: 3,
-      away_goals: 1,
-      ended_in: "regulation",
-      data_source: "demo",
-      home_source: "liiga_api",
-    });
-    expect(live).toMatchObject({ status: "live", home_goals: 1, away_goals: 1, ended_in: null });
-    for (const game of [final, live]) {
-      expect(playing_today).not.toContain(game.home_name);
-      expect(playing_today).not.toContain(game.away_name);
-    }
-  });
-
-  it("uses real forwards of the right team as demo goal scorers", async () => {
-    const goals = await db
-      .selectFrom("game_events")
-      .innerJoin("players", "players.id", "game_events.player_id")
-      .select([
-        "game_events.data_source",
-        "players.data_source as player_source",
-        "players.position",
-        sql<boolean>`players.team_id = game_events.team_id`.as("same_team"),
-      ])
-      .innerJoin("games", "games.id", "game_events.game_id")
-      .where("game_events.data_source", "=", "demo")
-      .where("games.sport", "=", "hockey")
-      .execute();
-
-    expect(goals).toHaveLength(6);
-    expect(goals.every((goal) => goal.player_source === "liiga_api")).toBe(true);
-    expect(goals.every((goal) => goal.position === "forward" && goal.same_team)).toBe(true);
+    expect(await count_games("demo")).toBe(0);
   });
 
   it("creates one editor and five players, each with a device identity", async () => {
@@ -132,12 +65,13 @@ describe("seed_demo_data (test database)", () => {
     ]);
   });
 
-  it("adds five unscored picks on the demo final, made before puck drop", async () => {
+  it("adds five unscored picks on the latest Liiga final, made before puck drop", async () => {
     const picks = await db
       .selectFrom("user_predictions")
       .innerJoin("games", "games.id", "user_predictions.game_id")
       .select([
-        "games.external_id",
+        "games.data_source",
+        "games.status",
         "user_predictions.points_awarded",
         sql<boolean>`user_predictions.created_at < games.start_time`.as("before_start"),
       ])
@@ -146,7 +80,9 @@ describe("seed_demo_data (test database)", () => {
 
     expect(summary.prediction_count).toBe(5);
     expect(picks).toHaveLength(5);
-    expect(picks.every((pick) => pick.external_id === "demo_final")).toBe(true);
+    expect(picks.every((pick) => pick.data_source === "liiga_api" && pick.status === "final")).toBe(
+      true,
+    );
     expect(picks.every((pick) => pick.points_awarded === null && pick.before_start)).toBe(true);
   });
 

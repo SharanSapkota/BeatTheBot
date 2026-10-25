@@ -31,6 +31,8 @@ import {
 } from "./modules/games/games_routes";
 import { HealthController } from "./modules/health/health_controller";
 import { create_health_routes } from "./modules/health/health_routes";
+import { HighlightsController } from "./modules/highlights/highlights_controller";
+import { create_admin_highlight_routes } from "./modules/highlights/highlights_routes";
 import { LeaderboardController } from "./modules/leaderboard/leaderboard_controller";
 import { create_leaderboard_routes } from "./modules/leaderboard/leaderboard_routes";
 import { PredictionsController } from "./modules/predictions/predictions_controller";
@@ -93,8 +95,12 @@ export function create_api_router(dependencies: AppDependencies): Router {
     create_story_report_routes(stories_controller, dependencies.report_rate_limit),
   );
   router.use(
-    "/editor/stories",
+    "/admin/stories",
     create_editor_routes(new EditorController(dependencies.editor_service)),
+  );
+  router.use(
+    "/admin/highlights",
+    create_admin_highlight_routes(new HighlightsController(dependencies.highlights_service)),
   );
   router.use("/games", create_game_question_routes(questions_controller));
   router.use("/questions", create_question_routes(questions_controller));

@@ -3,6 +3,7 @@ import type {
   ApiSuccess,
   GameDay,
   GameDetail,
+  GamesOverview,
   GameSummary,
   SportsDay,
 } from "@voita_kone/shared_types";
@@ -12,6 +13,7 @@ import {
   game_day_params_schema,
   game_list_query_schema,
   game_params_schema,
+  overview_query_schema,
   sport_query_schema,
   sports_query_schema,
 } from "./games_schemas";
@@ -31,6 +33,15 @@ export class GamesController {
       data: await this.games_service.get_game_day(date, sport),
     };
     set_cache_control(res, has_live_game(response.data.games));
+    res.json(response);
+  };
+
+  get_overview: RequestHandler = async (req, res) => {
+    const { sport, date } = overview_query_schema.parse(req.query);
+    const response: ApiSuccess<GamesOverview> = {
+      data: await this.games_service.get_overview(sport, date),
+    };
+    set_cache_control(res, has_live_game(response.data.today));
     res.json(response);
   };
 

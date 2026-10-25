@@ -97,6 +97,22 @@ function team_facts(
   };
 }
 
+/** This season's meetings so far (a Liiga game always has a winner, so no draws). */
+export function season_series_of(
+  history: readonly PlayedGame[],
+  home_team_id: string,
+  away_team_id: string,
+): PreviewFactSheetInput["season_series"] {
+  const meetings = history.filter(
+    (game) => plays_in(game, home_team_id) && plays_in(game, away_team_id),
+  );
+  if (meetings.length === 0) {
+    return null;
+  }
+  const home_team_wins = meetings.filter((game) => team_won(game, home_team_id)).length;
+  return { home_team_wins, away_team_wins: meetings.length - home_team_wins, draws: 0 };
+}
+
 export function to_preview_input(
   data: SeasonData,
   game: PreviewGame,
@@ -115,5 +131,6 @@ export function to_preview_input(
       ? { home_win: prediction.home_win_probability, away_win: prediction.away_win_probability }
       : null,
     model_source: `prediction_model:${model_config.model_version}`,
+    season_series: season_series_of(history, game.home_team_id, game.away_team_id),
   };
 }

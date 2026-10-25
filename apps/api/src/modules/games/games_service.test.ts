@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "../../common/app_error";
 import { AWAY_TEAM, HOME_TEAM, build_game_row, build_team_row } from "../../test_helpers/game_rows";
 import type { EventRow, GameFilter, GameRow, GamesRepository } from "./games_repository";
-import { GamesService, count_by_sport } from "./games_service";
+import { GamesService, count_by_sport, first_sentence } from "./games_service";
 
 class FakeGamesRepository implements GamesRepository {
   filters: GameFilter[] = [];
@@ -10,6 +10,7 @@ class FakeGamesRepository implements GamesRepository {
   constructor(
     private readonly games: GameRow[] = [],
     private readonly events: EventRow[] = [],
+    private readonly summaries: ReadonlyMap<string, string> = new Map(),
   ) {}
 
   list_games(filter: GameFilter): Promise<GameRow[]> {
@@ -19,7 +20,8 @@ class FakeGamesRepository implements GamesRepository {
         (game) =>
           game.start_time >= filter.start &&
           game.start_time < filter.end &&
-          (filter.sport === undefined || game.sport === filter.sport),
+          (filter.sport === undefined || game.sport === filter.sport) &&
+          (filter.statuses === undefined || filter.statuses.includes(game.status)),
       ),
     );
   }
@@ -38,6 +40,40 @@ class FakeGamesRepository implements GamesRepository {
 
   find_latest_demo_final(): Promise<GameRow | undefined> {
     return Promise.resolve(undefined);
+  }
+
+  find_latest_final_start(sport: string, before: Date): Promise<Date | undefined> {
+    const starts = this.games
+      .filter((game) => game.sport === sport && game.status === "final" && game.start_time < before)
+      .map((game) => game.start_time.getTime());
+    return Promise.resolve(starts.length > 0 ? new Date(Math.max(...starts)) : undefined);
+  }
+
+  find_next_scheduled_start(sport: string, from: Date): Promise<Date | undefined> {
+    const starts = this.games
+      .filter(
+        (game) => game.sport === sport && game.status === "scheduled" && game.start_time >= from,
+      )
+      .map((game) => game.start_time.getTime());
+    return Promise.resolve(starts.length > 0 ? new Date(Math.min(...starts)) : undefined);
+  }
+
+  list_published_summaries(game_ids: readonly string[]): Promise<Map<string, string>> {
+    return Promise.resolve(
+      new Map([...this.summaries].filter(([game_id]) => game_ids.includes(game_id))),
+    );
+  }
+
+  count_scheduled(sport: string, start: Date, end: Date): Promise<number> {
+    return Promise.resolve(
+      this.games.filter(
+        (game) =>
+          game.sport === sport &&
+          game.status === "scheduled" &&
+          game.start_time >= start &&
+          game.start_time < end,
+      ).length,
+    );
   }
 }
 
@@ -237,5 +273,128 @@ describe("GamesService.get_game_detail", () => {
     expect(detail).toMatchObject({ id: game.id, state: "final", featured: true });
     expect(detail.home_team.name).toBe(HOME_TEAM.name);
     expect(detail.away_team.name).toBe(AWAY_TEAM.name);
+  });
+});
+
+describe("GamesService.get_overview", () => {
+  const upcoming = { home_goals: null, away_goals: null, ended_in: null } as const;
+  const final_on = (id: number, start: string) =>
+    build_game_row({
+      id: `bbbbbbbb-0000-4000-8000-00000000000${String(id)}`,
+      status: "final",
+      start_time: new Date(start),
+    });
+  const scheduled_on = (id: number, start: string) =>
+    build_game_row({
+      id: `bbbbbbbb-0000-4000-8000-00000000000${String(id)}`,
+      status: "scheduled",
+      start_time: new Date(start),
+      ...upcoming,
+    });
+  // Sunday 25 Oct 2026 in Helsinki (the day summer time ends).
+  const NOW = "2026-10-25T09:00:00Z";
+
+  it("shows the latest results and the next games on a day without games", async () => {
+    const service = create_service(
+      new FakeGamesRepository([
+        final_on(1, "2026-10-22T16:30:00Z"),
+        final_on(2, "2026-10-23T16:30:00Z"),
+        final_on(3, "2026-10-23T17:00:00Z"),
+        scheduled_on(4, "2026-10-27T16:30:00Z"),
+        scheduled_on(5, "2026-10-29T16:30:00Z"),
+      ]),
+      NOW,
+    );
+    const overview = await service.get_overview("hockey");
+    expect(overview.date).toBe("2026-10-25");
+    expect(overview.today).toEqual([]);
+    expect(overview.latest_results?.date).toBe("2026-10-23");
+    expect(overview.latest_results?.games.map((game) => game.id)).toHaveLength(2);
+    expect(overview.coming_up?.date).toBe("2026-10-27");
+    expect(overview.coming_up?.games).toHaveLength(1);
+    expect(overview.next_7_days_count).toBe(2);
+  });
+
+  it("adds the first sentence of each latest result's published summary", async () => {
+    const service = create_service(
+      new FakeGamesRepository(
+        [final_on(1, "2026-10-23T16:30:00Z"), final_on(2, "2026-10-23T17:00:00Z")],
+        [],
+        new Map([
+          [
+            "bbbbbbbb-0000-4000-8000-000000000001",
+            "Kärpät beat Ilves 3–1. Eetu Laine scored twice.",
+          ],
+        ]),
+      ),
+      NOW,
+    );
+    const overview = await service.get_overview("hockey");
+    expect(overview.latest_results?.summary_lines).toEqual({
+      "bbbbbbbb-0000-4000-8000-000000000001": "Kärpät beat Ilves 3–1.",
+    });
+  });
+
+  it("has no coming games when the season is over (only past games)", async () => {
+    const service = create_service(
+      new FakeGamesRepository([final_on(1, "2026-10-20T16:30:00Z")]),
+      NOW,
+    );
+    const overview = await service.get_overview("hockey");
+    expect(overview.latest_results?.date).toBe("2026-10-20");
+    expect(overview.coming_up).toBeNull();
+    expect(overview.next_7_days_count).toBe(0);
+  });
+
+  it("has no latest results before the first game (only future games)", async () => {
+    const service = create_service(
+      new FakeGamesRepository([scheduled_on(1, "2026-11-20T16:30:00Z")]),
+      NOW,
+    );
+    const overview = await service.get_overview("hockey");
+    expect(overview.latest_results).toBeNull();
+    expect(overview.coming_up?.date).toBe("2026-11-20");
+    // More than 7 days away.
+    expect(overview.next_7_days_count).toBe(0);
+  });
+
+  it("keeps today's games in today, not in latest results or coming up", async () => {
+    const service = create_service(
+      new FakeGamesRepository([
+        final_on(1, "2026-10-25T07:00:00Z"),
+        scheduled_on(2, "2026-10-25T15:00:00Z"),
+        scheduled_on(3, "2026-10-26T15:00:00Z"),
+      ]),
+      NOW,
+    );
+    const overview = await service.get_overview("hockey");
+    expect(overview.today).toHaveLength(2);
+    expect(overview.latest_results).toBeNull();
+    expect(overview.coming_up?.date).toBe("2026-10-26");
+    expect(overview.next_7_days_count).toBe(2);
+  });
+
+  it("uses Helsinki days around midnight", async () => {
+    // 23:30 Helsinki on 24 Oct (UTC+3) is still the 24th; 00:30 on the 26th (UTC+2) is the 26th.
+    const service = create_service(
+      new FakeGamesRepository([
+        final_on(1, "2026-10-24T20:30:00Z"),
+        scheduled_on(2, "2026-10-25T22:30:00Z"),
+      ]),
+      "2026-10-24T21:30:00Z",
+    );
+    const overview = await service.get_overview("hockey");
+    // 00:30 Helsinki on the 25th: the game at 23:30 the evening before is yesterday's result.
+    expect(overview.date).toBe("2026-10-25");
+    expect(overview.latest_results?.date).toBe("2026-10-24");
+    expect(overview.coming_up?.date).toBe("2026-10-26");
+  });
+});
+
+describe("first_sentence", () => {
+  it("cuts at the first sentence end, not inside a number", () => {
+    expect(first_sentence("Kärpät won 3–2. Next game on Tuesday.")).toBe("Kärpät won 3–2.");
+    expect(first_sentence("A 9.5 point lead held! Then more.")).toBe("A 9.5 point lead held!");
+    expect(first_sentence("No sentence end")).toBe("No sentence end");
   });
 });

@@ -23,6 +23,8 @@ export interface TrafficLightInput {
   tips: readonly string[];
   /** Injury, discipline, minors, legal or personal topics. */
   escalation_words: readonly string[];
+  /** Betting language ("bet", "bookmaker", …). */
+  betting_words: readonly string[];
   /** The LLM answered with something unusable (empty, wrong length or shape). */
   llm_error: string | null;
 }
@@ -46,6 +48,9 @@ export function decide_traffic_light(input: TrafficLightInput): TrafficLightDeci
   }
   for (const word of input.escalation_words) {
     red.push(`Sensitive topic (injury, legal or personal): "${word}"`);
+  }
+  for (const word of input.betting_words) {
+    red.push(`Betting language: "${word}"`);
   }
   if (red.length > 0) {
     return { traffic_light: "red", reasons: red };

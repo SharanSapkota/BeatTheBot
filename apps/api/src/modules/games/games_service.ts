@@ -1,6 +1,7 @@
 import type {
   GameDay,
   GameDetail,
+  GamesOverview,
   GameState,
   GameSummary,
   Sport,
@@ -20,6 +21,9 @@ import { order_game_day, to_game_detail, to_game_summary } from "./games_mapper"
 import type { GameRow, GamesRepository } from "./games_repository";
 
 export const MAX_RANGE_DAYS = 31;
+/** "Next 7 days" on the hub. */
+export const OVERVIEW_WINDOW_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_RANGE_DAYS = 6;
 const STATUS_BY_STATE: Record<GameState, string> = {
   upcoming: "scheduled",
@@ -33,6 +37,12 @@ export interface GameListQuery {
   team_id?: string;
   state?: GameState;
   sport: Sport;
+}
+
+/** The first sentence of a text (the whole text when it has no sentence end). */
+export function first_sentence(text: string): string {
+  const match = /^.*?[.!?](?=\s|$)/s.exec(text.trim());
+  return (match ? match[0] : text).trim();
 }
 
 /** Games and live games per sport, every sport listed (0 when it has none). */
@@ -84,6 +94,61 @@ export class GamesService {
       games: order_game_day(games.map((game) => this.to_summary(game))),
       demo_replay: false,
     };
+  }
+
+  /**
+   * The hub is never empty: the day's games, the latest Helsinki day with results before it,
+   * and the next day with scheduled games after it (null when there is none). The day is
+   * "today" (server clock) unless the app sends its own today.
+   */
+  async get_overview(sport: Sport, date_value = "today"): Promise<GamesOverview> {
+    const now = this.clock();
+    const date = this.resolve_date(date_value);
+    const today = helsinki_day_range(date);
+    const [today_games, latest_start, next_start, next_7_days_count] = await Promise.all([
+      this.games_repository.list_games({ ...today, sport }),
+      this.games_repository.find_latest_final_start(sport, today.start),
+      this.games_repository.find_next_scheduled_start(sport, today.end),
+      this.games_repository.count_scheduled(
+        sport,
+        now,
+        new Date(now.getTime() + OVERVIEW_WINDOW_DAYS * DAY_MS),
+      ),
+    ]);
+    const latest = await this.day_of(latest_start, sport, "final");
+    const summaries = await this.games_repository.list_published_summaries(
+      latest?.games.map((game) => game.id) ?? [],
+    );
+    return {
+      date,
+      today: order_game_day(today_games.map((game) => this.to_summary(game))),
+      latest_results: latest && {
+        ...latest,
+        summary_lines: Object.fromEntries(
+          [...summaries].map(([game_id, body]) => [game_id, first_sentence(body)]),
+        ),
+      },
+      coming_up: await this.day_of(next_start, sport, "scheduled"),
+      next_7_days_count,
+    };
+  }
+
+  /** The games of the Helsinki day that contains `instant`, with one status. */
+  private async day_of(
+    instant: Date | undefined,
+    sport: Sport,
+    status: "final" | "scheduled",
+  ): Promise<GamesOverview["coming_up"]> {
+    if (instant === undefined) {
+      return null;
+    }
+    const date = to_helsinki_date(instant);
+    const games = await this.games_repository.list_games({
+      ...helsinki_day_range(date),
+      sport,
+      statuses: [status],
+    });
+    return { date, games: order_game_day(games.map((game) => this.to_summary(game))) };
   }
 
   /** The sport tabs: every sport (config order) with its game count for the day. */

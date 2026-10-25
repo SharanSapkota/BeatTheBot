@@ -19,3 +19,13 @@
     gap: 32px;
   }
 }
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap_cards);
+}
+
+.filters {
+  max-width: 420px;
+}

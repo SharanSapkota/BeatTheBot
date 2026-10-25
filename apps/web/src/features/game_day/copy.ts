@@ -5,6 +5,18 @@ export const game_day_copy = {
   page_title: "Fans vs fans",
   intro: "Pick before, during and after every game, and see how you do against all fans.",
   title: "Today's games",
+  day_title: (day: string) => `Games · ${day}`,
+  latest_results: "Latest results",
+  coming_up: "Coming up",
+  day_switcher_label: "Choose a day",
+  previous_day: "Previous day",
+  next_day: "Next day",
+  back_to_today: "Today",
+  no_games_today: "No games today.",
+  next_games: (day: string) => `Next games: ${day}`,
+  no_next_games: "No games scheduled yet.",
+  no_games_on: (day: string) => `No games on ${day}.`,
+  next_big_game: "NEXT BIG GAME",
   game_count: (count: number, league: string) =>
     `${String(count)} ${count === 1 ? "game" : "games"} · ${league}`,
   sport_tabs_label: "Sports",
@@ -21,6 +33,7 @@ export const game_day_copy = {
   top_game: "TODAY'S TOP GAME",
   vs: "VS",
   today_at: (time: string) => `Today ${time}`,
+  day_at: (day: string, time: string) => `${day} ${time}`,
   live: "LIVE",
   live_at: (period: string, clock: string) => `LIVE · ${period} ${clock}`,
   final: "FINAL",
@@ -55,6 +68,8 @@ export const game_day_copy = {
     `A loss would make it ${percent}. Make your picks before ${time} and see how you do against all fans.`,
   upcoming_headline: (home: string, away: string, time: string) =>
     `${home} vs ${away} tonight at ${time}`,
+  upcoming_headline_day: (home: string, away: string, day: string, time: string) =>
+    `${home} vs ${away} on ${day} at ${time}`,
   upcoming_text: (time: string) =>
     `Make your picks before ${time} and see how you do against all fans.`,
   live_headline: (home: string, away: string, score: string) =>

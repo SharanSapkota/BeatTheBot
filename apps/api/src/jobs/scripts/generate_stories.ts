@@ -15,10 +15,11 @@ async function main(): Promise<void> {
   const db = create_database(env.DATABASE_URL);
   try {
     const repository = new KyselyStoriesRepository(db);
+    const llm_client = create_llm_client(env);
     const service = new StoryGenerationService(
       repository,
       new KyselyModelInputsRepository(db),
-      create_llm_client(env),
+      llm_client,
       () => new Date(),
     );
     if (type && game_id) {
@@ -26,7 +27,11 @@ async function main(): Promise<void> {
         type === "preview"
           ? await service.generate_preview(game_id)
           : await service.generate_summary(game_id);
-      console.log(`Story ${result.story_id}: ${result.traffic_light} (${result.source}).`);
+      console.log(
+        "skipped" in result
+          ? "Facts unchanged since the last story: nothing written."
+          : `Story ${result.story_id}: ${result.traffic_light} (${result.source}).`,
+      );
       return;
     }
     const logger = create_logger({ level: "warn", pretty: false });
@@ -35,9 +40,10 @@ async function main(): Promise<void> {
       service,
       logger,
       () => new Date(),
+      { has_llm: llm_client !== undefined },
     ).run();
     console.log(
-      `Previews: ${String(result.previews)}, summaries: ${String(result.summaries)}, failed: ${String(result.failed_count)}.`,
+      `Previews: ${String(result.previews)}, summaries: ${String(result.summaries)}, unchanged: ${String(result.skipped)}, failed: ${String(result.failed_count)}.`,
     );
   } finally {
     await db.destroy();

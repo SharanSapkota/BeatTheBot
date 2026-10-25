@@ -1,10 +1,11 @@
 import type { Fact } from "@voita_kone/fact_checker";
-import type { LastMeeting, ReplayMoment, Story } from "@voita_kone/shared_types";
+import type { GameStories, LastMeeting, ReplayMoment, Story } from "@voita_kone/shared_types";
 import { AppError } from "../../common/app_error";
 import type { Clock } from "../../common/clock";
 import type { DemoReplayService } from "../demo/demo_replay_service";
 import type { StoriesRepository, StoryRow, StoryType } from "./stories_repository";
 import { STORY_LANGUAGE } from "./story_generation_service";
+import { WHY_IT_MATTERS } from "./story_templates";
 
 export function story_not_found(story_id: string): AppError {
   return new AppError("STORY_NOT_FOUND", 404, `Story ${story_id} not found`);
@@ -17,8 +18,22 @@ export function bullets_of(story_type: string, body: string): string[] {
   }
   return body
     .split("\n")
-    .map((line) => line.trim().replace(/^-\s*/, ""))
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("-"))
+    .map((line) => line.replace(/^-\s*/, ""))
     .filter((line) => line.length > 0);
+}
+
+/** The preview's "Why it matters: …" line, without the prefix; null when there is none. */
+export function why_it_matters_of(story_type: string, body: string): string | null {
+  if (story_type !== "preview") {
+    return null;
+  }
+  const line = body
+    .split("\n")
+    .map((candidate) => candidate.trim())
+    .find((candidate) => candidate.startsWith(WHY_IT_MATTERS));
+  return line ? line.slice(WHY_IT_MATTERS.length).trim() : null;
 }
 
 export function last_meetings_of(facts: readonly Fact[]): LastMeeting[] {
@@ -51,6 +66,7 @@ export function to_story(row: StoryRow): Story | null {
     headline: row.headline ?? "",
     body: row.body,
     bullets: bullets_of(row.story_type, row.body),
+    why_it_matters: why_it_matters_of(row.story_type, row.body),
     label_text: row.label_text,
     source: row.source === "template" ? "template" : "llm",
     last_meetings: row.story_type === "preview" ? last_meetings_of(row.facts) : [],
@@ -76,16 +92,24 @@ export class StoriesService {
     return row ? to_story(row) : null;
   }
 
+  /** The game's published preview and summary (null when not published). */
+  async get_game_stories(game_id: string): Promise<GameStories> {
+    const [preview, summary] = await Promise.all([
+      this.get_published(game_id, "preview"),
+      this.get_published(game_id, "summary"),
+    ]);
+    return { preview, summary };
+  }
+
   /** Demo replay: the real game's preview before puck drop and live, its summary at the end. */
-  async get_demo_published(
-    game_id: string,
-    story_type: StoryType,
-    moment: ReplayMoment,
-  ): Promise<Story | null> {
+  async get_demo_game_stories(game_id: string, moment: ReplayMoment): Promise<GameStories> {
     // Also checks that the game can be replayed (404 GAME_NOT_FOUND otherwise).
     await this.demo_replay_service?.get_game_detail(game_id, moment);
-    const is_shown = story_type === "summary" ? moment === "final" : moment !== "final";
-    return is_shown ? this.get_published(game_id, story_type) : null;
+    const stories = await this.get_game_stories(game_id);
+    return {
+      preview: moment === "final" ? null : stories.preview,
+      summary: moment === "final" ? stories.summary : null,
+    };
   }
 
   /** "Report an error": the story goes back to 🟡 and waits for an editor (JSN rule 35). */

@@ -67,6 +67,14 @@ export interface GamesRepository {
   ): Promise<GameRow | undefined>;
   /** The latest finished demo game of the sport, if any. */
   find_latest_demo_final(sport: Sport): Promise<GameRow | undefined>;
+  /** Start of the most recent finished game of the sport that started before `before`. */
+  find_latest_final_start(sport: Sport, before: Date): Promise<Date | undefined>;
+  /** Start of the first scheduled game of the sport at or after `from`. */
+  find_next_scheduled_start(sport: Sport, from: Date): Promise<Date | undefined>;
+  /** Scheduled games of the sport that start in [start, end). */
+  count_scheduled(sport: Sport, start: Date, end: Date): Promise<number>;
+  /** The newest published AI summary body of each game (games without one are left out). */
+  list_published_summaries(game_ids: readonly string[]): Promise<Map<string, string>>;
 }
 
 const TEAM_COLUMNS = [
@@ -181,6 +189,62 @@ export class KyselyGamesRepository implements GamesRepository {
       .orderBy("games.start_time", "desc")
       .limit(1)
       .executeTakeFirst();
+  }
+
+  async find_latest_final_start(sport: Sport, before: Date): Promise<Date | undefined> {
+    const row = await this.db
+      .selectFrom("games")
+      .select("start_time")
+      .where("sport", "=", sport)
+      .where("status", "=", "final")
+      .where("start_time", "<", before)
+      .orderBy("start_time", "desc")
+      .limit(1)
+      .executeTakeFirst();
+    return row?.start_time;
+  }
+
+  async find_next_scheduled_start(sport: Sport, from: Date): Promise<Date | undefined> {
+    const row = await this.db
+      .selectFrom("games")
+      .select("start_time")
+      .where("sport", "=", sport)
+      .where("status", "=", "scheduled")
+      .where("start_time", ">=", from)
+      .orderBy("start_time")
+      .limit(1)
+      .executeTakeFirst();
+    return row?.start_time;
+  }
+
+  async count_scheduled(sport: Sport, start: Date, end: Date): Promise<number> {
+    const row = await this.db
+      .selectFrom("games")
+      .select(sql<number>`count(*)::int`.as("count"))
+      .where("sport", "=", sport)
+      .where("status", "=", "scheduled")
+      .where("start_time", ">=", start)
+      .where("start_time", "<", end)
+      .executeTakeFirstOrThrow();
+    return row.count;
+  }
+
+  async list_published_summaries(game_ids: readonly string[]): Promise<Map<string, string>> {
+    if (game_ids.length === 0) {
+      return new Map();
+    }
+    const rows = await this.db
+      .selectFrom("stories")
+      .select(["game_id", "body"])
+      .distinctOn("game_id")
+      .where("game_id", "in", [...game_ids])
+      .where("story_type", "=", "summary")
+      .where("status", "in", ["published", "corrected"])
+      .orderBy("game_id")
+      .orderBy("published_at", "desc")
+      .orderBy("created_at", "desc")
+      .execute();
+    return new Map(rows.map((row) => [row.game_id, row.body]));
   }
 
   private select_games() {

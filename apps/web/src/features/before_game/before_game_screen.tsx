@@ -43,17 +43,28 @@ function pick_card(kind: PickKind, props: PickProps): ReactNode {
   }
 }
 
-/** Hockey: the AI preview and "Data says". Other sports: how the fans have picked so far. */
+/**
+ * Every sport: the AI preview. Hockey: also "Data says". Other sports: how the fans have picked
+ * so far (no model numbers).
+ */
 function GuideCards({ game }: { game: GameDetail }) {
   const has_model = config_of(game.sport).has_model;
   const data_says = useDataSays(has_model ? game : undefined);
-  const preview = useStory(game, "preview", has_model);
+  const preview = useStory(game, "preview");
+  const preview_card = (
+    <AiStoryCard story_type="preview" story={preview.data} on_report={report_story} />
+  );
   if (!has_model) {
-    return <FansSoFarCard game={game} />;
+    return (
+      <>
+        {preview_card}
+        <FansSoFarCard game={game} />
+      </>
+    );
   }
   return (
     <>
-      <AiStoryCard story_type="preview" story={preview.data} on_report={report_story} />
+      {preview_card}
       {data_says.isPending ? (
         <Skeleton card_heights={[240]} />
       ) : (

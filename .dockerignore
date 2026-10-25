@@ -1,0 +1,25 @@
+# Keep the Docker build context small, and secrets out of the image.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.git
+.cache
+.vscode
+.DS_Store
+uploads
+**/uploads
+
+# Never send env files (keys!) into an image.
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Not needed by the API image.
+docs
+infra
+apps/web/src
+apps/web/e2e
+apps/web/public
+playwright-report

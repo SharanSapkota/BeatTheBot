@@ -78,12 +78,13 @@ const PREVIEW: Story = {
   id: "33333333-3333-4333-8333-333333333333",
   story_type: "preview",
   headline: "Kärpät vs Ilves",
-  body: "- Kärpät won 4 of their last 5 games.\n- They last met on 1 Feb.\n- Data says Kärpät 67%.",
+  body: "- Kärpät won 4 of their last 5 games.\n- They last met on 1 Feb.\n- Data says Kärpät 67%.\nWhy it matters: A win would put Ilves's playoff chance at 55%.",
   bullets: [
     "Kärpät won 4 of their last 5 games.",
     "They last met on 1 Feb.",
     "Data says Kärpät 67%.",
   ],
+  why_it_matters: "A win would put Ilves's playoff chance at 55%.",
   label_text: "Written with AI from Liiga data · checked by Kaleva",
   source: "llm",
   last_meetings: [
@@ -96,7 +97,7 @@ const PREVIEW: Story = {
 function mock_real_prediction() {
   return mock_api({
     [`/games/${GAME.id}/data_says`]: DATA_SAYS,
-    [`/games/${GAME.id}/stories?type=preview`]: PREVIEW,
+    [`/games/${GAME.id}/stories`]: { preview: PREVIEW, summary: null },
     [`POST /stories/${PREVIEW.id}/reports`]: { received: true },
     [`/teams/${KARPAT.id}/players`]: [
       build_player(LAINE, 5, 9),
@@ -113,7 +114,7 @@ function render_screen() {
 
 describe("BeforeGameScreen", () => {
   it("says the preview is coming soon when none is published (no sample text)", async () => {
-    mock_rosters_and({ [`/games/${GAME.id}/stories?type=preview`]: null });
+    mock_rosters_and({ [`/games/${GAME.id}/stories`]: { preview: null, summary: null } });
     render_screen();
 
     expect(await screen.findByRole("heading", { name: "Preview coming soon" })).toBeInTheDocument();
@@ -258,6 +259,8 @@ describe("BeforeGameScreen", () => {
     expect(await screen.findByRole("heading", { name: "Kärpät vs Ilves" })).toBeInTheDocument();
     expect(screen.getByText("AI PREVIEW")).toBeInTheDocument();
     expect(screen.getByText("Kärpät won 4 of their last 5 games.")).toBeInTheDocument();
+    expect(screen.getByText("A win would put Ilves's playoff chance at 55%.")).toBeInTheDocument();
+    expect(screen.getByText("Why it matters:")).toBeInTheDocument();
     expect(screen.getByText("Last meetings")).toBeInTheDocument();
     expect(
       screen.getByText("Written with AI from Liiga data · checked by Kaleva"),

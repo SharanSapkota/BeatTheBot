@@ -11,7 +11,7 @@ async function main(): Promise<void> {
     throw new Error("db:reset is not allowed when NODE_ENV=production");
   }
 
-  const db = create_database(env.DATABASE_URL);
+  const db = create_database(env.DATABASE_DIRECT_URL);
   try {
     await sql`DROP SCHEMA public CASCADE`.execute(db);
     await sql`CREATE SCHEMA public`.execute(db);

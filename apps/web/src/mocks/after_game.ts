@@ -16,7 +16,7 @@ function score_text(game: GameDetail): string {
   return format_score(game.home_goals ?? 0, game.away_goals ?? 0).replaceAll(" ", "");
 }
 
-// TODO(step 7): replace with GET /api/v1/games/:game_id/highlight (chosen by an editor).
+// TODO(step 12): replace with GET /api/v1/games/:game_id/highlight (chosen by an editor).
 export function build_sample_highlight(game: GameDetail): Highlight | null {
   if (is_design_demo(game)) {
     return {

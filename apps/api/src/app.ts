@@ -16,6 +16,7 @@ import type { AdminMatchesService } from "./modules/admin_matches/admin_matches_
 import type { ElectionsService } from "./modules/elections/elections_service";
 import type { GamesService } from "./modules/games/games_service";
 import type { HealthService } from "./modules/health/health_service";
+import type { HighlightsService } from "./modules/highlights/highlights_service";
 import type { LeaderboardService } from "./modules/leaderboard/leaderboard_service";
 import type { PredictionsService } from "./modules/predictions/predictions_service";
 import type { QuestionsService } from "./modules/questions/questions_service";
@@ -29,6 +30,7 @@ import { create_api_router } from "./routes";
 
 export interface AppServices {
   health_service: HealthService;
+  highlights_service: HighlightsService;
   teams_service: TeamsService;
   games_service: GamesService;
   standings_service: StandingsService;
@@ -58,10 +60,14 @@ export interface AppServices {
 export interface AppDependencies extends AppServices {
   logger: Logger;
   cors_allowed_origins: readonly string[];
+  /** Proxies in front of the API (Render / Railway: 1). req.ip, and so every rate limit, then
+   * uses the real client IP from X-Forwarded-For instead of the proxy's. 0 = no proxy. */
+  trust_proxy_hops: number;
 }
 
 export function create_app(dependencies: AppDependencies): Express {
   const app = express();
+  app.set("trust proxy", dependencies.trust_proxy_hops);
 
   app.use(helmet());
   app.use(cors({ origin: [...dependencies.cors_allowed_origins] }));

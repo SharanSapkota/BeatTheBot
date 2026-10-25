@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   game_day_response_schema,
+  games_overview_response_schema,
   sports_day_response_schema,
   type GameDay,
+  type GamesOverview,
   type Sport,
   type SportsDay,
 } from "@voita_kone/shared_types";
@@ -20,6 +22,38 @@ export function useGameDay(sport: Sport) {
   return useQuery({
     queryKey: ["game_day", sport, is_demo ? moment : "today"],
     queryFn: async (): Promise<GameDay> => (await api_get(path, game_day_response_schema)).data,
+    refetchInterval: (query) =>
+      query.state.data?.games.some((game) => game.state === "live") ? LIVE_REFETCH_MS : false,
+  });
+}
+
+/**
+ * Today, the latest results and the next games of a sport: the hub is never empty. `today` is
+ * this device's Helsinki day, so the app and the API agree on what "today" means.
+ */
+export function useGamesOverview(sport: Sport, today: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["games_overview", sport, today],
+    enabled,
+    queryFn: async (): Promise<GamesOverview> =>
+      (
+        await api_get(
+          `/games/overview?sport=${sport}&date=${today}`,
+          games_overview_response_schema,
+        )
+      ).data,
+    refetchInterval: (query) =>
+      query.state.data?.today.some((game) => game.state === "live") ? LIVE_REFETCH_MS : false,
+  });
+}
+
+/** One sport's games of any Helsinki day (the day switcher). */
+export function useGameDayOn(sport: Sport, date: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["game_day", sport, date],
+    enabled,
+    queryFn: async (): Promise<GameDay> =>
+      (await api_get(`/game_days/${date}?sport=${sport}`, game_day_response_schema)).data,
     refetchInterval: (query) =>
       query.state.data?.games.some((game) => game.state === "live") ? LIVE_REFETCH_MS : false,
   });

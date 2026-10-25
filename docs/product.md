@@ -12,6 +12,7 @@ The UI says **"Voita Kaleva"**; code and package names still say `voita_kone`.
   3. **During the game:** next-goal pick, goal-in-period pick, "Data says: win chance" chart, game events.
   4. **After the game:** result, highlight (added by a Kaleva editor), points breakdown, AI summary, result quiz, player vote.
   5. **Leaderboard** (Leaders → tab **Games**): fans only, your accuracy vs all fans, weekly/season ranking, sponsor prize slot.
+- **Sports** (step 8): the Games menu has tabs **Hockey · Football · Basketball**. Hockey is real Liiga data; football and basketball matches are entered by a Kaleva admin until an API is available. Each sport has its own picks (see Games and scoring).
 - **Elections** (step 7, see below): predict who gets the most votes; see all users' picks after picking; separate election leaderboard (Leaders → tab **Elections**).
 - **Rooms** (step 9, see below): a private room with a join key, a new question every interval, the room's own scoreboard and emoji reactions.
 - **Admin page** (`/admin`, desktop first, role `admin`): first tab **Elections** (create, candidates, preview, publish, close, enter the result).
@@ -72,6 +73,8 @@ Big points before the game, medium during, small after, so skill on real games m
 | | Fan poll: best player so far | 0 |
 | After (small) | Result quiz, 3 questions from the summary facts | 2 each |
 | | Vote player of the game | 1 |
+
+**Other sports (step 8):** football: home / draw / away 10 (a draw is a pick too), exact score after 90 min 25, scorer 15; live next goal and fan poll; quiz and vote after. Basketball: winner 10, winning margin band (1–5 / 6–10 / 11+ points) 15, top scorer 15; live fan poll; vote after. The bold call (+5) works in every sport. "Data says" and the AI preview / summary are hockey only (real Liiga data).
 
 All quiz questions are built from the fact sheet and pass the fact checker before going live.
 UI design: Design canvas "Voita kone — UI design". The MVP builds only the 5 screens above (390px phone first).

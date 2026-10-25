@@ -1,7 +1,7 @@
 import { classify_claims } from "@voita_kone/fact_checker";
 import { describe, expect, it } from "vitest";
 import { ScriptedLlmClient } from "../../test_helpers/scripted_llm_client";
-import { bullets_of } from "./stories_service";
+import { bullets_of, why_it_matters_of } from "./stories_service";
 import { output_problem, write_story } from "./story_writer";
 import { template_preview, template_summary } from "./story_templates";
 import { GOOD_SUMMARY, KNOWN_NAMES, PREVIEW_SHEET, SUMMARY_SHEET } from "./test_sheets";
@@ -78,6 +78,24 @@ describe("write_story with the LLM", () => {
 
     expect(story.traffic_light).toBe("red");
     expect(story.check.tips).toEqual(["will win"]);
+  });
+
+  it("is red for betting language", async () => {
+    const story = await write_story(
+      new ScriptedLlmClient([
+        GOOD_SUMMARY.replace(
+          "It was a good night for the home crowd.",
+          "It was a good night for anyone with a bet on the home team.",
+        ),
+      ]),
+      "summary",
+      SUMMARY_SHEET,
+      KNOWN_NAMES,
+    );
+
+    expect(story.traffic_light).toBe("red");
+    expect(story.check.betting_words).toEqual(["bet"]);
+    expect(story.check.traffic_light_reasons).toContain('Betting language: "bet"');
   });
 
   it("is red when the text touches an injury", async () => {
@@ -166,11 +184,48 @@ describe("template fallback", () => {
     expect(bullets[2]).toContain("Data says Kärpät have a 62% chance of winning and Ilves 38%.");
   });
 
+  it('ends the preview with a "Why it matters" line from the biggest stake', () => {
+    const body = template_preview(PREVIEW_SHEET);
+    expect(body.split("\n").at(-1)).toMatch(/^Why it matters: A win would put /);
+    expect(why_it_matters_of("preview", body)).toMatch(/^A win would put /);
+  });
+
   it("writes the summary from the result, scorers, winning goal, table, odds and next game", () => {
     expect(template_summary(SUMMARY_SHEET)).toBe(
       "Kärpät beat Ilves 3–1. Scorers: Eetu Laine, Aleksi Mäkelä, Joonas Niemi. " +
         "Joonas Niemi scored the winning goal at 38:20. Kärpät move from 13th to 12th with 28 points. " +
         "Kärpät's chance of relegation went from 34% to 27%. Next, Kärpät play Jukurit away on Saturday.",
+    );
+  });
+});
+
+describe("template wording", () => {
+  it("says one goal and one game in plain words", () => {
+    const sheet = {
+      ...PREVIEW_SHEET,
+      facts: [
+        {
+          fact_id: "f1",
+          type: "form" as const,
+          value: { team: "Ilves", results: "W", wins: 1, draws: 0, losses: 0, games: 1 },
+          source: "derived" as const,
+        },
+        {
+          fact_id: "f2",
+          type: "form" as const,
+          value: { team: "AC Oulu", results: "L", wins: 0, draws: 0, losses: 1, games: 1 },
+          source: "derived" as const,
+        },
+        {
+          fact_id: "f3",
+          type: "player_form" as const,
+          value: { player: "Veeti Karjalainen", team: "Ilves", goals: 1, games: 5 },
+          source: "derived" as const,
+        },
+      ],
+    };
+    expect(template_preview(sheet)).toBe(
+      "- Ilves won their last game, AC Oulu lost their last game. In form: Ilves' Veeti Karjalainen has 1 goal in the last 5 games.",
     );
   });
 });

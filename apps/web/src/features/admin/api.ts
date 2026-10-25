@@ -5,6 +5,7 @@ import {
   admin_leagues_response_schema,
   admin_match_response_schema,
   admin_matches_response_schema,
+  highlight_upload_status_response_schema,
   type AdminCandidateInput,
   type AdminElection,
   type AdminElectionInput,
@@ -12,6 +13,7 @@ import {
   type AdminMatch,
   type AdminMatchInput,
   type AdminMatchResultRequest,
+  type HighlightUploadStatus,
 } from "@voita_kone/shared_types";
 import { z } from "zod";
 import { api_get, api_request } from "../../lib/api_client";
@@ -202,5 +204,17 @@ export function useAdminMatchAction() {
         ),
       );
     },
+  });
+}
+
+/** GET /admin/highlights/upload_status: video files, or video links only (and why). */
+export function useHighlightUploadStatus(enabled: boolean) {
+  const token = useSessionToken();
+  return useQuery({
+    queryKey: ["highlight_upload_status", token],
+    enabled: enabled && token !== null,
+    queryFn: async (): Promise<HighlightUploadStatus> =>
+      (await api_get("/admin/highlights/upload_status", highlight_upload_status_response_schema))
+        .data,
   });
 }

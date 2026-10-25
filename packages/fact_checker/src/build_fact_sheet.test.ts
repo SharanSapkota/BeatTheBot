@@ -40,6 +40,33 @@ const INPUT: FactSheetInput = {
 describe("build_fact_sheet", () => {
   const sheet = build_fact_sheet(INPUT);
 
+  it("adds lead changes and a comeback when every goal is known", () => {
+    const comeback = build_fact_sheet({
+      ...INPUT,
+      home_goals: 3,
+      away_goals: 2,
+      goals: [
+        { player: "Aleksi Ahola", team: "Ilves", period: 1, game_time_seconds: 300 },
+        { player: "Aleksi Ahola", team: "Ilves", period: 1, game_time_seconds: 600 },
+        { player: "Eetu Laine", team: "Kärpät", period: 2, game_time_seconds: 1500 },
+        { player: "Eetu Laine", team: "Kärpät", period: 2, game_time_seconds: 2000 },
+        { player: "Eetu Laine", team: "Kärpät", period: 3, game_time_seconds: 3000 },
+      ],
+    });
+    const lead = comeback.facts.find((fact) => fact.type === "lead_changes");
+    expect(lead?.value).toEqual({ lead_changes: 1, comeback: { team: "Kärpät", from_behind: 2 } });
+  });
+
+  it("leaves out lead changes when goals are missing", () => {
+    const missing = build_fact_sheet({ ...INPUT, goals: INPUT.goals.slice(0, 1) });
+    expect(missing.facts.some((fact) => fact.type === "lead_changes")).toBe(false);
+  });
+
+  it("marks sample games' facts as sample data", () => {
+    const sample = build_fact_sheet({ ...INPUT, data_source: "sample_data" });
+    expect(sample.facts[0]?.source).toBe("sample_data");
+  });
+
   it("numbers the facts and gives each a source", () => {
     expect(sheet.facts.map((fact) => [fact.fact_id, fact.type, fact.source])).toEqual([
       ["f1", "final_score", "liiga_api"],
@@ -49,6 +76,7 @@ describe("build_fact_sheet", () => {
       ["f5", "standing", "derived"],
       ["f6", "season_odds", "prediction_model:poisson_mc_v1"],
       ["f7", "next_game", "liiga_api"],
+      ["f8", "lead_changes", "derived"],
     ]);
   });
 

@@ -2,6 +2,7 @@ import type { AppDependencies, AppServices } from "./app";
 import type { Clock } from "./common/clock";
 import { create_logger, type Logger } from "./common/logger";
 import { create_rate_limit } from "./common/rate_limit";
+import type { UploadStatus } from "./common/upload_dir";
 import type { Env } from "./config/env";
 import { create_database, type Database } from "./db/kysely";
 import { create_llm_client } from "./integrations/llm_client/create_llm_client";
@@ -9,6 +10,8 @@ import { create_liiga_client } from "./integrations/liiga_client/create_liiga_cl
 import { GenerateStoriesJob } from "./jobs/generate_stories";
 import { JobScheduler } from "./jobs/job_scheduler";
 import { LiveSyncJob, LiveSyncPoller } from "./jobs/live_sync";
+import { RefreshDemoDataJob } from "./jobs/refresh_demo_data";
+import { KyselyRefreshDemoDataRepository } from "./jobs/refresh_demo_data_repository";
 import { RunModelJob } from "./jobs/run_model";
 import { ScoreAnswersJob } from "./jobs/score_answers";
 import { KyselyScoreAnswersRepository } from "./jobs/score_answers_repository";
@@ -29,7 +32,9 @@ import { KyselyElectionsRepository } from "./modules/elections/elections_reposit
 import { ElectionsService } from "./modules/elections/elections_service";
 import { KyselyGamesRepository } from "./modules/games/games_repository";
 import { GamesService } from "./modules/games/games_service";
+import { KyselyHealthRepository } from "./modules/health/health_repository";
 import { HealthService } from "./modules/health/health_service";
+import { HighlightsService } from "./modules/highlights/highlights_service";
 import { KyselyLeaderboardRepository } from "./modules/leaderboard/leaderboard_repository";
 import { LeaderboardService } from "./modules/leaderboard/leaderboard_service";
 import { KyselyPredictionsRepository } from "./modules/predictions/predictions_repository";
@@ -66,6 +71,8 @@ export interface Container {
   answers_scoring_scheduler: JobScheduler;
   /** Writes AI previews and summaries (on start, every 10 minutes and when a game ends). */
   stories_scheduler: JobScheduler;
+  /** Keeps the sample football / basketball fixtures and the demo election current (hourly). */
+  demo_refresh_scheduler: JobScheduler;
 }
 
 /** POST /auth/device: new accounts per client IP per hour. */
@@ -78,6 +85,8 @@ const ROOM_JOIN_RATE_LIMIT = { max_requests: 10, window_ms: 60 * 1000 };
 export interface ServiceConfig {
   featured_team_external_id: string;
   demo_replay_enabled: boolean;
+  /** From check_upload_dir() on API start: video files, or video URLs only. */
+  upload_status: UploadStatus;
   /** Writes room questions; the mock bank when not given (tests). */
   room_question_generator?: QuestionGenerator;
 }
@@ -104,7 +113,8 @@ export function build_services(
       )
     : undefined;
   return {
-    health_service: new HealthService(clock),
+    health_service: new HealthService(new KyselyHealthRepository(db), clock),
+    highlights_service: new HighlightsService(config.upload_status),
     teams_service,
     games_service,
     standings_service: new StandingsService(new KyselyStandingsRepository(db)),
@@ -157,12 +167,17 @@ export function build_services(
 }
 
 // The single place that builds dependencies. Add repositories, clients and services here.
-export function build_container(env: Env): Container {
+export function build_container(env: Env, upload_status: UploadStatus): Container {
   const logger = create_logger({
     level: env.LOG_LEVEL,
     pretty: env.NODE_ENV === "development",
   });
-  const db = create_database(env.DATABASE_URL);
+  const db = create_database(env.DATABASE_URL, {
+    max_connections: env.DATABASE_POOL_SIZE,
+    on_idle_error: (error) => {
+      logger.warn({ err: error }, "Idle database connection closed");
+    },
+  });
   const clock: Clock = () => new Date();
 
   const model_run_scheduler = new JobScheduler(
@@ -186,20 +201,31 @@ export function build_container(env: Env): Container {
     "Answer scoring",
   );
   const stories_repository = new KyselyStoriesRepository(db);
+  const llm_client = create_llm_client(env);
   const stories_scheduler = new JobScheduler(
     new GenerateStoriesJob(
       stories_repository,
       new StoryGenerationService(
         stories_repository,
         new KyselyModelInputsRepository(db),
-        create_llm_client(env),
+        llm_client,
         clock,
       ),
       logger,
       clock,
+      { has_llm: llm_client !== undefined },
     ),
     logger,
     "Story generation",
+  );
+  const demo_refresh_scheduler = new JobScheduler(
+    new RefreshDemoDataJob(new KyselyRefreshDemoDataRepository(db), logger, clock, [
+      scoring_scheduler,
+      answers_scoring_scheduler,
+      stories_scheduler,
+    ]),
+    logger,
+    "Demo data refresh",
   );
   const live_sync_poller = env.LIVE_SYNC_ENABLED
     ? new LiveSyncPoller(
@@ -223,17 +249,20 @@ export function build_container(env: Env): Container {
     scoring_scheduler,
     answers_scoring_scheduler,
     stories_scheduler,
+    demo_refresh_scheduler,
     app_dependencies: {
       logger,
       cors_allowed_origins: env.CORS_ALLOWED_ORIGINS,
+      trust_proxy_hops: env.TRUST_PROXY_HOPS,
       ...build_services(
         db,
         {
           featured_team_external_id: env.FEATURED_TEAM_EXTERNAL_ID,
           demo_replay_enabled: env.DEMO_REPLAY_ENABLED,
+          upload_status,
           room_question_generator: create_question_generator(
             env.ROOM_QUESTIONS_SOURCE,
-            create_llm_client(env),
+            llm_client,
             logger,
             new MockQuestionGenerator(),
           ),

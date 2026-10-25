@@ -116,13 +116,13 @@ export interface SamplePlayer {
 }
 
 /** A goal by the player at `scorer` (roster index 2–4 = the forwards) of the home/away team. */
-interface SampleGoal {
+export interface SampleGoal {
   side: "home" | "away";
   scorer: number;
   minute: number;
 }
 
-interface SampleResult {
+export interface SampleResult {
   home: number;
   away: number;
   goals: readonly SampleGoal[];
@@ -130,7 +130,7 @@ interface SampleResult {
   top_scorer?: { side: "home" | "away"; index: number };
 }
 
-interface SampleFixture {
+export interface SampleFixture {
   sport: Exclude<SportId, "hockey">;
   home: string;
   away: string;
@@ -242,7 +242,7 @@ function today_start(now: Date, today: LocalDate, order: number): Date | null {
   return start > now.getTime() ? new Date(start) : null;
 }
 
-function build_game(fixture: SampleFixture, start_time: Date, day: LocalDate): SampleGame {
+export function build_game(fixture: SampleFixture, start_time: Date, day: LocalDate): SampleGame {
   const league = league_of(fixture.sport);
   const home = team_external_id(league, fixture.home);
   const away = team_external_id(league, fixture.away);
@@ -343,7 +343,11 @@ export async function delete_sample_games(trx: Transaction<DB>): Promise<void> {
     .execute();
 }
 
-async function upsert_teams_and_players(trx: Transaction<DB>, fixtures: SampleFixtures) {
+/** Upserts the sample teams and players; returns their ids by external id. */
+export async function upsert_teams_and_players(
+  trx: Transaction<DB>,
+  fixtures: Pick<SampleFixtures, "teams" | "players">,
+) {
   const team_rows = await trx
     .insertInto("teams")
     .values(

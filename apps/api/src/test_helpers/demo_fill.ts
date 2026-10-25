@@ -1,8 +1,8 @@
 import type { EndedIn } from "@voita_kone/prediction_model";
 
-// Demo games fill gaps in the real Liiga data, so the game day hub always has one game
-// in each state (upcoming, live, final) to show. They use real teams and players and
-// are stored with data_source = 'demo'.
+// Tests only: hockey games for TEST_NOW, so the test day has one game in each state
+// (upcoming, live, final). Production has real Liiga data only. They use real teams and
+// players and are stored with data_source = 'demo'.
 
 export type HubState = "upcoming" | "live" | "final";
 

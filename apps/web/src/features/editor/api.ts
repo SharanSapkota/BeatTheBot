@@ -10,15 +10,17 @@ import { useSessionToken } from "../../lib/session";
 
 const QUEUE_KEY = "editor_stories";
 
-/** GET /editor/stories: the 🟡 and 🔴 stories waiting for an editor. */
-export function useEditorQueue(enabled: boolean) {
+export type QueueFilter = "all" | "yellow" | "red";
+
+/** GET /admin/stories(?status=yellow|red): the 🟡 and 🔴 stories waiting for an editor. */
+export function useEditorQueue(enabled: boolean, filter: QueueFilter = "all") {
   const token = useSessionToken();
   return useQuery({
-    queryKey: [QUEUE_KEY, token],
+    queryKey: [QUEUE_KEY, token, filter],
     enabled: enabled && token !== null,
     queryFn: async (): Promise<EditorStory[]> => {
-      const response = await api_get("/editor/stories", editor_stories_response_schema);
-      return response.data;
+      const path = filter === "all" ? "/admin/stories" : `/admin/stories?status=${filter}`;
+      return (await api_get(path, editor_stories_response_schema)).data;
     },
   });
 }
@@ -28,19 +30,23 @@ export type EditorAction =
   | { kind: "edit"; story_id: string; body: string; note?: string }
   | { kind: "reject"; story_id: string; note?: string };
 
-function story_path(story_id: string, action: EditorAction["kind"]): string {
-  return `/editor/stories/${encodeURIComponent(story_id)}/${action}`;
-}
-
+/** approve / reject: POST …/:id/approve|reject; edit: PUT …/:id (the fact checker re-runs). */
 async function send_editor_action(action: EditorAction): Promise<EditorActionResult> {
-  const path = story_path(action.story_id, action.kind);
-  const body =
-    action.kind === "approve"
-      ? undefined
-      : action.kind === "edit"
-        ? { body: action.body, note: action.note }
-        : { note: action.note };
-  const response = await api_request("POST", path, editor_action_response_schema, body);
+  const base = `/admin/stories/${encodeURIComponent(action.story_id)}`;
+  if (action.kind === "edit") {
+    const response = await api_request("PUT", base, editor_action_response_schema, {
+      body: action.body,
+      note: action.note,
+    });
+    return response.data;
+  }
+  const body = action.kind === "reject" ? { note: action.note } : undefined;
+  const response = await api_request(
+    "POST",
+    `${base}/${action.kind}`,
+    editor_action_response_schema,
+    body,
+  );
   return response.data;
 }
 

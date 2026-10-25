@@ -53,3 +53,9 @@
     color: var(--color_ink);
   }
 }
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
