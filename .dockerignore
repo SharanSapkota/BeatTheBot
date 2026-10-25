@@ -19,7 +19,5 @@ uploads
 # Not needed by the API image.
 docs
 infra
-apps/web/src
 apps/web/e2e
-apps/web/public
 playwright-report
