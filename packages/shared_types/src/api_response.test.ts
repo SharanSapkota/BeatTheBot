@@ -3,13 +3,13 @@ import { api_error_schema, health_response_schema } from "./api_response";
 
 describe("health_response_schema", () => {
   it("accepts a valid health response", () => {
-    const response = { data: { status: "ok", time: "2026-10-24T12:00:00.000Z" } };
+    const response = { data: { status: "ok", database: "ok", time: "2026-10-24T12:00:00.000Z" } };
 
     expect(health_response_schema.parse(response)).toEqual(response);
   });
 
   it("rejects a response without a valid time", () => {
-    const response = { data: { status: "ok", time: "yesterday" } };
+    const response = { data: { status: "ok", database: "ok", time: "yesterday" } };
 
     expect(health_response_schema.safeParse(response).success).toBe(false);
   });

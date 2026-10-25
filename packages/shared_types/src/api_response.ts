@@ -26,6 +26,8 @@ export function api_success_schema<T extends z.ZodType>(data_schema: T) {
 
 export const health_data_schema = z.object({
   status: z.literal("ok"),
+  /** GET /health answers 503 DATABASE_UNAVAILABLE when the database does not answer. */
+  database: z.literal("ok"),
   time: z.iso.datetime(),
 });
 

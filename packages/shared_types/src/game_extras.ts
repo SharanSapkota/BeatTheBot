@@ -17,3 +17,18 @@ export const highlight_schema = z.object({
 export const highlight_response_schema = api_success_schema(highlight_schema.nullable());
 
 export type Highlight = z.infer<typeof highlight_schema>;
+
+/**
+ * GET /admin/highlights/upload_status (role editor or admin): whether the highlight form may take
+ * a video file. When not, it takes video URLs only and shows `reason`.
+ */
+export const highlight_upload_status_schema = z.object({
+  file_uploads: z.boolean(),
+  reason: z.string().nullable(),
+});
+
+export const highlight_upload_status_response_schema = api_success_schema(
+  highlight_upload_status_schema,
+);
+
+export type HighlightUploadStatus = z.infer<typeof highlight_upload_status_schema>;

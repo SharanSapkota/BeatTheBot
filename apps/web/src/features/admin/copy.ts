@@ -124,4 +124,9 @@ export const admin_copy = {
   no_top_scorer: "Not known",
   save_match_result: "Save result",
   match_result_saved: "Result saved. The match's picks are scored.",
+  // Highlight form (step 12): the video source
+  field_video_file: "Video file",
+  field_video_url: "Video link (https)",
+  field_video_url_or: "Or paste a video link (https)",
+  video_url_only: "Video links only",
 } as const;

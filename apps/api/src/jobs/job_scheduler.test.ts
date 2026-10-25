@@ -54,4 +54,18 @@ describe("JobScheduler", () => {
 
     expect(calls).toBe(2);
   });
+
+  it("stops: finishes the run in progress, drops a queued run and starts no new ones", async () => {
+    const slow = new SlowJob();
+    const scheduler = new JobScheduler(slow, logger, "Test job");
+    scheduler.request_run("start");
+    scheduler.request_run("queued");
+
+    const stopped = scheduler.stop();
+    slow.release?.();
+    await stopped;
+    scheduler.request_run("after shutdown");
+
+    expect(slow.runs).toBe(1);
+  });
 });

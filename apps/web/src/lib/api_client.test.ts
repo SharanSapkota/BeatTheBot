@@ -140,7 +140,9 @@ describe("api_get", () => {
 describe("api_request with a session", () => {
   it("sends the token as a Bearer header", async () => {
     save_session_token("abc");
-    const api = mock_api({ "/health": { status: "ok", time: "2026-10-24T12:00:00.000Z" } });
+    const api = mock_api({
+      "/health": { status: "ok", database: "ok", time: "2026-10-24T12:00:00.000Z" },
+    });
 
     await api_get("/health", health_response_schema);
 
@@ -156,7 +158,7 @@ describe("api_request with a session", () => {
           JSON.stringify(
             has_token
               ? { error: { code: "UNAUTHORIZED", message: "Sign in to do this" } }
-              : { data: { status: "ok", time: "2026-10-24T12:00:00.000Z" } },
+              : { data: { status: "ok", database: "ok", time: "2026-10-24T12:00:00.000Z" } },
           ),
           { status: has_token ? 401 : 200 },
         ),

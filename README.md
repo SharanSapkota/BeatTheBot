@@ -4,6 +4,7 @@ A Liiga prediction game for Kaleva Media: fans compete against Kaleva's AI, and 
 
 - Product: [docs/product.md](docs/product.md)
 - Setup: [docs/setup.md](docs/setup.md)
+- Deploy (Neon + Render/Railway + Vercel): [docs/deploy.md](docs/deploy.md)
 - Architecture: [docs/architecture.md](docs/architecture.md)
 - Editorial rules (human in the loop): [docs/editorial_rules.md](docs/editorial_rules.md)
 - Progress: [docs/progress.md](docs/progress.md)

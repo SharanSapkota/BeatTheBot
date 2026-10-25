@@ -1,21 +1,11 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { Kysely } from "kysely";
-import { FileMigrationProvider, Migrator, type MigrationResultSet } from "kysely/migration";
-
-const migration_folder = path.join(path.dirname(fileURLToPath(import.meta.url)), "migrations");
+import { Migrator, type MigrationResultSet } from "kysely/migration";
+import { migrations } from "./migrations";
 
 function create_migrator<T>(db: Kysely<T>): Migrator {
   return new Migrator({
     db,
-    provider: new FileMigrationProvider({
-      fs,
-      path,
-      migrationFolder: migration_folder,
-      // Import from this module, so tsx and Vitest can load the .ts migration files.
-      import: (module_path: string) => import(module_path),
-    }),
+    provider: { getMigrations: () => Promise.resolve(migrations) },
   });
 }
 
